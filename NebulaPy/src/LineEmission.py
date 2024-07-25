@@ -1,18 +1,20 @@
 from .Chianti import chianti
-
-
+import NebulaPy.tools.constants as const
+import numpy as np
+import NebulaPy.tools.util as util
 class emissionline():
 
 
-    def __init__(self, ion):
+    def __init__(self, ion, verbose):
         """
         only single ion is considered here
         """
         self.Ion = ion
+        self.Verbose = verbose
 
-    #todo: write a fucntion to get all wavelength of a ion
 
-    def Luminosity_1DGrid(self, wavelength, temperature, ne, ns, cellvolume):
+
+    def lineluminosity_1Dgrid(self, line, temperature, ne, ns, dV):
         """
         Calculate the free-free energy loss rate of an ion. The result is returned to the
         `free_free_loss` attribute.
@@ -34,8 +36,48 @@ class emissionline():
 
         """
 
-        ion = chianti(self.Ion, temperature, ne)
-        print(ion.emissivity())
+        ion = chianti(ionName=self.Ion, temperature=temperature, ne=ne, verbose=self.Verbose)
+
+        self.LineLuminosity = {'ion':self.Ion, 'temperature':temperature, 'ne':ne}
+        self.LineLuminosity['spectroscopicName'] = ion.ChiantiInstant.Spectroscopic
+
+        #print(ion.get_allLines()) # not in use
+
+        # if the line (wavelength) is given in string, get the corresponding
+        # float value
+        if isinstance(line, str):
+            line = const.wvl_dict[line]
+
+        all_emissivity_data = ion.get_emissivity()
+        allLines = all_emissivity_data['wvl']
+        self.LineLuminosity['allLines'] = allLines
+        self.LineLuminosity['line'] = line
+
+        if self.Verbose:
+            print(f' identifying {line} Å from allLines of {ion.ChiantiInstant.Spectroscopic}')
+        index = (np.abs(allLines - line)).argmin()
+        tolerance = 10 ** -4
+        if np.abs(allLines[index] - line) <= tolerance:
+            if self.Verbose:
+                print(f' line {line} Å found at index {index} in allLines')
+        else:
+            util.nebula_exit('line not found in allLines')
+        self.LineLuminosity['lineIndex'] = index
+
+        if self.Verbose:
+            print(f' retrieving cell emissivity values for {ion.ChiantiInstant.Spectroscopic} {line}')
+
+        emissivity = np.asarray(all_emissivity_data['emiss'][index])
+        self.LineLuminosity['emiss'] = emissivity
+        self.LineLuminosity['ns'] = ns
+        self.LineLuminosity['dV'] = dV
+
+        # Calculating line Luminosity
+        luminosity = np.sum(emissivity * ns * dV)
+
+        self.LineLuminosity['luminosity'] = luminosity
+
+
 
 
 
