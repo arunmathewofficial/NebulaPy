@@ -5,18 +5,28 @@ A set of physical constants, and constants strings.
 import numpy as np
 from scipy import special
 
-# known wave-lenght list
+# known wave-length dictonary
 wvl_dict = {}
 wvl_dict['OIV25'] = 2.589332e+05
 
+#
+ev2Ang = 12.39841875e+3
 
+
+
+
+
+
+
+################################################################
+################################################################
 
 planck = 6.6260693e-27   #erg s
 planckEv = 4.13566743e-15  # ev s
 hbar = planck/(2.*np.pi)
 light = 29979245800.  # cm/s
 q = 4.80320425e-10  # the units of charge
-ev2Ang = 12.39841875e+3
+
 kev2Ang = 1.e-3*12.39841875e+3
 ev2Erg = 1.602176487e-12
 pi = 3.1415926535897931
