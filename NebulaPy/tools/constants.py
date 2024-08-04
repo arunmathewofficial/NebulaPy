@@ -9,10 +9,22 @@ from scipy import special
 wvl_dict = {}
 wvl_dict['OIV25'] = 2.589332e+05
 
-#
+# Physical constants
+pi = 3.1415926535897931
+h  = 6.6260693e-27              #erg s
+c  = 29979245800                # cm/s
+kB = 1.3806504e-16              # cgs
+stefanBoltzmann = 5.670373e-5   # cgs - ergs cm^-2 K^-4 s^-1
+
+# Convertions factors
+ev2Erg = 1.602176487e-12
 ev2Ang = 12.39841875e+3
+Ang2cm = 1.0e-8
 
-
+# Astronomical constants
+radiusSun = 6.955e+10    # mean radius of Sun in cm
+luminositySun = 3.86e+33 # ergs/s
+parsec = 3.08568025e+18  # cm
 
 
 
@@ -20,6 +32,263 @@ ev2Ang = 12.39841875e+3
 
 ################################################################
 ################################################################
+
+
+############################################################################
+# NebulaPy SED parameters
+
+SEDModels = ['powr', 'atlas', 'blackbody']
+
+# POWR Model Parameters
+PoWRMetallicity = ['mw', 'lmc', 'smc', 'z0.07']
+PoWRComposition = ['wne', 'wnl-h20', 'wnl-h40', 'wnl-h50', 'wnl-h60', 'wc']
+PoWRMdotMin = -6.184
+PoWRMdotMax = -3.784
+ClumpFactor = {'mw-wne': 4, 'mw-wnl-h20': 4, 'mw-wnl-h50': 4, 'mw-wc': 10, 'lmc-wne': 10,
+               'lmc-wnl-h20': 10, 'lmc-wnl-h40': 10, 'lmc-wc': 10, 'smc-wne': 4, 'smc-wnl-h20': 4,
+               'smc-wnl-h40': 4, 'smc-wnl-h60': 4, 'smc-wc': 10, 'z007-wne': 10,
+               'z007-wnl-h20': 10, 'z007-wnl-h40': 10, 'z007-wnl-h60': 10, 'z007-wc': 10}
+data = {
+    "Galactic Metallicity": {
+        "MW WNE": {"log L": 5.3, "vfinal": 1600, "Dmax": 4, "XH": None, "XHe": None,
+                   "XC": 0.98, "XN": 1.0E-4, "XO": 0.015, "XNe": None, "XFe": 1.4E-3},
+        "MW WNL-H20": {
+            "log L": 5.3,
+            "vfinal": 1000,
+            "Dmax": 4,
+            "XH": 0.2,
+            "XHe": 0.78,
+            "XC": 1.0E-4,
+            "XN": 0.015,
+            "XO": None,
+            "XNe": None,
+            "XFe": 1.4E-3
+        },
+        "MW WNL-H50": {
+            "log L": 5.3,
+            "vfinal": 1000,
+            "Dmax": 4,
+            "XH": 0.5,
+            "XHe": 0.48,
+            "XC": 1.0E-4,
+            "XN": 0.015,
+            "XO": None,
+            "XNe": None,
+            "XFe": 1.4E-3
+        },
+        "MW WC": {
+            "log L": 5.3,
+            "vfinal": 2000,
+            "Dmax": 10,
+            "XH": None,
+            "XHe": 0.55,
+            "XC": 0.4,
+            "XN": None,
+            "XO": 0.05,
+            "XNe": None,
+            "XFe": 1.6E-3
+        }
+    },
+    "LMC Metallicity": {
+        "LMC WNE": {
+            "log L": 5.3,
+            "vfinal": 1600,
+            "Dmax": 10,
+            "XH": None,
+            "XHe": 0.995,
+            "XC": 7.0E-5,
+            "XN": 4.0E-3,
+            "XO": None,
+            "XNe": None,
+            "XFe": 7.0E-4
+        },
+        "LMC WNL-H20": {
+            "log L": 5.3,
+            "vfinal": 1000,
+            "Dmax": 10,
+            "XH": 0.2,
+            "XHe": 0.795,
+            "XC": 7.0E-5,
+            "XN": 4.0E-3,
+            "XO": None,
+            "XNe": None,
+            "XFe": 7.0E-4
+        },
+        "LMC WNL-H40": {
+            "log L": 5.3,
+            "vfinal": 1000,
+            "Dmax": 10,
+            "XH": 0.4,
+            "XHe": 0.595,
+            "XC": 7.0E-5,
+            "XN": 4.0E-3,
+            "XO": None,
+            "XNe": None,
+            "XFe": 7.0E-4
+        },
+        "LMC WC": {
+            "log L": 5.3,
+            "vfinal": 2000,
+            "Dmax": 10,
+            "XH": None,
+            "XHe": 0.55,
+            "XC": 0.4,
+            "XN": None,
+            "XO": 0.05,
+            "XNe": 1.0E-3,
+            "XFe": 7.0E-4
+        }
+    },
+    "SMC Metallicity": {
+        "SMC WNE": {
+            "log L": 5.3,
+            "vfinal": "1600‡",
+            "Dmax": 4,
+            "XH": None,
+            "XHe": 0.998,
+            "XC": 2.5E-5,
+            "XN": 1.5E-3,
+            "XO": None,
+            "XNe": None,
+            "XFe": 3.0E-4
+        },
+        "SMC WNL-H20": {
+            "log L": 5.3,
+            "vfinal": "1600‡",
+            "Dmax": 4,
+            "XH": 0.2,
+            "XHe": 0.798,
+            "XC": 2.5E-5,
+            "XN": 1.5E-3,
+            "XO": None,
+            "XNe": None,
+            "XFe": 3.0E-4
+        },
+        "SMC WNL-H40": {
+            "log L": 5.3,
+            "vfinal": "1600‡",
+            "Dmax": 4,
+            "XH": 0.4,
+            "XHe": 0.598,
+            "XC": 2.5E-5,
+            "XN": 1.5E-3,
+            "XO": None,
+            "XNe": None,
+            "XFe": 3.0E-4
+        },
+        "SMC WNL-H60": {
+            "log L": 5.3,
+            "vfinal": "1600‡",
+            "Dmax": 4,
+            "XH": 0.6,
+            "XHe": 0.398,
+            "XC": 2.5E-5,
+            "XN": 1.5E-3,
+            "XO": None,
+            "XNe": None,
+            "XFe": 3.0E-4
+        },
+        "SMC WC": {
+            "log L": 5.3,
+            "vfinal": 2000,
+            "Dmax": 10,
+            "XH": None,
+            "XHe": 0.547,
+            "XC": 0.4,
+            "XN": None,
+            "XO": 0.05,
+            "XNe": 2.4E-3,
+            "XFe": 3.0E-4
+        }
+    },
+    "sub-SMC Metallicity (0.07 solar)": {
+        "Z0.07 WNE": {
+            "log L": 5.3,
+            "vfinal": 1600,
+            "Dmax": 10,
+            "XH": None,
+            "XHe": 0.999,
+            "XC": 1.0E-5,
+            "XN": 6.1E-4,
+            "XO": 1.0E-5,
+            "XNe": None,
+            "XFe": 9.2E-5
+        },
+        "Z0.07 WNL-H20": {
+            "log L": 5.3,
+            "vfinal": 1600,
+            "Dmax": 10,
+            "XH": 0.2,
+            "XHe": 0.799,
+            "XC": 1.0E-5,
+            "XN": 6.1E-4,
+            "XO": 1.0E-5,
+            "XNe": None,
+            "XFe": 9.2E-5
+        },
+        "Z0.07 WNL-H40": {
+            "log L": 5.3,
+            "vfinal": 1600,
+            "Dmax": 10,
+            "XH": 0.4,
+            "XHe": 0.599,
+            "XC": 1.0E-5,
+            "XN": 6.1E-4,
+            "XO": 1.0E-5,
+            "XNe": None,
+            "XFe": 9.2E-5
+        },
+        "Z0.07 WC": {
+            "log L": 5.3,
+            "vfinal": 2000,
+            "Dmax": 10,
+            "XH": None,
+            "XHe": 0.549,
+            "XC": 0.4,
+            "XN": None,
+            "XO": 0.05,
+            "XNe": 8.3E-4,
+            "XFe": 9.2E-5
+        }
+    }
+}
+
+# Atlas Model Parameter
+AtlasMetallicity = ['-0.5', '-1.0', '-1.5', '-2.0', '-2.5', '-0.0', '0.0',
+                    '+0.0', '+0.2', '0.2', '+0.5', '0.5']
+
+AtlasGravity = ['0.0', '0.5', '1.0', '1.5', '2.0', '2.5', '3.0', '3.5', '4.0',
+                '4.5', '5.0', '+0.0', '+0.5', '+1.0', '+1.5', '+2.0', '+2.5',
+                '+3.0', '+3.5', '+4.0', '+4.5', '+5.0']
+
+# Blackbody Model Parameters
+blackbody_temp_table = [3.500000e+03, 3.750000e+03, 4.000000e+03, 4.250000e+03,
+                        4.500000e+03, 4.750000e+03, 5.000000e+03, 5.250000e+03,
+                        5.500000e+03, 5.750000e+03, 6.000000e+03, 6.250000e+03,
+                        6.500000e+03, 6.750000e+03, 7.000000e+03, 7.250000e+03,
+                        7.500000e+03, 7.750000e+03, 8.000000e+03, 8.250000e+03,
+                        8.500000e+03, 8.750000e+03, 9.000000e+03, 9.250000e+03,
+                        9.500000e+03, 9.750000e+03, 1.000000e+04, 1.025000e+04,
+                        1.050000e+04, 1.075000e+04, 1.100000e+04, 1.125000e+04,
+                        1.150000e+04, 1.175000e+04, 1.200000e+04, 1.225000e+04,
+                        1.250000e+04, 1.275000e+04, 1.300000e+04, 1.400000e+04,
+                        1.500000e+04, 1.600000e+04, 1.700000e+04, 1.800000e+04,
+                        1.900000e+04, 2.000000e+04, 2.100000e+04, 2.200000e+04,
+                        2.300000e+04, 2.400000e+04, 2.500000e+04, 2.600000e+04,
+                        2.700000e+04, 2.800000e+04, 2.900000e+04, 3.000000e+04,
+                        3.100000e+04, 3.200000e+04, 3.300000e+04, 3.400000e+04,
+                        3.500000e+04, 3.600000e+04, 3.700000e+04, 3.800000e+04,
+                        3.900000e+04, 4.000000e+04, 4.100000e+04, 4.200000e+04,
+                        4.300000e+04, 4.400000e+04, 4.500000e+04, 4.600000e+04,
+                        4.700000e+04, 4.800000e+04, 4.900000e+04]
+
+##########################################################################################################
+
+
+
+
+
+
 
 planck = 6.6260693e-27   #erg s
 planckEv = 4.13566743e-15  # ev s
