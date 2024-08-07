@@ -1,3 +1,4 @@
 build/
 NebulaPy.egg-info/
 .idea/
+tests/*.txt
