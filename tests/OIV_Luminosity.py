@@ -1,13 +1,30 @@
 import NebulaPy.src as nebula
-import sys
-#sys.path.insert(0, "/Users/tony/.local/silo/lib")
-#import Silo
+
 
 # bundle up the silo files
-silo = nebula.pion()
-silo_dir = '/Users/tony/Desktop/NebulaPy/tests/wind-wind-jm'
-files = silo.collate_files(dir=silo_dir, filebase='e7_WRwind_d1l5n256_v0750')
-silo.get_all(files[0][0])
+pion_object = nebula.pion_silos(verbose=True)
+silo_dir = '/home/tony/Desktop/NebulaPy/tests/wind-wind-jm'
+silo_instant_set = pion_object.batch_silos(silo_dir, 'e7_WRwind_d1l5n256_v0750')
+pion_object.get_chemistry(silo_instant_set[0])
+print(pion_object.chemistry_container)
+
+
+
+
+
+
+
+'''
+for i in range(len(files[0])):
+  datafile=[]
+  for v in range(0,lev):
+    datafile.append(files[v][i])
+  print(i,datafile[0])
+'''
+
+
+
+
 
 
 

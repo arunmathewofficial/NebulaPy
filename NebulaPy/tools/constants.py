@@ -5,9 +5,13 @@ A set of physical constants, and constants strings.
 import numpy as np
 from scipy import special
 
-# known wave-length dictonary
+# ***************************************
+# Line Dictionary
+#
 wvl_dict = {}
 wvl_dict['OIV25'] = 2.589332e+05
+# ****************************************
+
 
 # Physical constants
 pi = 3.1415926535897931
@@ -282,6 +286,15 @@ blackbody_temp_table = [3.500000e+03, 3.750000e+03, 4.000000e+03, 4.250000e+03,
                         4.300000e+04, 4.400000e+04, 4.500000e+04, 4.600000e+04,
                         4.700000e+04, 4.800000e+04, 4.900000e+04]
 
+
+
+nebula_elements = {'H': "Hydrogen", 'He': "Helium", 'C': "Carbon", 'N': "Nitrogen",
+                   'O': "Oxygen", 'Ne': "Neon", 'Si': "Silicon", 'S': "Sulfur",
+                   'Fe': "Iron"}
+
+periodic_tab = ['h','he','li','be','b','c','n','o','f','ne','na', 'mg','al','si',
+                'p','s','cl','ar','k','ca','sc','ti', 'v','cr','mn','fe','co',
+                'ni','cu','zn', 'ga','ge','as','se','br','kr']
 ##########################################################################################################
 
 
