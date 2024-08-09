@@ -33,6 +33,8 @@ class pion_silos():
         all_silos = []
         batched_silos = []
 
+        if self.verbose: print(" batching silo files into time instances")
+
         # Iterate through possible levels to find the files
         for level in range(20):
             search_pattern = os.path.join(dir, f"{filebase}_level{str(level).zfill(2)}_0000.*.silo")
@@ -52,6 +54,8 @@ class pion_silos():
                 instantaneous_set = [all_silos[level][i] for level in range(len(all_silos))]
                 batched_silos.append(instantaneous_set)
         except IndexError:
+            if self.verbose:
+                print(f" batch processing {level} level silo file completed")
             pass
 
         return batched_silos
@@ -89,13 +93,17 @@ class pion_silos():
         header_data = OpenData(instant_silo_set)
         # Set the directory to '/header'
         header_data.db.SetDir('/header')
+        #print(header_data.header_info())
         # Retrieve the value of "EP_chemistry" from the header data
         chemistry_flag = header_data.db.GetVar("EP_chemistry")
         # Retrieve the value of "EP_dynamics" from the header data
         dynamics = header_data.db.GetVar("EP_dynamics")
+        # Retrieve what coordinate system is used
+        coord_sys = header_data.db.GetVar("coord_sys")
 
         # save the dynamics and chemistry_flag values in the chemistry_container dictionary
         self.chemistry_container['dynamics'] = dynamics
+        self.chemistry_container['coordinate_sys'] = const.coordinate_system[coord_sys]
         self.chemistry_container['chemistry'] = chemistry_flag
 
         # Define the list of process variable names
@@ -140,8 +148,10 @@ class pion_silos():
                 self.chemistry_container['microphysics'] = microphysics
                 # Retrieve the number of tracers
                 Ntracers = header_data.db.GetVar('num_tracer')
-                # initialize an empty list to store elements for MPv10
+                # mass_fraction
                 mass_fractions = []
+                # list of element wise tracer list
+                elementWiseTracers = [[] for _ in range(len(const.nebula_elements))]
                 # list of element names from the nebula_elements dictionary keys
                 element_list = list(const.nebula_elements.keys())
                 # save the number of tracers in the chemistry_container dictionary
@@ -166,20 +176,39 @@ class pion_silos():
                         # if verbose is enabled, print the found element name
                         if self.verbose:
                             print(f" found {const.nebula_elements[element]}")
+                        # get the index of the element in the element_list
+                        element_index = element_list.index(element)
+                        # append the tracer with the corresponding element to the mpv10tracers list
+                        if 0 <= element_index < len(elementWiseTracers):
+                            elementWiseTracers[element_index].append(f'Tr{i:03}_' + chem_tracer)
 
                     # check if the tracer is a corresponding ion
                     if re.sub(r'\d{1,2}\+', '', chem_tracer) in const.nebula_elements:
                         self.chemistry_container[chem_tracer] = f'Tr{i:03}_' + chem_tracer
+                        # extract the element name
+                        element = re.sub(r'\d{1,2}\+', '', chem_tracer)
+                        # get the index of the element in the element_list
+                        element_index = element_list.index(element)
+                        # gppend the tracer with the corresponding ion to the mpv10tracers list
+                        elementWiseTracers[element_index].append(f'Tr{i:03}_' + chem_tracer)
 
                 # save mass fraction to chemistry_container dictionary
                 self.chemistry_container['mass_fractions'] = mass_fractions
                 self.chemistry_container['Nelements'] = len(mass_fractions)
+                self.element_wise_tracer_list = elementWiseTracers
+
+
 
     ######################################################################################
     # get species number denisty
     ######################################################################################
-    def get_number_density(self):
+    def get_cell_num_density(self):
         pass
 
-
+    ######################################################################################
+    # get electron number density
+    ######################################################################################
+    def get_cell_ne(self):
+        print(self.element_wise_tracer_list)
+        pass
 

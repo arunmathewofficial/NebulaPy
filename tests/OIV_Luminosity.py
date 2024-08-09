@@ -1,15 +1,29 @@
 import NebulaPy.src as nebula
 
 
+pion = nebula.pion_silos(verbose=True)
 
-# bundle up the silo files
-pion_object = nebula.pion_silos(verbose=True)
 silo_dir = '/home/tony/Desktop/NebulaPy/tests/wind-wind-jm'
-silo_instant_set = pion_object.batch_silos(silo_dir, 'e7_WRwind_d1l5n256_v0750')
-pion_object.get_chemistry(silo_instant_set[0])
-pion_object.get_number_density()
 
-print(pion_object.chemistry_container)
+# batch the silo file according to the time instant
+silo_instant_set = pion.batch_silos(silo_dir, 'e7_WRwind_d1l5n256_v0750')
+
+# get_chemistry will extract all chemistry information from
+# the silo file into chemistry container
+pion.get_chemistry(silo_instant_set[0])
+
+# display chemistry container
+print(pion.chemistry_container)
+
+pion.get_cell_ne()
+
+
+
+
+
+# get the number density of any species in the silo file
+
+
 
 
 
