@@ -1,11 +1,14 @@
 import NebulaPy.src as nebula
 
 
+
 # bundle up the silo files
 pion_object = nebula.pion_silos(verbose=True)
 silo_dir = '/home/tony/Desktop/NebulaPy/tests/wind-wind-jm'
 silo_instant_set = pion_object.batch_silos(silo_dir, 'e7_WRwind_d1l5n256_v0750')
 pion_object.get_chemistry(silo_instant_set[0])
+pion_object.get_number_density()
+
 print(pion_object.chemistry_container)
 
 

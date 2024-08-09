@@ -5,7 +5,7 @@ from pypion.ReadData import ReadData
 from pypion.SiloHeader_data import OpenData
 from NebulaPy.tools import util as util
 from NebulaPy.tools import constants as const
-
+from NebulaPy.tools import Ions as Ion
 
 class pion_silos():
     '''
@@ -55,9 +55,6 @@ class pion_silos():
             pass
 
         return batched_silos
-
-
-
 
     ######################################################################################
     # get chemistry from the initial silo file
@@ -144,9 +141,7 @@ class pion_silos():
                 # Retrieve the number of tracers
                 Ntracers = header_data.db.GetVar('num_tracer')
                 # initialize an empty list to store elements for MPv10
-                mpv10elements = []
-                # initialize a 2D list to store tracers for each element
-                mpv10tracers = [[] for _ in range(len(const.nebula_elements))]
+                mass_fractions = []
                 # list of element names from the nebula_elements dictionary keys
                 element_list = list(const.nebula_elements.keys())
                 # save the number of tracers in the chemistry_container dictionary
@@ -167,31 +162,24 @@ class pion_silos():
                         # extract the element name
                         element = chem_tracer.replace("_", "").replace("X", "")
                         # get the full element name from the nebula_elements dictionary
-                        element_name = const.nebula_elements[element]
-                        # append the element to the mpv10elements list
-                        mpv10elements.append(element)
+                        mass_fractions.append({element: f'Tr{i:03}_' + chem_tracer})
                         # if verbose is enabled, print the found element name
                         if self.verbose:
-                            print(f" found {element_name}")
-
-                        # get the index of the element in the element_list
-                        element_index = element_list.index(element)
-                        # append the tracer with the corresponding element to the mpv10tracers list
-                        if 0 <= element_index < len(mpv10tracers):
-                            mpv10tracers[element_index].append(f'Tr{i:03}_' + chem_tracer)
+                            print(f" found {const.nebula_elements[element]}")
 
                     # check if the tracer is a corresponding ion
                     if re.sub(r'\d{1,2}\+', '', chem_tracer) in const.nebula_elements:
-                        # extract the element name
-                        element = re.sub(r'\d{1,2}\+', '', chem_tracer)
-                        # get the index of the element in the element_list
-                        element_index = element_list.index(element)
-                        # gppend the tracer with the corresponding ion to the mpv10tracers list
-                        mpv10tracers[element_index].append(f'Tr{i:03}_' + chem_tracer)
+                        self.chemistry_container[chem_tracer] = f'Tr{i:03}_' + chem_tracer
 
-                # save the mpv10elements and mpv10tracers lists in the chemistry_container dictionary
-                self.chemistry_container['mpv10_elements'] = mpv10elements
-                self.chemistry_container['mpv10_tracers'] = mpv10tracers
+                # save mass fraction to chemistry_container dictionary
+                self.chemistry_container['mass_fractions'] = mass_fractions
+                self.chemistry_container['Nelements'] = len(mass_fractions)
+
+    ######################################################################################
+    # get species number denisty
+    ######################################################################################
+    def get_number_density(self):
+        pass
 
 
 
