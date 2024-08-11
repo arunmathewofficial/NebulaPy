@@ -9,10 +9,10 @@ filebase = 'e7_WRwind_d1l5n256_v0750'  # Base name of the silo files
 output_file = '/home/tony/Desktop/NebulaPy/tests/line_luminosity_OIV25.txt'  # Output file for results
 
 # Set up the ion and line emission parameters
-ion_name = 'O4+'  # The ion of interest (Oxygen IV)
+ion_name = 'O3+'  # The ion of interest (Oxygen IV)
 mass_O = 2.6567628e-23  # Mass of an Oxygen atom (in grams)
-line = 'OIV25'  # Emission line of interest
-print(f" calculating line luminosity of {line}")
+line = 2.589332e+05  # Emission line of interest
+print(rf" calculating line luminosity of {ion_name} {line} \AA")
 
 
 # Batch the silo files according to the time instant
@@ -33,9 +33,8 @@ nebula_pion.spherical_grid(batched_silos[0])
 radius = nebula_pion.geometry_container['radius']
 shell_volume = nebula_pion.geometry_container['shell_volumes']
 
-line_emission = nebula.emissionline('o_4', verbose=True)  # Initialize the emission line calculation
+line_emission = nebula.emissionline(ion_name, verbose=True)  # Initialize the emission line calculation
 
-print(f" calculating line luminosity of {line}")
 # Open the output file and write the header
 with open(output_file, "w") as file:
     file.write(util.nebula_version()+'\n')
