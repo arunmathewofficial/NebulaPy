@@ -12,8 +12,7 @@ output_file = '/home/tony/Desktop/NebulaPy/tests/line_luminosity_OIV25.txt'  # O
 ion_name = 'O3+'  # The ion of interest (Oxygen IV)
 mass_O = 2.6567628e-23  # Mass of an Oxygen atom (in grams)
 line = 2.589332e+05  # Emission line of interest
-print(rf" calculating line luminosity of {ion_name} {line} \AA")
-
+print(rf" calculating line luminosity of {ion_name} {line} Angstrom")
 
 # Batch the silo files according to the time instant
 batched_silos = util.batch_silos(silo_dir, filebase)
