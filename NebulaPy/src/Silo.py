@@ -1,69 +1,113 @@
-import glob
-import os
 import re
+import numpy as np
 from pypion.ReadData import ReadData
 from pypion.SiloHeader_data import OpenData
 from NebulaPy.tools import util as util
 from NebulaPy.tools import constants as const
-from NebulaPy.tools import Ions as Ion
+import astropy.units as unit
 
-class pion_silos():
+
+
+class pion():
     '''
     This class is not an alternative to Pypion; rather, it is a
     bundle of methods useful for creating synthetic emission
     maps from the Silo file.
     '''
 
-
-    def __init__(self, verbose):
+    def __init__(self, silo_set, verbose):
+        self.silo_set = silo_set
         self.verbose = verbose
+        self.geometry_container = {}
         self.chemistry_container = {}
 
-
     ######################################################################################
-    # batch silo files
+    # spherical grid
     ######################################################################################
-    def batch_silos(self, dir, filebase):
-        '''
-        Find silo files and put them in order of levels.
-        :param dir: Directory path where files are located
-        :param filebase: Base name of the files to search for
-        :return: List of batched silo files by levels
-        '''
-        all_silos = []
-        batched_silos = []
+    def spherical_grid(self, silo_instant):
 
-        if self.verbose: print(" batching silo files into time instances")
+        # Open the data for the first silo instant silo
+        header_data = OpenData(silo_instant)
+        # Set the directory to '/header'
+        header_data.db.SetDir('/header')
+        # Retrieve what coordinate system is used
+        coord_sys = header_data.db.GetVar("coord_sys")
+        if not coord_sys == 3:
+            util.nebula_exit_with_error(f"geometry mismatch {const.coordinate_system[coord_sys]}")
+        # Retrieve no of nested grid levels
+        Nlevels = header_data.db.GetVar("grid_nlevels")
+        # close the object
+        header_data.close()
 
-        # Iterate through possible levels to find the files
-        for level in range(20):
-            search_pattern = os.path.join(dir, f"{filebase}_level{str(level).zfill(2)}_0000.*.silo")
-            level_files = sorted(glob.glob(search_pattern))
+        # save the dynamics and chemistry_flag values in the chemistry_container dictionary
+        self.geometry_container['coordinate_sys'] = const.coordinate_system[coord_sys]
+        self.geometry_container['Nlevels'] = Nlevels
+        if self.verbose:
+            print(f" ---------------------------")
+            print(f" geometry: {const.coordinate_system[coord_sys]}")
+            print(f" N grid levels: {Nlevels}")
 
-            if level_files:
-                all_silos.append(level_files)
-            else:
-                break
+        # read silo file
+        data = ReadData(silo_instant)
+        basic = data.get_1Darray('Density')
+        mask = data.get_1Darray("NG_Mask")['data']
+        mask = np.array(mask)
+        # radial axis
+        rmax = (basic['max_extents'] * unit.cm)
+        rmin = (basic['min_extents'] * unit.cm)
+        Ngrid = data.ngrid()
+        # close the object
+        data.close()
 
-        if not all_silos:
-            print(f" error: No '{filebase}' silo files found in '{dir}'.")
-            quit()
+        # calculating radial points
+        if self.verbose:
+            print(' calculating radial points')
+        radius = []
+        for level in range(Nlevels):
+            level_min = rmin[level].value
+            level_max = rmax[level].value
+            level_dr = (level_max[0] - level_min[0]) / Ngrid[0]
+            r0 = level_min[0] + 0.5 * level_dr
+            rn = level_max[0] - 0.5 * level_dr
+            r = np.linspace(r0, rn, Ngrid[0])
+            radius.append(r)  # append radius of each level
 
-        try:
-            for i in range(len(all_silos[0])):
-                instantaneous_set = [all_silos[level][i] for level in range(len(all_silos))]
-                batched_silos.append(instantaneous_set)
-        except IndexError:
-            if self.verbose:
-                print(f" batch processing {level} level silo file completed")
-            pass
+        if Nlevels > 1:
+            # last element of the tracer array tracer[Nlevels - 1]
+            fine_level = radius[Nlevels - 1]
+            # Loop through the tracer array starting from the second-to-last element down to the first element,
+            # goes from Nlevels - 2 (second-to-last element) to 0 (first element)
+            for i in range(Nlevels - 2, -1, -1):
+                # Use the mask array to selectively delete certain elements from tracer[i]. np.where(mask[i] == 0)
+                # finds the indices in mask[i] where the value is 0. np.delete(tracer[i], np.where(mask[i] == 0))
+                # removes the elements from tracer[i] at those indices.
+                coarse_level = np.delete(radius[i], np.where(mask[i] == 0))
+                # append the filtered array coarse_level to the result array to fine_level.
+                fine_level = np.append(fine_level, coarse_level)
+            radius = np.array(fine_level)
 
-        return batched_silos
+        # if the data is single level (uniform grid)
+        if Nlevels == 1:
+            radius = radius[0] * mask[0]
+
+        # calculating shell volumes
+        if self.verbose:
+            print(' calculating shell volumes')
+        # Calculating the core volume
+        core = 4.0 * const.pi * radius[0] ** 3.0 / 3.0
+        # Calculating the shell volumes
+        shell_volumes = 4.0 * const.pi * (radius[1:] ** 3 - radius[:-1] ** 3) / 3.0
+        # Insert the core volume at the beginning of the shell_volumes array
+        shell_volumes = np.insert(shell_volumes, 0, core)
+
+        self.geometry_container['radius'] = radius
+        self.geometry_container['shell_volumes'] = shell_volumes
+
 
     ######################################################################################
     # get chemistry from the initial silo file
     ######################################################################################
-    def get_chemistry(self, instant_silo_set):
+    def get_chemistry(self):
         '''
         This method extracts information related to the chemistry and chemical tracers,
         transforming the chemical tracer names to a format that PyPion can directly
@@ -87,23 +131,13 @@ class pion_silos():
         - 'mpv10_tracers': List of tracers corresponding to each element for MPv10 chemistry code
         '''
 
-        # Read data for the given instant silo set
-        data = ReadData(instant_silo_set)
-        # Open the data for the given instant silo set
-        header_data = OpenData(instant_silo_set)
+        # Open the data for the first silo instant silo
+        header_data = OpenData(self.silo_set[0])
         # Set the directory to '/header'
         header_data.db.SetDir('/header')
         #print(header_data.header_info())
         # Retrieve the value of "EP_chemistry" from the header data
         chemistry_flag = header_data.db.GetVar("EP_chemistry")
-        # Retrieve the value of "EP_dynamics" from the header data
-        dynamics = header_data.db.GetVar("EP_dynamics")
-        # Retrieve what coordinate system is used
-        coord_sys = header_data.db.GetVar("coord_sys")
-
-        # save the dynamics and chemistry_flag values in the chemistry_container dictionary
-        self.chemistry_container['dynamics'] = dynamics
-        self.chemistry_container['coordinate_sys'] = const.coordinate_system[coord_sys]
         self.chemistry_container['chemistry'] = chemistry_flag
 
         # Define the list of process variable names
@@ -135,7 +169,8 @@ class pion_silos():
             else:
                 # If verbose is enabled, print the chemistry code
                 if self.verbose:
-                    print(f" pion chemistry: {chemistry_code}")
+                    print(f" ---------------------------")
+                    print(f" chemistry: {chemistry_code}")
 
                 # Loop through each process
                 for index, process in enumerate(processes):
@@ -148,6 +183,8 @@ class pion_silos():
                 self.chemistry_container['microphysics'] = microphysics
                 # Retrieve the number of tracers
                 Ntracers = header_data.db.GetVar('num_tracer')
+                # elements in the tracer list
+                tracer_elements = []
                 # mass_fraction
                 mass_fractions = []
                 # list of element wise tracer list
@@ -158,7 +195,7 @@ class pion_silos():
                 self.chemistry_container['Ntracers'] = Ntracers
                 # If verbose is enabled, print the number of chemical tracers
                 if self.verbose:
-                    print(f" number of chemical tracers: {Ntracers}")
+                    print(f" N chemical tracers: {Ntracers}")
 
                 # Loop through each tracer index
                 for i in range(Ntracers):
@@ -171,6 +208,7 @@ class pion_silos():
                     if 'X' in chem_tracer and chem_tracer.replace("_", "").replace("X", "") in const.nebula_elements:
                         # extract the element name
                         element = chem_tracer.replace("_", "").replace("X", "")
+                        tracer_elements.append(element)
                         # get the full element name from the nebula_elements dictionary
                         mass_fractions.append({element: f'Tr{i:03}_' + chem_tracer})
                         # if verbose is enabled, print the found element name
@@ -184,31 +222,139 @@ class pion_silos():
 
                     # check if the tracer is a corresponding ion
                     if re.sub(r'\d{1,2}\+', '', chem_tracer) in const.nebula_elements:
-                        self.chemistry_container[chem_tracer] = f'Tr{i:03}_' + chem_tracer
+                        self.chemistry_container[chem_tracer] = f'Tr{i:03}_' + chem_tracer.replace('+', 'p')
                         # extract the element name
                         element = re.sub(r'\d{1,2}\+', '', chem_tracer)
                         # get the index of the element in the element_list
                         element_index = element_list.index(element)
                         # gppend the tracer with the corresponding ion to the mpv10tracers list
-                        elementWiseTracers[element_index].append(f'Tr{i:03}_' + chem_tracer)
+                        elementWiseTracers[element_index].append(f'Tr{i:03}_' + chem_tracer.replace('+', 'p'))
 
                 # save mass fraction to chemistry_container dictionary
                 self.chemistry_container['mass_fractions'] = mass_fractions
-                self.chemistry_container['Nelements'] = len(mass_fractions)
+                self.element_list = tracer_elements
                 self.element_wise_tracer_list = elementWiseTracers
+        header_data.close()
+
+
+    ######################################################################################
+    # get parameter
+    ######################################################################################
+    def get_parameter(self, parameter, silo_instant):
+        '''
+        Method will return the parameter value for a spherical nested grid
+
+        Parameters
+        ----------
+        parameter physical
+        silo_instant
+
+        Returns
+        -------
+        physical parameter value for a spherical nested grid
+        '''
+
+        # 1 dimensional (spherical) ######################################################
+        if self.geometry_container['coordinate_sys'] == 'spherical':
+            # get nested grid level
+            Nlevels = self.geometry_container['Nlevels']
+
+            # pypion ReadDate object
+            data = ReadData(silo_instant)
+            # get parameter values
+            parameter = data.get_1Darray(parameter)['data']
+            # get mask
+            mask = data.get_1Darray("NG_Mask")['data']
+            data.close()
+            # if the data is single level (uniform grid)
+            if Nlevels == 1:
+                return parameter[0] * mask[0]
+
+            # last element of the parameter array parameter[Nlevels - 1]
+            fine_level = parameter[Nlevels - 1]
+            # Loop through the parameter array starting from the second-to-last element down to the first element,
+            # goes from Nlevels - 2 (second-to-last element) to 0 (first element)
+            for i in range(Nlevels - 2, -1, -1):
+                # Use the mask array to selectively delete certain elements from parameter[i]. np.where(mask[i] == 0)
+                # finds the indices in mask[i] where the value is 0. np.delete(parameter[i], np.where(mask[i] == 0))
+                # removes the elements from parameter[i] at those indices.
+                coarse_level = np.delete(parameter[i], np.where(mask[i] == 0))
+                # append the filtered array coarse_level to the result array to fine_level.
+                fine_level = np.append(fine_level, coarse_level)
+            return np.array(fine_level)
+        # end of 1 dimensional ***********************************************************
+        # 2 dimensional (cylindrical) ####################################################
+        # end of 2 dimensional ***********************************************************
+        # 3 dimensional (cylindrical) ####################################################
+        # end of 3 dimensional ***********************************************************
+
 
 
 
     ######################################################################################
-    # get species number denisty
+    # get ion mass fraction values
     ######################################################################################
-    def get_cell_num_density(self):
-        pass
+    def get_ion(self, ion, silo_instant):
+        '''
+        This methos will return the ion mass fraction value set
+
+        Parameters
+        ----------
+        ion name
+        silo_instant
+
+        Returns
+        -------
+        ion mass fraction
+        '''
+
+        ion_tracer = None
+        if ion not in self.chemistry_container:
+            util.nebula_exit_with_error(f"ion {ion} not in {self.chemistry_container['chemistry_code']} chemistry")
+        else:
+            ion_tracer = self.chemistry_container[ion]
+
+        return self.get_parameter(ion_tracer, silo_instant)
+
 
     ######################################################################################
     # get electron number density
     ######################################################################################
-    def get_cell_ne(self):
-        print(self.element_wise_tracer_list)
-        pass
+    def get_ne(self, silo_instant):
+        '''
+
+        Parameters
+        ----------
+        silo_instant
+
+        Returns
+        -------
+        electron number density in each cell
+        '''
+
+        density = self.get_parameter("Density", silo_instant)
+        ne = np.zeros(len(density))
+
+        for e, element in enumerate(self.element_wise_tracer_list):
+            if not element:  # Check if the element is empty
+                continue
+            massfrac_sum = np.zeros(len(density))
+            element_name = self.element_list[e]
+            atomic_number = len(element) - 1
+            top_ion = self.get_parameter(element[0], silo_instant)
+
+            for i, ion in enumerate(element[1:], start=1):
+                charge = i - 1
+                ion_density = self.get_parameter(ion, silo_instant)
+                top_ion -= ion_density
+                massfrac_sum += charge * ion_density
+
+            massfrac_sum += atomic_number * np.maximum(top_ion, 0.0)
+
+            ne += massfrac_sum / const.mass[element_name]
+
+        return ne * density
+
+
+
 

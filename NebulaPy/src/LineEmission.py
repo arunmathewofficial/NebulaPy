@@ -2,9 +2,12 @@ from .Chianti import chianti
 import NebulaPy.tools.constants as const
 import numpy as np
 import NebulaPy.tools.util as util
+
 class emissionline():
 
-
+    ######################################################################################
+    # get parameter in spherical grid setup
+    ######################################################################################
     def __init__(self, ion, verbose):
         """
         only single ion is considered here
@@ -13,15 +16,13 @@ class emissionline():
         self.Verbose = verbose
 
 
-
-    def lineluminosity_1Dgrid(self, line, temperature, ne, ns, dV):
+    ######################################################################################
+    # line luminosity
+    ######################################################################################
+    def lineluminosity_spherical(self, line, temperature, ne, ns, dV):
         """
         Calculate the free-free energy loss rate of an ion. The result is returned to the
         `free_free_loss` attribute.
-
-
-
-
         The free-free radiative loss rate is given by Eq. 5.15a of [107]_. Writing the numerical
         constant in terms of the fine structure constant :math:`\\alpha`,
 
@@ -61,7 +62,7 @@ class emissionline():
             if self.Verbose:
                 print(f' line {line} Å found at index {index} in allLines')
         else:
-            util.nebula_exit('line not found in allLines')
+            util.nebula_exit_with_error('line not found in allLines')
         self.LineLuminosity['lineIndex'] = index
 
         if self.Verbose:

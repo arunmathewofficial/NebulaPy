@@ -1,61 +1,82 @@
 import NebulaPy.src as nebula
+from NebulaPy.tools import util
+from pypion.ReadData import ReadData
+import astropy.units as unit
+
+# Set up paths and filenames
+silo_dir = '/home/tony/Desktop/NebulaPy/tests/wind-wind-jm'  # Directory containing silo files
+filebase = 'e7_WRwind_d1l5n256_v0750'  # Base name of the silo files
+output_file = '/home/tony/Desktop/NebulaPy/tests/line_luminosity_OIV25.txt'  # Output file for results
+
+# Set up the ion and line emission parameters
+ion_name = 'O4+'  # The ion of interest (Oxygen IV)
+mass_O = 2.6567628e-23  # Mass of an Oxygen atom (in grams)
+line = 'OIV25'  # Emission line of interest
+print(f" calculating line luminosity of {line}")
 
 
-pion = nebula.pion_silos(verbose=True)
+# Batch the silo files according to the time instant
+batched_silos = util.batch_silos(silo_dir, filebase)
 
-silo_dir = '/home/tony/Desktop/NebulaPy/tests/wind-wind-jm'
+# Initialize the Pion class from NebulaPy, which handles the simulation data
+nebula_pion = nebula.pion(batched_silos, verbose=True)
 
-# batch the silo file according to the time instant
-silo_instant_set = pion.batch_silos(silo_dir, 'e7_WRwind_d1l5n256_v0750')
+# Extract all chemistry information from the silo files into a chemistry container
+# This uses the first time instant's silo file to initialize
+nebula_pion.get_chemistry()
 
-# get_chemistry will extract all chemistry information from
-# the silo file into chemistry container
-pion.get_chemistry(silo_instant_set[0])
+# Initialize spherical grid parameters (e.g., radius, shell volumes)
+# This sets up the grid using the first silo file in the batch
+nebula_pion.spherical_grid(batched_silos[0])
 
-# display chemistry container
-print(pion.chemistry_container)
+# Retrieve the radius and shell volumes from the geometry container
+radius = nebula_pion.geometry_container['radius']
+shell_volume = nebula_pion.geometry_container['shell_volumes']
 
-pion.get_cell_ne()
+line_emission = nebula.emissionline('o_4', verbose=True)  # Initialize the emission line calculation
 
+print(f" calculating line luminosity of {line}")
+# Open the output file and write the header
+with open(output_file, "w") as file:
+    file.write(util.nebula_version()+'\n')
+    file.write(f"time (kyr)\tLine {line} Luminosity (erg/s)\n")
 
+# Loop over each time instant in the batched silo files
+for silo_instant in batched_silos:
+    # Read the data from the current silo file
+    dataio = ReadData(silo_instant)
+    basic = dataio.get_1Darray('Density')  # Retrieve basic simulation data, such as density
+    time = (basic['sim_time'] * unit.s).to(unit.kyr)  # Convert simulation time to kiloyears
+    dataio.close()  # Close the data file
 
+    # Print the current time instant
+    print(f" ---------------------------")
+    print(f" time {time:.6e}")
 
+    # Extract necessary physical parameters for the current time instant
+    density = nebula_pion.get_parameter('Density', silo_instant)  # Retrieve density
+    temperature = nebula_pion.get_parameter('Temperature', silo_instant)  # Retrieve temperature
+    ion_massfrac = nebula_pion.get_ion(ion_name, silo_instant)  # Retrieve ion mass fraction
 
-# get the number density of any species in the silo file
+    # Calculate ion number density (number of ions per unit volume)
+    ion_num_density = ion_massfrac * density / mass_O
 
+    # Retrieve the electron number density
+    ne = nebula_pion.get_ne(silo_instant)
 
+    # Calculate the line luminosity for the specific emission line
+    line_emission.lineluminosity_spherical(
+        line=line,
+        temperature=temperature,
+        ne=ne,
+        ns=ion_num_density,
+        dV=shell_volume
+    )
 
+    # Print the calculated luminosity for the current time instant
+    print(f" L_{line} = {line_emission.LineLuminosity['luminosity']} erg/s")
 
-
-
-
-
-
-'''
-for i in range(len(files[0])):
-  datafile=[]
-  for v in range(0,lev):
-    datafile.append(files[v][i])
-  print(i,datafile[0])
-'''
-
-
-
-
-
-
-
-
-
-
-'''
-line_emission = nebula.emissionline('o_4', verbose=True)
-
-line = 'OIV25' # Once can either put string or float
-temperature = [1.e+3, 1.e+4]
-ne = [0.1, 10]
-line_emission.lineluminosity_1Dgrid(line=line, temperature=temperature, ne=ne, ns=0.0, dV=0.0)
-print(line_emission.LineLuminosity)
-'''
-
+    # Append the calculated luminosity to the output file
+    with open(output_file, "a") as file:
+        file.write(f"{time.value:.6e}\t{line_emission.LineLuminosity['luminosity']:.6e}\n")
 

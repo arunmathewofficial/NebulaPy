@@ -5,14 +5,6 @@ A set of physical constants, and constants strings.
 import numpy as np
 from scipy import special
 
-# ***************************************
-# Line Dictionary
-#
-wvl_dict = {}
-wvl_dict['OIV25'] = 2.589332e+05
-# ****************************************
-
-
 # Physical constants
 pi = 3.1415926535897931
 h  = 6.6260693e-27              #erg s
@@ -30,15 +22,44 @@ radiusSun = 6.955e+10    # mean radius of Sun in cm
 luminositySun = 3.86e+33 # ergs/s
 parsec = 3.08568025e+18  # cm
 
+nebula_elements = {
+    'H': "Hydrogen",
+    'He': "Helium",
+    'C': "Carbon",
+    'N': "Nitrogen",
+    'O': "Oxygen",
+    'Ne': "Neon",
+    'Si': "Silicon",
+    'S': "Sulfur",
+    'Fe': "Iron"
+}
+
+mass = {
+    'H': 1.6738e-24,
+    'He': 6.6464768e-24,
+    'C': 1.994374e-23,
+    'N': 2.325892e-23,
+    'O': 2.6567628e-23,
+    'Ne': 3.3509177e-23,
+    'Si': 4.6637066e-23,
+    'S': 5.3245181e-23,
+    'Fe': 9.2732796e-23
+}
+
+coordinate_system = {
+    3: "spherical",
+    2: "cylindrical",
+    1: "cartesian"
+}
+
+########################################################################################
+# NebulaPy Line Dictionary
+wvl_dict = {}
+wvl_dict['OIV25'] = 2.589332e+05
 
 
 
-
-################################################################
-################################################################
-
-
-############################################################################
+########################################################################################
 # NebulaPy SED parameters
 
 SEDModels = ['powr', 'atlas', 'blackbody']
@@ -288,17 +309,12 @@ blackbody_temp_table = [3.500000e+03, 3.750000e+03, 4.000000e+03, 4.250000e+03,
 
 
 
-nebula_elements = {'H': "Hydrogen", 'He': "Helium", 'C': "Carbon", 'N': "Nitrogen",
-                   'O': "Oxygen", 'Ne': "Neon", 'Si': "Silicon", 'S': "Sulfur",
-                   'Fe': "Iron"}
-
 periodic_tab = ['h','he','li','be','b','c','n','o','f','ne','na', 'mg','al','si',
                 'p','s','cl','ar','k','ca','sc','ti', 'v','cr','mn','fe','co',
                 'ni','cu','zn', 'ga','ge','as','se','br','kr']
 
-##########################################################################################################
+########################################################################################
 # Ion class
-##########################################################################################################
 class Ion:
     def __init__(self, element: str, charge: int, mass: float = None, IP: float = None):
         self.element = element
@@ -411,12 +427,6 @@ Ions = {
 
 ##########################################################################################################
 
-##########################################################################################################
-coordinate_system = {
-    3: "spherical",
-    2: "cylindrical",
-    1: "cartesian"
-}
 
 
 
