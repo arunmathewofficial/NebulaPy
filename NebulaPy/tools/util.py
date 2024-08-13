@@ -45,7 +45,12 @@ def nebula_version():
 ######################################################################################
 def batch_silos(dir, filebase):
     '''
-    Find silo files and put them in order of levels.
+    This method searches for silo files with the same file base in a specified
+    directory and organizes them based on their corresponding time instants.
+    If the simulation is run on a nested grid with multiple levels, then for each
+    time instant, an inner array is created that contains the silo files for
+    that instant, with each file in the inner array representing a different
+    grid level.
     :param dir: Directory path where files are located
     :param filebase: Base name of the files to search for
     :return: List of batched silo files by levels
@@ -61,13 +66,20 @@ def batch_silos(dir, filebase):
         level_files = sorted(glob.glob(search_pattern))
 
         if level_files:
-            all_silos.append(level_files)
+            # Ensure all files for the level have the same extension pattern
+            file_extensions = [os.path.splitext(file)[1] for file in level_files]
+            unique_extensions = set(file_extensions)
+
+            if len(unique_extensions) == 1:
+                all_silos.append(level_files)
+            else:
+                nebula_exit_with_error(f"level {level} file missing for file extensions {unique_extensions}")
+                break
         else:
             break
 
     if not all_silos:
-        print(f" error: No '{filebase}' silo files found in '{dir}'.")
-        quit()
+        nebula_exit_with_error(f"No '{filebase}' silo files found in '{dir}'")
 
     try:
         for i in range(len(all_silos[0])):
@@ -77,5 +89,7 @@ def batch_silos(dir, filebase):
         print(f" batch processing {level} level silo file completed")
         pass
 
+    del all_silos
     return batched_silos
+
 #*************************************************************************************
