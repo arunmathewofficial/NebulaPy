@@ -231,8 +231,9 @@ class pion():
                         elementWiseTracers[element_index].append(f'Tr{i:03}_' + chem_tracer.replace('+', 'p'))
 
                 # save mass fraction to chemistry_container dictionary
-                self.chemistry_container['mass_fractions'] = mass_fractions
+                #self.chemistry_container['mass_fractions'] = mass_fractions
                 self.element_list = tracer_elements
+                self.chemistry_container['tracer_elements'] = tracer_elements
                 self.element_wise_tracer_list = elementWiseTracers
         header_data.close()
 
