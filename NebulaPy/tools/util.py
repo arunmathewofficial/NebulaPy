@@ -51,14 +51,15 @@ def batch_silos(dir, filebase):
     time instant, an inner array is created that contains the silo files for
     that instant, with each file in the inner array representing a different
     grid level.
+
     :param dir: Directory path where files are located
     :param filebase: Base name of the files to search for
     :return: List of batched silo files by levels
     '''
     all_silos = []
     batched_silos = []
-    print(f" ---------------------------")
-    print(" batching silo files into time instances")
+    print(" ---------------------------")
+    print(" Batching silo files into time instances")
 
     # Iterate through possible levels to find the files
     for level in range(20):
@@ -66,30 +67,30 @@ def batch_silos(dir, filebase):
         level_files = sorted(glob.glob(search_pattern))
 
         if level_files:
-            # Ensure all files for the level have the same extension pattern
-            file_extensions = [os.path.splitext(file)[1] for file in level_files]
-            unique_extensions = set(file_extensions)
+            # Extract the suffix after _0000 from filenames
+            suffixes = [os.path.splitext(file)[0].split('_0000.')[-1] for file in level_files]
+            unique_suffixes = set(suffixes)
 
-            if len(unique_extensions) == 1:
+            if len(unique_suffixes) == 1:
                 all_silos.append(level_files)
             else:
-                nebula_exit_with_error(f"level {level} file missing for file extensions {unique_extensions}")
-                break
+                nebula_exit_with_error(f"Level {level} files have mismatched suffixes: {unique_suffixes}")
+                return []  # Return an empty list to indicate failure
         else:
             break
 
     if not all_silos:
         nebula_exit_with_error(f"No '{filebase}' silo files found in '{dir}'")
 
+    # Batch the silo files by time instant
     try:
-        for i in range(len(all_silos[0])):
+        num_instantaneous_sets = len(all_silos[0])
+        for i in range(num_instantaneous_sets):
             instantaneous_set = [all_silos[level][i] for level in range(len(all_silos))]
             batched_silos.append(instantaneous_set)
     except IndexError:
-        print(f" batch processing {level} level silo file completed")
-        pass
+        print("Batch processing completed with missing time instants")
 
-    del all_silos
     return batched_silos
 
 #*************************************************************************************
