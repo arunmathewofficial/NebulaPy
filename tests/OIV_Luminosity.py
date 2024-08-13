@@ -32,7 +32,7 @@ nebula_pion.spherical_grid(batched_silos[0])
 radius = nebula_pion.geometry_container['radius']
 shell_volume = nebula_pion.geometry_container['shell_volumes']
 
-line_emission = nebula.emissionline(ion_name, verbose=True)  # Initialize the emission line calculation
+line_emission_obj = nebula.line_emission(ion_name, verbose=True)  # Initialize the emission line calculation
 
 # Open the output file and write the header
 with open(output_file, "w") as file:
@@ -63,7 +63,7 @@ for silo_instant in batched_silos:
     ne = nebula_pion.get_ne(silo_instant)
 
     # Calculate the line luminosity for the specific emission line
-    line_emission.lineluminosity_spherical(
+    line_emission_obj.lineluminosity_spherical(
         line=line,
         temperature=temperature,
         ne=ne,
@@ -72,9 +72,9 @@ for silo_instant in batched_silos:
     )
 
     # Print the calculated luminosity for the current time instant
-    print(f" L_{line} = {line_emission.LineLuminosity['luminosity']} erg/s")
+    print(f" L_{line} = {line_emission_obj.line_emission_container['luminosity']} erg/s")
 
     # Append the calculated luminosity to the output file
     with open(output_file, "a") as file:
-        file.write(f"{time.value:.6e}\t{line_emission.LineLuminosity['luminosity']:.6e}\n")
+        file.write(f"{time.value:.6e}\t{line_emission_obj.line_emission_container['luminosity']:.6e}\n")
 
