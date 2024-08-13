@@ -67,12 +67,11 @@ def batch_silos(dir, filebase):
     all_silos = glob.glob(search_pattern)
 
     if not all_silos:
-        raise RuntimeError(f"no '{filebase}' silo files found in '{dir}'")
+        nebula_exit_with_error(f"no '{filebase}' silo files found in '{dir}'")
 
     # Assume the number of grid levels; this may need to be adjusted based on actual usage
-    first_silo = all_silos[0]
-    # Open the data for the first silo instant silo
-    header_data = OpenData(first_silo)
+    # Open header data
+    header_data = OpenData(all_silos)
     # Set the directory to '/header'
     header_data.db.SetDir('/header')
     # Retrieve no of nested grid levels
@@ -81,10 +80,13 @@ def batch_silos(dir, filebase):
     header_data.close()
 
     if Nlevels == 1:
+        print(f" uniform grid")
+        batched_silo = sorted(all_silos)
         print(" batching completed")
-        return sorted(all_silos)
+        return batched_silo
 
     else:
+        print(f" nested grid with {Nlevels} levels")
         # Pattern to match level 00 files
         pattern = re.compile(r'_level00_0000\.\d+\.silo$')
         # Find and sort level 00 files, one per time instant
@@ -104,7 +106,7 @@ def batch_silos(dir, filebase):
                 level_instant_file = next((file for file in all_silos if level_pattern.search(file)), None)
 
                 if level_instant_file is None:
-                    nebula_exit_with_error(f"missing file for level {level} and instant {instant_extension}")
+                    nebula_exit_with_error(f"missing file for level {level} instant {instant_extension}")
                 else:
                     # Append the found file to the corresponding time instant group
                     batched_silos[i].append(level_instant_file)
