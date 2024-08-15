@@ -6,8 +6,6 @@ from NebulaPy.tools import util as util
 from NebulaPy.tools import constants as const
 import astropy.units as unit
 
-
-
 class pion():
     '''
     This class is not an alternative to Pypion; rather, it is a
