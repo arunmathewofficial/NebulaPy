@@ -87,7 +87,7 @@ for step, silo_instant in enumerate(batched_silos):
         dV=shell_volume
     )
 
-    # Average quantities
+    # mean quantities
     temp_avg = np.sum(temperature) / len(temperature)
     ne_avg = np.sum(ne) / len(ne)
     ns_avg = np.sum(ion_num_density) / len(ion_num_density)
