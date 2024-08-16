@@ -32,7 +32,7 @@ xray_emission = nebula.xray(
     verbose=True
 )
 
-temperature = [100000, 1000000]
+temperature = [1e+5, 1e+6, 1e+7, 1e+8]
 ne = [1.5, 10]
 
 #mp.freeze_support()  # Ensures proper support for frozen scripts
@@ -40,7 +40,6 @@ ne = [1.5, 10]
 # You need to call xray_intensity on an instance of the object, e.g.,
 #if __name__ == '__main__':
 #    mp.freeze_support()
-#    xray_emission.xray_intensity(temperature=temperature, ne=ne)
+xray_emission.xray_intensity(temperature=temperature, ne=ne)
 
 
-xray_emission.dummy(temperature=temperature, ne=ne)
