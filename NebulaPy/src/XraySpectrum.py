@@ -5,8 +5,13 @@ from datetime import datetime
 from ChiantiPy.base import specTrails
 from .Chianti import chianti
 import numpy as np
+from ChiantiPy.core import mspectrum
 
 from .ChiantiMultiProc import *
+
+
+from ChiantiPy.core import mspectrum
+import ChiantiPy.tools.filters as chfilters
 
 class xray:
 
@@ -49,7 +54,6 @@ class xray:
     ######################################################################################
     #
     ######################################################################################
-
     def process_multiprocessing_tasks(self, tasks, result_aggregator, worker_function):
         # Determine the number of cores to use
         ncores = min(self.ncores, mp.cpu_count())
@@ -87,7 +91,7 @@ class xray:
             ne=ne,
             verbose=self.verbose
         )
-
+        ''''''
         chianti_obj.get_elements_attributes()
         species_attributes = chianti_obj.species_attributes
         self.xray_containter.update(species_attributes)
@@ -98,6 +102,8 @@ class xray:
         print(self.xray_containter)
 
         freeFree = np.zeros((temperature.size, self.wavelength.size), dtype=np.float64)
+
+        print(self.wavelength)
 
         # Define tasks and result aggregation function
         tasks = [(species, temperature, self.wavelength) for species in species_attributes
@@ -113,4 +119,26 @@ class xray:
         print(freeFree)
 
 
+    def dummy(self, temperature, ne):
+
+        spectrum_obj = mspectrum(
+            temperature=temperature,
+            eDensity=ne,
+            wavelength=self.wavelength,
+            filter=(chfilters.gaussianR, 1000.), label=0,
+            elementList = None,
+            ionList = ['h_1'],
+            minAbund=None,
+            keepIons=0,
+            abundance=None,
+            doLines=True,
+            doContinuum=True,
+            allLines=True,
+            em=None,
+            proc=3,
+            verbose=False,
+            timeout=0.1
+        )
+
+        print(spectrum_obj)
 

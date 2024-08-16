@@ -28,18 +28,19 @@ xray_emission = nebula.xray(
     min_photon_energy=0.3,  # Minimum photon energy in keV
     max_photon_energy=7.0,  # Maximum photon energy in keV
     elements=elements,
-    ncores=1,
+    ncores=3,
     verbose=True
 )
 
-temperature = [1000, 10000]
+temperature = [100000, 1000000]
 ne = [1.5, 10]
 
 #mp.freeze_support()  # Ensures proper support for frozen scripts
 # Assuming that the method is being called within an object method
 # You need to call xray_intensity on an instance of the object, e.g.,
+#if __name__ == '__main__':
+#    mp.freeze_support()
+#    xray_emission.xray_intensity(temperature=temperature, ne=ne)
 
-xray_emission.xray_intensity(temperature=temperature, ne=ne)
 
-
-
+xray_emission.dummy(temperature=temperature, ne=ne)
