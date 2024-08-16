@@ -4,7 +4,10 @@ import ChiantiPy
 import ChiantiPy.core as ch
 import ChiantiPy.tools.filters as chfilters
 import ChiantiPy.tools.io as chio
+import ChiantiPy.tools.data as chdata
+from ChiantiPy.base import specTrails
 import numpy as np
+import ChiantiPy.tools.util as util
 
 class chianti:
     """
@@ -29,51 +32,69 @@ class chianti:
     ######################################################################################
     #
     ######################################################################################
-    def __init__(self, ionName, temperature, ne, verbose):
+    def __init__(self, temperature, ne, ion=None, element_list=None, verbose=False):
 
-        chianti_ion = self.get_chianti_ion_symbol(ionName)
-        self.IonChiantiName = chianti_ion
-        self.Temperature = temperature
-        self.electronDensity = ne
-        self.Verbose = verbose
-        self.setup()
+        self.temperature = temperature
+        self.electron_density = ne
+        self.verbose = verbose
+
+        if ion is not None:
+            self.chianti_ion_name = self.get_chianti_symbol(ion, make=0)
+            self.chianti_ion = ch.ion(
+                self.chianti_ion_name, temperature=self.temperature,
+                eDensity=self.electron_density, pDensity='default',
+                radTemperature=None, rStar=None, abundance=None,
+                setup=True, em=None, verbose=self.verbose
+            )
+
+        if element_list is not None:
+            chianti_element_list = []
+            for element in element_list:
+                element_symbol = self.get_chianti_symbol(element, make=1)
+                chianti_element_list.append(element_symbol)
+        self.chianti_element_list = chianti_element_list
+
+        self.species_attributes = {}
 
     ######################################################################################
-    #
+    # generate species chianti symbol
     ######################################################################################
-    def setup(self):
-        chinati_object = ch.ion(self.IonChiantiName, temperature=self.Temperature,
-                                eDensity=self.electronDensity, pDensity='default',
-                                radTemperature=None, rStar=None, abundance=None,
-                                setup=True, em=None, verbose=self.Verbose)
-
-        self.ChiantiInstant = chinati_object
-
-
-    ######################################################################################
-    # get chianti ion name
-    ######################################################################################
-    def get_chianti_ion_symbol(self, ion):
+    def get_chianti_symbol(self, species, make=False):
         '''
-        makes chianti ion symbol from pion ion symbol
-        Parameters
-        ----------
-        ion
+        Converts a PION species symbol to a corresponding CHIANTI species symbol.
 
-        Returns
-        -------
-        The corresponding chianti symbol for the ion
+        This function takes a species symbol used in PION (a computational tool) and
+        converts it into the format required by CHIANTI, a database for atomic data.
+        The function can generate either the elemental symbol or the ionized symbol
+        depending on the 'make' parameter.
+
+        :param species: str, the PION species symbol, which can represent both neutral
+                        and ionized states.
+        :param make: bool, if True, returns the elemental symbol (e.g., 'h' for hydrogen).
+                     if False, returns the CHIANTI ion symbol (e.g., 'h_2' for H+).
+        :return: str, the corresponding CHIANTI symbol for the species.
         '''
-        # Convert the input ion string to lowercase and remove any '+' characters
-        ion = ion.lower().replace('+', '')
-        # Extract the alphabetic characters to identify the element
-        element = ''.join(filter(str.isalpha, ion))
-        # Extract the numeric characters to determine the ionization level
-        ion_level = ''.join(filter(str.isdigit, ion))
-        # If no numeric characters are found, set chianti_level to 1 (or your preferred default value)
-        chianti_level = int(ion_level) + 1 if ion_level else 1
-        # Return the concatenated element name and ionization level, separated by an underscore
-        return f"{element}_{chianti_level}"
+
+        # Convert the input species symbol to lowercase and remove any '+' characters
+        # (denoting ionization)
+        species = species.lower().replace('+', '')
+
+        # Extract alphabetic characters to identify the element symbol (e.g., 'h' from 'h1' or 'h+')
+        element = ''.join(filter(str.isalpha, species))
+
+        if make:
+            # If 'make' is True, return only the element symbol (e.g., 'h')
+            return element
+        else:
+            # Extract numeric characters to determine the ionization level (e.g., '1' from 'h1')
+            ion_level = ''.join(filter(str.isdigit, species))
+
+            # If no numeric characters are found, set the CHIANTI ionization level to 1
+            chianti_level = int(ion_level) + 1 if ion_level else 1
+
+            # Return the element symbol followed by the ionization level, separated
+            # by an underscore (e.g., 'h_2')
+            return f"{element}_{chianti_level}"
 
     ######################################################################################
     # get all lines of the ion
@@ -83,9 +104,9 @@ class chianti:
         Retrieve all spectral lines associated with a specified ion
         :return: wave-length array
         """
-        if self.Verbose:
-            print(' retrieving all spectral lines of ', self.ChiantiInstant.Spectroscopic)
-        wvl = np.asarray(self.ChiantiInstant.Wgfa['wvl'], np.float64)
+        if self.verbose:
+            print(' retrieving all spectral lines of ', self.chianti_ion.Spectroscopic)
+        wvl = np.asarray(self.chianti_ion.Wgfa['wvl'], np.float64)
         wvl = np.abs(wvl)
         return wvl
 
@@ -100,8 +121,70 @@ class chianti:
         :return: Dict Emiss. Emiss has several quantities, namely, ion,
         # wvl(angstrom), emissivity (ergs s^-1 str^-1), pretty1, pretty2.
         """
-        if self.Verbose:
-            print(' retrieving emissivity values for all spectral lines of', self.ChiantiInstant.Spectroscopic)
-        self.ChiantiInstant.emiss(True)
-        emissivity = self.ChiantiInstant.Emiss
+        if self.verbose:
+            print(' retrieving emissivity values for all spectral lines '
+                  'of', self.chianti_ion.Spectroscopic)
+        self.chianti_ion.emiss(True)
+        emissivity = self.chianti_ion.Emiss
         return emissivity
+
+    ######################################################################################
+    # get attributes of all elements in chianti element list
+    ######################################################################################
+    def get_elements_attributes(self):
+        '''
+        Generates and appends species attributes for each element in the
+        `chianti_element_list` to a dictionary called `species_attributes`.
+
+        This function first retrieves abundance data from the `chdata.Abundance`
+        dictionary using the specified abundance name ('unity'). It then initializes
+        an instance of the `specTrails` class to handle species-related data, setting
+        its abundance and temperature properties.
+
+        The function calls the `ionGate` method on the `species` object to process
+        the elements in `chianti_element_list`, generating species data based on
+        the specified parameters.
+
+        The species data is then looped over, and for each element key in the sorted
+        `species.Todo` dictionary:
+        - The key is converted using `util.convertName` and stored in `species_attributes`.
+        - The relevant data is stored in the `species_attributes` dictionary under
+          each element's key.
+        - Unnecessary entries like 'filename' and 'experimental' are removed
+          from the dictionary before final storage.
+
+        :return: None
+        '''
+        AbundanceName = 'unity'
+        abundAll = chdata.Abundance[AbundanceName]['abundance']
+
+        species = specTrails()  # Create an instance of specTrails to manage species data
+        species.AbundAll = abundAll
+        species.Temperature = self.temperature  # Set the temperature for the species
+
+        species.ionGate(
+            elementList=self.chianti_element_list,
+            minAbund=None, doLines=True,
+            doContinuum=True, doWvlTest=0,
+            doIoneqTest=0, verbose=False
+        )
+
+        # Loop through the sorted keys in the dictionary of species
+        print(f" ---------------------------")
+        for akey in sorted(species.Todo.keys()):
+            self.species_attributes[akey] = util.convertName(akey)  # Convert the key and store it
+            if self.verbose:
+                print(f" retrieving attributes for species: {self.species_attributes[akey]['spectroscopic']}")
+            self.species_attributes[akey]['keys'] = species.Todo[akey]  # Store relevant data
+
+            # Remove unnecessary data from the dictionary
+            del self.species_attributes[akey]['filename']
+            del self.species_attributes[akey]['experimental']
+
+        # Finalize the species attributes dictionary
+        # At this point, `self.species_attributes` contains all the relevant
+        # attributes for the species in `chianti_element_list`
+
+    ######################################################################################
+    #
+    ######################################################################################

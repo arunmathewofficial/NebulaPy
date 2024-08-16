@@ -6,9 +6,9 @@ import numpy as np
 import time
 
 # Set up paths and filenames
-silo_dir = '/home/tony/Desktop/OIV_Luminosity/mpv10-wind-test'  # Directory containing silo files
-filebase = 'e7_WRwind_d1l5n256_v1500'  # Base name of the silo files
-output_file = '/home/tony/Desktop/OIV_Luminosity/line_luminosity_OIV25.txt'  # Output file for results
+silo_dir = '/home/tony/Desktop/NebulaPy/tests/wind-wind-jm'  # Directory containing silo files
+filebase = 'e7_WRwind_d1l5n256_v0750'  # Base name of the silo files
+output_file = '/home/tony/Desktop/NebulaPy/tests/line_luminosity_OIV25.txt'  # Output file for results
 
 # Set up the ion and line emission parameters
 ion_name = 'O3+'  # The ion of interest (Oxygen IV)

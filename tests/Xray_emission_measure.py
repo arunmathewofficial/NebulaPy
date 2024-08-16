@@ -1,5 +1,6 @@
 import NebulaPy.src as nebula
 from NebulaPy.tools import util
+import multiprocessing as mp
 
 '''
 # Set up paths and filenames
@@ -20,6 +21,25 @@ nebula_pion.get_chemistry()
 elements = nebula_pion.chemistry_container['tracer_elements']
 '''
 
-elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si']
+# elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si']
+elements = ['H', 'He']
 
-xray_emission = nebula.xray(0.3, 7.0, elements, verbose=True)
+xray_emission = nebula.xray(
+    min_photon_energy=0.3,  # Minimum photon energy in keV
+    max_photon_energy=7.0,  # Maximum photon energy in keV
+    elements=elements,
+    ncores=1,
+    verbose=True
+)
+
+temperature = [1000, 10000]
+ne = [1.5, 10]
+
+#mp.freeze_support()  # Ensures proper support for frozen scripts
+# Assuming that the method is being called within an object method
+# You need to call xray_intensity on an instance of the object, e.g.,
+
+xray_emission.xray_intensity(temperature=temperature, ne=ne)
+
+
+

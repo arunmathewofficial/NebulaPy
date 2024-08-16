@@ -16,6 +16,7 @@ stefanBoltzmann = 5.670373e-5   # cgs - ergs cm^-2 K^-4 s^-1
 ev2Erg = 1.602176487e-12
 ev2Ang = 12.39841875e+3
 Ang2cm = 1.0e-8
+kev2Ang = 12.39841875
 
 # Astronomical constants
 radiusSun = 6.955e+10    # mean radius of Sun in cm
@@ -44,6 +45,18 @@ mass = {
     'Si': 4.6637066e-23,
     'S': 5.3245181e-23,
     'Fe': 9.2732796e-23
+}
+
+atomic_number = {
+    'H': 1,
+    'He': 2,
+    'C': 6,
+    'N': 7,
+    'O': 8,
+    'Ne': 10,
+    'Si': 14,
+    'S': 16,
+    'Fe': 26
 }
 
 coordinate_system = {
@@ -439,7 +452,6 @@ hbar = planck/(2.*np.pi)
 light = 29979245800.  # cm/s
 q = 4.80320425e-10  # the units of charge
 
-kev2Ang = 1.e-3*12.39841875e+3
 ev2Erg = 1.602176487e-12
 pi = 3.1415926535897931
 boltzmann = 1.3806504e-16  # cgs

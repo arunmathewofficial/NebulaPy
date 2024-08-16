@@ -37,8 +37,7 @@ class line_emission():
 
         '''
 
-        ion = chianti(ionName=self.Ion, temperature=temperature, ne=ne, verbose=self.Verbose)
-
+        ion = chianti(ion=self.Ion, temperature=temperature, ne=ne, verbose=self.Verbose)
         self.line_emission_container['ion'] = self.Ion
         self.line_emission_container['temperature'] = temperature
         self.line_emission_container['ne'] = ne
