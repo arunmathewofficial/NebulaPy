@@ -22,7 +22,7 @@ elements = nebula_pion.chemistry_container['tracer_elements']
 '''
 
 # elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si']
-elements = ['C']
+elements = ["C"]
 
 xray_emission = nebula.xray(
     min_photon_energy=0.3,  # Minimum photon energy in keV
@@ -48,6 +48,7 @@ start_time = time.time()
 spectrum = xray_emission.xray_intensity(
     temperature=temperature,
     ne=ne,
+    freefree=False, freebound=False, lines=True, twophoton=True,
     multiprocessing=True,
     ncores=3)
 finish_time = time.time()  # Record the finish time
@@ -59,12 +60,15 @@ print(f" runtime: {runtime:.4e} | dt: {dt:.4e} s")
 
 generated_wvl_array = xray_emission.xray_containter['wvl_array']
 
+
+
+
 # Create a plot
-#plt.figure(figsize=(8, 6))  # Set the figure size
-#plt.plot(generated_wvl_array, spectrum, marker='o', linestyle='-', color='b', label=f'T = {temperature[0]:.4e} (K)')
-#plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
-#plt.ylabel('Spectrum', fontsize=14)
-#plt.legend(fontsize=14, frameon=False)
-#plt.show()
+plt.figure(figsize=(8, 6))  # Set the figure size
+plt.plot(generated_wvl_array, spectrum[0], marker='o', linestyle='-', color='b', label=f'T = {temperature[0]:.4e} (K)')
+plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
+plt.ylabel('Spectrum', fontsize=14)
+plt.legend(fontsize=14, frameon=False)
+plt.show()
 
 
