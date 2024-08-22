@@ -112,7 +112,7 @@ class xray:
             # Define worker and done queues for multiprocessing tasks.
             freefree_workerQ, freefree_doneQ = (mp.Queue(), mp.Queue()) if freefree else (None, None)
             freebound_workerQ, freebound_doneQ = (mp.Queue(), mp.Queue()) if freebound else (None, None)
-            line_workerQ, line_doneQ = (mp.Queue(), mp.Queue()) if lines else (None, None)
+            line_emission_workerQ, line_emission_doneQ = (mp.Queue(), mp.Queue()) if lines else (None, None)
 
             abundance = None
             em = None
@@ -129,15 +129,25 @@ class xray:
                     freebound_workerQ.put((species, temperature, self.wavelength, abundance, em))
 
                 if lines and 'line' in species_attributes[species]['keys']:
-                    line_workerQ.put(
-                        (species, temperature, ne, self.wavelength, filter, allLines, abundance, em, doContinuum))
+                    line_emission_workerQ.put(
+                        (species,
+                         temperature,
+                         ne,
+                         self.wavelength,
+                         filter,
+                         allLines,
+                         abundance,
+                         em,
+                         doContinuum
+                         )
+                    )
 
             # Free-free emission calculation using multiprocessing.
             if freefree:
                 freefree_processes = []
                 freefree_workerQSize = freefree_workerQ.qsize()
                 for i in range(proc):
-                    p = mp.Process(target=doFfQ, args=(freefree_workerQ, freefree_doneQ))
+                    p = mp.Process(target=do_freefree_Q, args=(freefree_workerQ, freefree_doneQ))
                     p.start()
                     freefree_processes.append(p)
 
@@ -177,7 +187,25 @@ class xray:
 
             # line emission calculation using multiprocessing.
             if lines:
-                pass
+                line_emission_task = []
+                line_emission_workerQSize = line_emission_workerQ.qsize()
+                for i in range(proc):
+                    p = mp.Process(target=do_line_emission_Q, args=(line_emission_workerQ, line_emission_doneQ))
+                    p.start()
+                    line_emission_task.append(p)
+
+                for task in line_emission_task:
+                    if task.is_alive():
+                        task.join(timeout=timeout)
+
+                for index_line in range(line_emission_workerQSize):
+                    this_line_emission = line_emission_doneQ.get()
+                    if 'errorMessage' not in this_line_emission.keys():
+                        line_spectrum += this_line_emission['intensity'].squeeze()
+
+                for task in line_emission_task:
+                    if task.is_alive():
+                        task.terminate()
 
         # Return the calculated spectra.
         return freefree_spectrum + freebound_spectrum + line_spectrum

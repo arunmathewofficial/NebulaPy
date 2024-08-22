@@ -2,6 +2,9 @@ import NebulaPy.src as nebula
 from NebulaPy.tools import util
 import time
 import matplotlib.pyplot as plt
+import numpy as np
+
+
 '''
 # Set up paths and filenames
 silo_dir = '/home/tony/Desktop/NebulaPy/tests/wind-wind-jm'  # Directory containing silo files
@@ -32,8 +35,8 @@ xray_emission = nebula.xray(
     verbose=True
 )
 
-temperature = [1e+7]
-ne = [1.5]
+temperature = [2e+6]
+ne = [1e+9]
 
 
 
@@ -43,12 +46,13 @@ ne = [1.5]
 #if __name__ == '__main__':
 #    mp.freeze_support()
 
+
 runtime = 0.0
 start_time = time.time()
 spectrum = xray_emission.xray_intensity(
     temperature=temperature,
     ne=ne,
-    freefree=False, freebound=False, lines=True, twophoton=True,
+    freefree=False, freebound=False, lines=False, twophoton=False,
     multiprocessing=True,
     ncores=3)
 finish_time = time.time()  # Record the finish time
@@ -58,14 +62,20 @@ dt = finish_time - start_time
 #runtime += dt
 print(f" runtime: {runtime:.4e} | dt: {dt:.4e} s")
 
-generated_wvl_array = xray_emission.xray_containter['wvl_array']
+#generated_wvl_array = xray_emission.xray_containter['wvl_array']
 
+
+wvl = 200 + 0.125 * np.arange(801)
+emission_measure = [1.e+27]
+chianti = nebula.chianti(ion='Fe13+', temperature=temperature, ne=ne, verbose=True)
+line_spectrum = chianti.get_line_spectrum(wvl, Ab=1.0, ion_frac=1.0,
+                                          em=emission_measure, select_filter='default', factor=None, allLines=True)
 
 
 
 # Create a plot
 plt.figure(figsize=(8, 6))  # Set the figure size
-plt.plot(generated_wvl_array, spectrum[0], marker='o', linestyle='-', color='b', label=f'T = {temperature[0]:.4e} (K)')
+plt.plot(wvl, line_spectrum[0], linestyle='-', color='b', label=f'T = {temperature[0]:.2e} (K)')
 plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
 plt.ylabel('Spectrum', fontsize=14)
 plt.legend(fontsize=14, frameon=False)
