@@ -19,9 +19,9 @@ def doFfQ(inQ, outQ):
         species = inputs[0]
         temperature = inputs[1]
         wavelength = inputs[2]
-        abund = inputs[3]
+        ion_abundance = inputs[3]
         em = inputs[4]
-        ff = ChiantiPy.core.continuum(species, temperature, abundance=None, em=None, verbose=0)
+        ff = ChiantiPy.core.continuum(species, temperature, abundance=ion_abundance, em=em, verbose=0)
         ff.freeFree(wavelength, includeAbund=False, includeIoneq=False)
         outQ.put(ff.FreeFree)
     return

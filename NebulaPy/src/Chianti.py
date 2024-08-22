@@ -52,9 +52,8 @@ class chianti:
             for element in element_list:
                 element_symbol = self.get_chianti_symbol(element, make=1)
                 chianti_element_list.append(element_symbol)
-        self.chianti_element_list = chianti_element_list
-
-        self.species_attributes = {}
+            self.chianti_element_list = chianti_element_list
+            self.get_elements_attributes()
 
     ######################################################################################
     # generate species chianti symbol
@@ -137,7 +136,7 @@ class chianti:
         `chianti_element_list` to a dictionary called `species_attributes`.
 
         This function first retrieves abundance data from the `chdata.Abundance`
-        dictionary using the specified abundance name ('unity'). It then initializes
+        dictionary using the specified abundancoe name ('unity'). It then initializes
         an instance of the `specTrails` class to handle species-related data, setting
         its abundance and temperature properties.
 
@@ -169,22 +168,67 @@ class chianti:
             doIoneqTest=0, verbose=False
         )
 
+        self.species_attributes_container = {}
+
         # Loop through the sorted keys in the dictionary of species
         print(f" ---------------------------")
+        print(f" species attributes")
         for akey in sorted(species.Todo.keys()):
-            self.species_attributes[akey] = util.convertName(akey)  # Convert the key and store it
+            self.species_attributes_container[akey] = util.convertName(akey)  # Convert the key and store it
             if self.verbose:
-                print(f" retrieving attributes for species: {self.species_attributes[akey]['spectroscopic']}")
-            self.species_attributes[akey]['keys'] = species.Todo[akey]  # Store relevant data
+                print(f" retrieving attributes for {self.species_attributes_container[akey]['spectroscopic']}")
+            self.species_attributes_container[akey]['keys'] = species.Todo[akey]  # Store relevant data
 
             # Remove unnecessary data from the dictionary
-            del self.species_attributes[akey]['filename']
-            del self.species_attributes[akey]['experimental']
+            del self.species_attributes_container[akey]['filename']
+            del self.species_attributes_container[akey]['experimental']
 
         # Finalize the species attributes dictionary
         # At this point, `self.species_attributes` contains all the relevant
         # attributes for the species in `chianti_element_list`
+    ######################################################################################
+    # get line spectrum
+    ######################################################################################
+    def get_line_spectrum(self, ion, temperature, ne, wavelength, elemental_abundance=None,
+                          ionization_fraction=None, emission_measure=None, filter=None
+                          ):
+        '''
+        1. Intensity (class ion) 2330
+        Calculate  the intensities for lines of the specified ion.
+        units:  ergs cm^-3 s^-1 str^-1
+        includes elemental abundance and ionization fraction.
+        the emission measure 'em' is included if specified
+        2. Spectrum (class ion) 1064
+        Calculates the line emission spectrum for the specified ion.
 
-    ######################################################################################
-    #
-    ######################################################################################
+        Convolves the results of intensity to make them look like an observed spectrum
+        the default filter is the gaussianR filter with a resolving power of 1000.  Other choices
+        include chianti.filters.box and chianti.filters.gaussian.  When using the box filter,
+        the width should equal the wavelength interval to keep the units of the continuum and line
+        spectrum the same.
+
+        includes ionization equilibrium and elemental abundances
+        Returns
+        -------
+
+        '''
+
+        print(f" ---------------------------")
+        for species in self.species_attributes_container:
+
+            if 'line' in self.species_attributes_container[species]['keys']:
+                chianti_ion = ch.ion(
+                    species, temperature=self.temperature,
+                    eDensity=self.electron_density, pDensity='default',
+                    radTemperature=None, rStar=None, abundance=None,
+                    setup=True, em=None, verbose=self.verbose
+                )
+
+
+
+
+
+
+
+
+

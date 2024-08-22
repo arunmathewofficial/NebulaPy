@@ -12,9 +12,11 @@ class line_emission():
         """
         only single ion is considered here
         """
-        self.Ion = ion
-        self.Verbose = verbose
+        self.ion = ion
+        self.verbose = verbose
         self.line_emission_container = {}
+        self.line_emission_container['ion'] = self.ion
+
 
 
 
@@ -37,8 +39,7 @@ class line_emission():
 
         '''
 
-        ion = chianti(ion=self.Ion, temperature=temperature, ne=ne, verbose=self.Verbose)
-        self.line_emission_container['ion'] = self.Ion
+        ion = chianti(ion=self.ion, temperature=temperature, ne=ne, verbose=self.verbose)
         self.line_emission_container['temperature'] = temperature
         self.line_emission_container['ne'] = ne
         self.line_emission_container['spectroscopicName'] = ion.ChiantiInstant.Spectroscopic
@@ -55,18 +56,18 @@ class line_emission():
         self.line_emission_container['allLines'] = allLines
         self.line_emission_container['line'] = line
 
-        if self.Verbose:
+        if self.verbose:
             print(f' identifying {line} Å from allLines of {ion.ChiantiInstant.Spectroscopic}')
         index = (np.abs(allLines - line)).argmin()
         tolerance = 10 ** -4
         if np.abs(allLines[index] - line) <= tolerance:
-            if self.Verbose:
+            if self.verbose:
                 print(f' line {line} Å found at index {index} in allLines')
         else:
             util.nebula_exit_with_error('line not found in allLines')
         self.line_emission_container['lineIndex'] = index
 
-        if self.Verbose:
+        if self.verbose:
             print(f' retrieving cell emissivity values for {ion.ChiantiInstant.Spectroscopic} {line}')
 
         emissivity = np.asarray(all_emissivity_data['emiss'][index])
@@ -75,10 +76,6 @@ class line_emission():
         # Calculating line Luminosity
         luminosity = 4.0 * const.pi * np.sum(emissivity * ns * dV)
         self.line_emission_container['luminosity'] = luminosity
-
-
-
-
 
 
 
