@@ -190,8 +190,7 @@ class chianti:
     ######################################################################################
     # get line spectrum
     ######################################################################################
-    def get_line_spectrum(self, wavelength, Ab, ion_frac, em, allLines=True,
-                          select_filter='default', factor=1000):
+    def get_line_spectrum(self, wavelength, abun, ionfrac, emission_measure, allLines=True, filtername=None, filterfactor=None):
         """
         Calculates the intensities for spectral lines of a specified ion, considering elemental
         abundance, ionization fraction, and emission measure.
@@ -237,8 +236,7 @@ class chianti:
         """
 
         if self.verbose:
-            print("---------------------------")
-            print(f"Retrieving emissivity values for all spectral lines of {self.chianti_ion.Spectroscopic}")
+            print(f" retrieving emissivity values for all spectral lines of {self.chianti_ion.Spectroscopic}")
 
         # Get emissivity of the specified ion (units: ergs s^-1 str^-1)
         self.chianti_ion.emiss(allLines)
@@ -254,19 +252,16 @@ class chianti:
 
         # Calculate intensity for each temperature
         for temp_idx in range(N_temp):
-            intensity[temp_idx] = Ab * ion_frac * emissivity[:, temp_idx] * em[temp_idx] / self.ne[temp_idx]
+            intensity[temp_idx] = abun * ionfrac * emissivity[:, temp_idx] * emission_measure[temp_idx] / self.ne[temp_idx]
 
         # Define the wavelength range and number of wavelength points
         wvl_range = [wavelength[0], wavelength[-1]]
         N_wvl = len(wavelength)
 
         # Select filter and factor
-        if select_filter == 'default':
-            useFilter = chfilters.gaussianR
-            if factor is not None:
-                useFactor = factor
-            else:
-                useFactor = 1000
+        filter = (chfilters.gaussianR, 1000.)
+        useFilter = filter[0]
+        useFactor = filter[1]
 
         # Initialize the line spectrum array
         line_spectrum = np.zeros((N_temp, N_wvl), dtype=np.float64)
@@ -275,8 +270,9 @@ class chianti:
         selected_idx = util.between(lines, wvl_range)
 
         if len(selected_idx) == 0:
-            print(f'No lines in wavelength range {wvl_range[0]}-{wvl_range[1]}')
-            print('Skipping ...')
+            print(f' no lines found for {self.chianti_ion.Spectroscopic} in the wavelength '
+                  f'range {wvl_range[0]:.2e} - {wvl_range[1]:.2e} Angstrom')
+            print(' skipping ...')
         else:
             # Convolve the intensities with the filter for each temperature
             for temp_idx in range(N_temp):

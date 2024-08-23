@@ -59,6 +59,7 @@ class xray:
     ######################################################################################
     def xray_intensity(self, temperature, ne,
                        freefree=False, freebound=False, lines=False, twophoton=False,
+                       filtername=None, filterfactor=None, allLines = True,
                        multiprocessing=False, ncores=None):
         """
         Calculate X-ray intensity for given temperature and electron density (ne).
@@ -114,19 +115,17 @@ class xray:
             freebound_workerQ, freebound_doneQ = (mp.Queue(), mp.Queue()) if freebound else (None, None)
             line_emission_workerQ, line_emission_doneQ = (mp.Queue(), mp.Queue()) if lines else (None, None)
 
-            abundance = None
-            em = None
-            filter = (chfilters.gaussianR, 1000.)
-            allLines = True
-            doContinuum = True
+            elemental_abund = 1.0
+            em = [1.e+27]
+            ion_fraction = 1.0
 
             # Populate the worker queues with tasks for the species.
             for species in species_attributes:
                 if freefree and 'ff' in species_attributes[species]['keys']:
-                    freefree_workerQ.put((species, temperature, self.wavelength, abundance, em))
+                    freefree_workerQ.put((species, temperature, self.wavelength, elemental_abund, em))
 
                 if freebound and 'fb' in species_attributes[species]['keys']:
-                    freebound_workerQ.put((species, temperature, self.wavelength, abundance, em))
+                    freebound_workerQ.put((species, temperature, self.wavelength, elemental_abund, em))
 
                 if lines and 'line' in species_attributes[species]['keys']:
                     line_emission_workerQ.put(
@@ -134,11 +133,12 @@ class xray:
                          temperature,
                          ne,
                          self.wavelength,
-                         filter,
-                         allLines,
-                         abundance,
+                         elemental_abund,
+                         ion_fraction,
                          em,
-                         doContinuum
+                         filtername,
+                         filterfactor,
+                         allLines
                          )
                     )
 

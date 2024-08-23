@@ -28,9 +28,9 @@ elements = nebula_pion.chemistry_container['tracer_elements']
 elements = ["C"]
 
 xray_emission = nebula.xray(
-    min_photon_energy=0.3,  # Minimum photon energy in keV
-    max_photon_energy=7.0,  # Maximum photon energy in keV
-    energy_point_count=100,
+    min_photon_energy=0.04,  # Minimum photon energy in keV
+    max_photon_energy=0.062,  # Maximum photon energy in keV
+    energy_point_count=1000,
     elements=elements,
     verbose=True
 )
@@ -52,9 +52,9 @@ start_time = time.time()
 spectrum = xray_emission.xray_intensity(
     temperature=temperature,
     ne=ne,
-    freefree=False, freebound=False, lines=False, twophoton=False,
+    freefree=False, freebound=False, lines=True, twophoton=False,
     multiprocessing=True,
-    ncores=3)
+    ncores=12)
 finish_time = time.time()  # Record the finish time
 # Calculate the time spent on the current step
 dt = finish_time - start_time
@@ -62,20 +62,11 @@ dt = finish_time - start_time
 #runtime += dt
 print(f" runtime: {runtime:.4e} | dt: {dt:.4e} s")
 
-#generated_wvl_array = xray_emission.xray_containter['wvl_array']
-
-
-wvl = 200 + 0.125 * np.arange(801)
-emission_measure = [1.e+27]
-chianti = nebula.chianti(ion='Fe13+', temperature=temperature, ne=ne, verbose=True)
-line_spectrum = chianti.get_line_spectrum(wvl, Ab=1.0, ion_frac=1.0,
-                                          em=emission_measure, select_filter='default', factor=None, allLines=True)
-
-
+generated_wvl_array = xray_emission.xray_containter['wvl_array']
 
 # Create a plot
 plt.figure(figsize=(8, 6))  # Set the figure size
-plt.plot(wvl, line_spectrum[0], linestyle='-', color='b', label=f'T = {temperature[0]:.2e} (K)')
+plt.plot(generated_wvl_array, spectrum[0], linestyle='-', color='b', label=f'T = {temperature[0]:.2e} (K)')
 plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
 plt.ylabel('Spectrum', fontsize=14)
 plt.legend(fontsize=14, frameon=False)
