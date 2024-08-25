@@ -25,8 +25,9 @@ elements = nebula_pion.chemistry_container['tracer_elements']
 '''
 
 elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si', 'S', 'Fe']
-solar_abundance = []
-ionisation_equilibrium = []
+elements = ['O']
+solar_abundance = 1.0
+ionisation_equilibrium = 1.0
 
 xray_emission = nebula.xray(
     min_photon_energy=0.04,  # Minimum photon energy in keV
@@ -41,6 +42,7 @@ ne = [1e+9]
 em = [1e+27]
 
 
+
 #mp.freeze_support()  # Ensures proper support for frozen scripts
 # Assuming that the method is being called within an object method
 # You need to call xray_intensity on an instance of the object, e.g.,
@@ -53,10 +55,11 @@ start_time = time.time()
 spectrum = xray_emission.xray_intensity(
     temperature=temperature,
     ne=ne,
-    elementalabunds=solar_abundance,
-    ionfractions=ionisation_equilibrium,
-    emissionmeasure=em,
-    freefree=True, freebound=True, lines=True, twophoton=False,
+    elemental_abundances=solar_abundance,
+    ion_fractions=ionisation_equilibrium,
+    emission_measure=em,
+    bremsstrahlung=False, freebound=True,
+    lines=False, twophoton=False,
     multiprocessing=True,
     ncores=12)
 finish_time = time.time()  # Record the finish time

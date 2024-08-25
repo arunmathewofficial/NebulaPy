@@ -10,6 +10,10 @@ pi = 3.1415926535897931
 h  = 6.6260693e-27              #erg s
 c  = 29979245800                # cm/s
 kB = 1.3806504e-16              # cgs
+alpha = 7.2973525376e-3  # fine structure constant ~ 1./137  = e^2/(h_bar*c) h_bar = h/(2*pi)
+emass = 9.10938215e-28   #  electron mass in gram
+q = 4.80320425e-10  # the units of charge
+
 stefanBoltzmann = 5.670373e-5   # cgs - ergs cm^-2 K^-4 s^-1
 
 # Convertions factors
@@ -17,7 +21,9 @@ ev2Erg = 1.602176487e-12
 ev2Ang = 12.39841875e+3
 Ang2cm = 1.0e-8
 kev2Ang = 12.39841875
+invCm2Ev = 1./8.06554465e+3
 
+verner = (1.e-8/(h*c**3*emass**3))*(emass/(2.*pi*kB))**1.5
 # Astronomical constants
 radiusSun = 6.955e+10    # mean radius of Sun in cm
 luminositySun = 3.86e+33 # ergs/s

@@ -1,9 +1,3 @@
-"""
-Functions needed for standard Python multiprocessing module mspectrum
-"""
-import numpy as np
-import ChiantiPy
-
 from .Chianti import chianti
 
 
@@ -22,26 +16,29 @@ def do_freefree_Q(inQ, outQ):
         Finished free-free emission jobs
     """
     for inputs in iter(inQ.get, 'STOP'):
-        species = inputs[0]
-        spectroscopic = inputs[1]
-        temperature = inputs[2]
-        wavelength = inputs[3]
-        ion_abundance = inputs[4]
-        em = inputs[5]
+        ion = inputs[0]
+        temperature = inputs[1]
+        wavelength = inputs[2]
+        elemental_abundance = inputs[3]
+        ionfraction = inputs[4]
+        emission_measure = inputs[5]
         verbose = inputs[6]
-        if verbose:
-            print(f' calculating free free emission for {spectroscopic}')
-        ff = ChiantiPy.core.continuum(species, temperature, abundance=ion_abundance, em=em, verbose=0)
-        ff.freeFree(wavelength, includeAbund=False, includeIoneq=False)
-        if verbose:
-            print(f' {spectroscopic} free free calculation done')
-        outQ.put(ff.FreeFree)
+
+        chianti_ion = chianti(chianti_ion=ion, temperature=temperature, ne=None,
+                              pion_ion=None, pion_elements=None, verbose=verbose)
+
+        bremsstrahlung_emission = chianti_ion.get_bremsstrahlung_emission(
+            wavelength,
+            elemental_abundance,
+            ionfraction,
+            emission_measure
+        )
+        outQ.put({'intensity': bremsstrahlung_emission})
     return
 
 ######################################################################################
-#
+# do free-bound queue
 ######################################################################################
-
 def do_freebound_Q(inQ, outQ):
     """
     Multiprocessing helper for `ChiantiPy.core.continuum.freeBound`
@@ -54,29 +51,27 @@ def do_freebound_Q(inQ, outQ):
         Finished free-bound emission jobs
     """
     for inputs in iter(inQ.get, 'STOP'):
-        ionS = inputs[0]
-        spectroscopic = inputs[1]
-        temperature = inputs[2]
-        wavelength = inputs[3]
-        abund = inputs[4]
-        em = inputs[5]
+        ion = inputs[0]
+        temperature = inputs[1]
+        wavelength = inputs[2]
+        elemental_abundance = inputs[3]
+        ionfraction = inputs[4]
+        emission_measure = inputs[5]
         verbose = inputs[6]
-        if verbose:
-            print(f' calculating free bound emission for {spectroscopic}')
-        fb = ChiantiPy.core.continuum(ionS, temperature, abundance=abund, em=em)
-        try:
-            fb.freeBound(wavelength)
-#            fb_emiss = fb.FreeBound['intensity']
-        except ValueError:
-            fb.FreeBound = {'intensity': np.zeros((len(temperature), len(wavelength)))}
-        if verbose:
-            print(f' {spectroscopic} free bound calculation done')
-        outQ.put(fb.FreeBound)
+
+        chianti_ion = chianti(chianti_ion=ion, temperature=temperature, ne=None,
+                              pion_ion=None, pion_elements=None, verbose=verbose)
+
+        freebound_emission = chianti_ion.get_freebound_emission(
+            wavelength,
+            elemental_abundance,
+            ionfraction,
+            emission_measure,
+            verner=True
+        )
+
+        outQ.put({'intensity': freebound_emission})
     return
-
-
-
-
 ######################################################################################
 #
 ######################################################################################
@@ -131,8 +126,8 @@ def do_line_emission_Q(inQ, outQ):
         # Calculate the line spectrum using the Chianti ion object
         line_spectrum = chianti_ion.get_line_spectrum(
             wavelength,
-            abun=abundance,
-            ionfrac=ion_fraction,
+            elemental_abundance=abundance,
+            ionfraction=ion_fraction,
             emission_measure=em,
             filtername=filter_name,
             filterfactor=filter_factor,

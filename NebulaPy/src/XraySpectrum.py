@@ -6,9 +6,9 @@ from ChiantiPy.base import specTrails
 from .Chianti import chianti
 import numpy as np
 from ChiantiPy.core import mspectrum
-
+from NebulaPy.tools import util as util
 import ChiantiPy.tools.mputil as mputil
-import ChiantiPy.tools.util as util
+import ChiantiPy.tools.util as chianti_util
 
 from .ChiantiMultiProc import *
 
@@ -58,8 +58,8 @@ class xray:
     #
     ######################################################################################
     def xray_intensity(self, temperature, ne,
-                       elementalabunds, ionfractions, emissionmeasure,
-                       freefree=False, freebound=False, lines=False, twophoton=False,
+                       elemental_abundances, ion_fractions, emission_measure,
+                       bremsstrahlung=False, freebound=False, lines=False, twophoton=False,
                        filtername=None, filterfactor=None, allLines = True,
                        multiprocessing=False, ncores=None):
         """
@@ -81,10 +81,12 @@ class xray:
         if self.verbose:
             print(f" ---------------------------")
             print(" initiating X-ray spectrum calculation...")
-            print(f" free-free intensity = {freefree}")
-            print(f" free-bound intensity = {freebound}")
+            print(f" bremsstrahlung emission = {bremsstrahlung}")
+            print(f" free-bound emission = {freebound}")
             print(f" line intensity = {lines}")
-            print(f" two photon intensity = {twophoton}")
+            print(f" two photon emission = {twophoton}")
+            if not (bremsstrahlung or freebound or lines):
+                util.nebula_exit_with_error(" no emission processes specified")
 
         # Initialize the chianti object with the given elements, temperature, and electron density.
         chianti_obj = chianti(
@@ -98,12 +100,13 @@ class xray:
         self.xray_containter.update(chianti_obj.species_attributes_container)
         species_attributes = chianti_obj.species_attributes_container
 
+
         # Convert the temperature list to a NumPy array for efficient numerical operations.
         temperature = np.array(temperature)
         N_temp = len(temperature)  # Determine the number of temperature values.
 
         # Initialize empty arrays for storing X-ray intensity values.
-        freefree_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
+        bremsstrahlung_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
         freebound_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
         line_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
         twophoton_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
@@ -115,23 +118,24 @@ class xray:
             proc = min(ncores, cpu_count)
             timeout = 0.1
 
-            print(f" multiprocessing with {ncores} cores")
+            if self.verbose:
+                print(f" multiprocessing with {ncores} cores")
 
             # Define worker and done queues for multiprocessing tasks.
-            freefree_workerQ, freefree_doneQ = (mp.Queue(), mp.Queue())
+            bremsstrahlung_workerQ, bremsstrahlung_doneQ = (mp.Queue(), mp.Queue())
             freebound_workerQ, freebound_doneQ = (mp.Queue(), mp.Queue())
             line_emission_workerQ, line_emission_doneQ = (mp.Queue(), mp.Queue())
 
             # Populate the worker queues with tasks for the species.
             for species in species_attributes:
-                if freefree and 'ff' in species_attributes[species]['keys']:
-                    freefree_workerQ.put(
+                if bremsstrahlung and 'ff' in species_attributes[species]['keys']:
+                    bremsstrahlung_workerQ.put(
                         (species,
-                         species_attributes[species]['spectroscopic'],
                          temperature,
                          self.wavelength,
-                         elemental_abund,
-                         em,
+                         elemental_abundances,
+                         ion_fractions,
+                         emission_measure,
                          self.verbose
                          )
                     )
@@ -139,11 +143,11 @@ class xray:
                 if freebound and 'fb' in species_attributes[species]['keys']:
                     freebound_workerQ.put(
                         (species,
-                         species_attributes[species]['spectroscopic'],
                          temperature,
                          self.wavelength,
-                         elemental_abund,
-                         em,
+                         elemental_abundances,
+                         ion_fractions,
+                         emission_measure,
                          self.verbose
                          )
                     )
@@ -154,9 +158,9 @@ class xray:
                          temperature,
                          ne,
                          self.wavelength,
-                         elemental_abund,
-                         ion_fraction,
-                         em,
+                         elemental_abundances,
+                         ion_fractions,
+                         emission_measure,
                          filtername,
                          filterfactor,
                          allLines
@@ -164,23 +168,23 @@ class xray:
                     )
 
             # Free-free emission calculation using multiprocessing.
-            if freefree:
-                freefree_processes = []
-                freefree_workerQSize = freefree_workerQ.qsize()
+            if bremsstrahlung:
+                bremsstrahlung_processes = []
+                bremsstrahlung_workerQSize = bremsstrahlung_workerQ.qsize()
                 for i in range(proc):
-                    p = mp.Process(target=do_freefree_Q, args=(freefree_workerQ, freefree_doneQ))
+                    p = mp.Process(target=do_freefree_Q, args=(bremsstrahlung_workerQ, bremsstrahlung_doneQ))
                     p.start()
-                    freefree_processes.append(p)
+                    bremsstrahlung_processes.append(p)
 
-                for p in freefree_processes:
+                for p in bremsstrahlung_processes:
                     if p.is_alive():
                         p.join(timeout=timeout)
 
-                for index_freefree in range(freefree_workerQSize):
-                    thisFreeFree = freefree_doneQ.get()
-                    freefree_spectrum += thisFreeFree['intensity']
+                for index_brem in range(bremsstrahlung_workerQSize):
+                    thisFreeFree = bremsstrahlung_doneQ.get()
+                    bremsstrahlung_spectrum += thisFreeFree['intensity']
 
-                for p in freefree_processes:
+                for p in bremsstrahlung_processes:
                     if p.is_alive():
                         p.terminate()
 
@@ -228,5 +232,5 @@ class xray:
                         task.terminate()
 
         # Return the calculated spectra.
-        return freefree_spectrum + freebound_spectrum + line_spectrum
+        return bremsstrahlung_spectrum + freebound_spectrum + line_spectrum
         ###############################################################################################
