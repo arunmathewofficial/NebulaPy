@@ -58,6 +58,7 @@ class xray:
     #
     ######################################################################################
     def xray_intensity(self, temperature, ne,
+                       elementalabunds, ionfractions, emissionmeasure,
                        freefree=False, freebound=False, lines=False, twophoton=False,
                        filtername=None, filterfactor=None, allLines = True,
                        multiprocessing=False, ncores=None):
@@ -77,10 +78,17 @@ class xray:
         Returns:
         - Total X-ray intensity from selected emission types as a NumPy array.
         """
+        if self.verbose:
+            print(f" ---------------------------")
+            print(" initiating X-ray spectrum calculation...")
+            print(f" free-free intensity = {freefree}")
+            print(f" free-bound intensity = {freebound}")
+            print(f" line intensity = {lines}")
+            print(f" two photon intensity = {twophoton}")
 
         # Initialize the chianti object with the given elements, temperature, and electron density.
         chianti_obj = chianti(
-            element_list=self.elements,
+            pion_elements=self.elements,
             temperature=temperature,
             ne=ne,
             verbose=self.verbose
@@ -93,9 +101,6 @@ class xray:
         # Convert the temperature list to a NumPy array for efficient numerical operations.
         temperature = np.array(temperature)
         N_temp = len(temperature)  # Determine the number of temperature values.
-
-        # Wavelength range
-        wvl_range = [self.wavelength[0], self.wavelength[-1]]
 
         # Initialize empty arrays for storing X-ray intensity values.
         freefree_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
@@ -110,22 +115,38 @@ class xray:
             proc = min(ncores, cpu_count)
             timeout = 0.1
 
-            # Define worker and done queues for multiprocessing tasks.
-            freefree_workerQ, freefree_doneQ = (mp.Queue(), mp.Queue()) if freefree else (None, None)
-            freebound_workerQ, freebound_doneQ = (mp.Queue(), mp.Queue()) if freebound else (None, None)
-            line_emission_workerQ, line_emission_doneQ = (mp.Queue(), mp.Queue()) if lines else (None, None)
+            print(f" multiprocessing with {ncores} cores")
 
-            elemental_abund = 1.0
-            em = [1.e+27]
-            ion_fraction = 1.0
+            # Define worker and done queues for multiprocessing tasks.
+            freefree_workerQ, freefree_doneQ = (mp.Queue(), mp.Queue())
+            freebound_workerQ, freebound_doneQ = (mp.Queue(), mp.Queue())
+            line_emission_workerQ, line_emission_doneQ = (mp.Queue(), mp.Queue())
 
             # Populate the worker queues with tasks for the species.
             for species in species_attributes:
                 if freefree and 'ff' in species_attributes[species]['keys']:
-                    freefree_workerQ.put((species, temperature, self.wavelength, elemental_abund, em))
+                    freefree_workerQ.put(
+                        (species,
+                         species_attributes[species]['spectroscopic'],
+                         temperature,
+                         self.wavelength,
+                         elemental_abund,
+                         em,
+                         self.verbose
+                         )
+                    )
 
                 if freebound and 'fb' in species_attributes[species]['keys']:
-                    freebound_workerQ.put((species, temperature, self.wavelength, elemental_abund, em))
+                    freebound_workerQ.put(
+                        (species,
+                         species_attributes[species]['spectroscopic'],
+                         temperature,
+                         self.wavelength,
+                         elemental_abund,
+                         em,
+                         self.verbose
+                         )
+                    )
 
                 if lines and 'line' in species_attributes[species]['keys']:
                     line_emission_workerQ.put(
@@ -168,7 +189,7 @@ class xray:
                 freebound_processes = []
                 freebound_workerQSize = freebound_workerQ.qsize()
                 for i in range(proc):
-                    p = mp.Process(target=mputil.doFbQ, args=(freebound_workerQ, freebound_doneQ))
+                    p = mp.Process(target=do_freebound_Q, args=(freebound_workerQ, freebound_doneQ))
                     p.start()
                     freebound_processes.append(p)
 
@@ -195,7 +216,6 @@ class xray:
                     line_emission_task.append(p)
 
                 for task in line_emission_task:
-                    if task.is_alive():
                         task.join(timeout=timeout)
 
                 for index_line in range(line_emission_workerQSize):

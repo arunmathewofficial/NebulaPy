@@ -24,8 +24,9 @@ nebula_pion.get_chemistry()
 elements = nebula_pion.chemistry_container['tracer_elements']
 '''
 
-# elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si']
-elements = ["C"]
+elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si', 'S', 'Fe']
+solar_abundance = []
+ionisation_equilibrium = []
 
 xray_emission = nebula.xray(
     min_photon_energy=0.04,  # Minimum photon energy in keV
@@ -37,7 +38,7 @@ xray_emission = nebula.xray(
 
 temperature = [2e+6]
 ne = [1e+9]
-
+em = [1e+27]
 
 
 #mp.freeze_support()  # Ensures proper support for frozen scripts
@@ -52,7 +53,10 @@ start_time = time.time()
 spectrum = xray_emission.xray_intensity(
     temperature=temperature,
     ne=ne,
-    freefree=False, freebound=False, lines=True, twophoton=False,
+    elementalabunds=solar_abundance,
+    ionfractions=ionisation_equilibrium,
+    emissionmeasure=em,
+    freefree=True, freebound=True, lines=True, twophoton=False,
     multiprocessing=True,
     ncores=12)
 finish_time = time.time()  # Record the finish time

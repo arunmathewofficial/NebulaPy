@@ -7,7 +7,10 @@ import ChiantiPy.tools.io as chio
 import ChiantiPy.tools.data as chdata
 from ChiantiPy.base import specTrails
 import numpy as np
-import ChiantiPy.tools.util as util
+import ChiantiPy.tools.util as chianti_util
+
+from NebulaPy.tools import util as util
+
 
 class chianti:
     """
@@ -32,25 +35,37 @@ class chianti:
     ######################################################################################
     #
     ######################################################################################
-    def __init__(self, temperature, ne, ion=None, element_list=None, verbose=False):
+    def __init__(self, temperature, ne, chianti_ion=None, pion_ion=None, pion_elements=None, verbose=False):
 
         self.temperature = temperature
         self.ne= ne
         self.verbose = verbose
 
-        if ion is not None:
-            self.chianti_ion_name = self.get_chianti_symbol(ion, make=0)
-            self.chianti_ion = ch.ion(
-                self.chianti_ion_name, temperature=self.temperature,
-                eDensity=self.ne, pDensity='default',
-                radTemperature=None, rStar=None, abundance=None,
-                setup=True, em=None, verbose=self.verbose
-            )
+        # Count the number of arguments that are not None
+        non_none_count = sum(arg is not None for arg in [chianti_ion, pion_ion, pion_elements])
 
-        if element_list is not None:
+        # If more than one argument is not None, raise a ValueError
+        if non_none_count > 1:
+            util.nebula_exit_with_error(" invalid arguments: set only one of 'chianti_ion', 'pion_ion', or 'pion_elements")
+
+        if pion_ion is not None:
+            self.chianti_ion_name = self.get_chianti_symbol(pion_ion, make=False)
+            print(self.chianti_ion_name)
+            self.chianti_ion = ch.ion(self.chianti_ion_name, temperature=self.temperature, eDensity=self.ne,
+                                 pDensity='default', radTemperature=None, rStar=None, abundance=None,
+                                 setup=True, em=None, verbose=self.verbose)
+
+
+        if chianti_ion is not None:
+            self.chianti_ion = ch.ion(chianti_ion, temperature=self.temperature, eDensity=self.ne,
+                                 pDensity='default', radTemperature=None, rStar=None, abundance=None,
+                                 setup=True, em=None, verbose=self.verbose)
+
+
+        if pion_elements is not None:
             chianti_element_list = []
-            for element in element_list:
-                element_symbol = self.get_chianti_symbol(element, make=1)
+            for element in pion_elements:
+                element_symbol = self.get_chianti_symbol(element, make=True)
                 chianti_element_list.append(element_symbol)
             self.chianti_element_list = chianti_element_list
             self.get_elements_attributes()
@@ -171,17 +186,28 @@ class chianti:
         self.species_attributes_container = {}
 
         # Loop through the sorted keys in the dictionary of species
-        print(f" ---------------------------")
-        print(f" species attributes")
-        for akey in sorted(species.Todo.keys()):
-            self.species_attributes_container[akey] = util.convertName(akey)  # Convert the key and store it
-            if self.verbose:
-                print(f" retrieving attributes for {self.species_attributes_container[akey]['spectroscopic']}")
-            self.species_attributes_container[akey]['keys'] = species.Todo[akey]  # Store relevant data
+        if self.verbose:
+            print(f" retrieving species attributes")
 
+        count = 0
+        for akey in sorted(species.Todo.keys()):
+            self.species_attributes_container[akey] = chianti_util.convertName(akey)  # Convert the key and store it
+            # If verbose mode is enabled, print the spectroscopic name
+            if self.verbose:
+                # Print a comma-separated list of names with up to 10 items per line
+                print(f" {self.species_attributes_container[akey]['spectroscopic']}", end='')
+                count += 1
+                # Print a newline after every 10 items
+                if count % 10 == 0:
+                    print()  # Move to the next line
+                else:
+                    print(", ", end='')  # Continue on the same line
+
+            self.species_attributes_container[akey]['keys'] = species.Todo[akey]  # Store relevant data
             # Remove unnecessary data from the dictionary
             del self.species_attributes_container[akey]['filename']
             del self.species_attributes_container[akey]['experimental']
+        print()
 
         # Finalize the species attributes dictionary
         # At this point, `self.species_attributes` contains all the relevant
@@ -235,6 +261,8 @@ class chianti:
             Array of convolved line intensities across the wavelength range.
         """
 
+
+
         if self.verbose:
             print(f" retrieving emissivity values for all spectral lines of {self.chianti_ion.Spectroscopic}")
 
@@ -251,9 +279,12 @@ class chianti:
         intensity = np.zeros((N_temp, N_lines), dtype=np.float64)
 
         # Calculate intensity for each temperature
+        if self.verbose:
+            print(f" calculating line intensity for {self.chianti_ion.Spectroscopic}")
         for temp_idx in range(N_temp):
             intensity[temp_idx] = abun * ionfrac * emissivity[:, temp_idx] * emission_measure[temp_idx] / self.ne[temp_idx]
-
+        if self.verbose:
+            print(f" {self.chianti_ion.Spectroscopic} line calculation done")
         # Define the wavelength range and number of wavelength points
         wvl_range = [wavelength[0], wavelength[-1]]
         N_wvl = len(wavelength)
@@ -267,7 +298,7 @@ class chianti:
         line_spectrum = np.zeros((N_temp, N_wvl), dtype=np.float64)
 
         # Get indices of lines within the wavelength range
-        selected_idx = util.between(lines, wvl_range)
+        selected_idx = chianti_util.between(lines, wvl_range)
 
         if len(selected_idx) == 0:
             print(f' no lines found for {self.chianti_ion.Spectroscopic} in the wavelength '
