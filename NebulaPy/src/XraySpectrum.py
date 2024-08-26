@@ -203,8 +203,7 @@ class xray:
 
                 for index_freebound in range(freebound_workerQSize):
                     thisFreeBound = freebound_doneQ.get()
-                    if 'errorMessage' not in thisFreeBound.keys():
-                        freebound_spectrum += thisFreeBound['intensity'].squeeze()
+                    freebound_spectrum += thisFreeBound['intensity']
 
                 for p in freebound_processes:
                     if p.is_alive():

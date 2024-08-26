@@ -405,7 +405,7 @@ class chianti:
 
         # If verbose, indicate completion
         if self.verbose:
-            print(f'{self.chianti_ion.Spectroscopic} bremsstrahlung emission done')
+            print(f' {self.chianti_ion.Spectroscopic} bremsstrahlung emission done')
 
         return bremsstrahlung_emission
 
@@ -458,14 +458,15 @@ class chianti:
         goodT = np.arange(Ntemp)
 
         if self.verbose:
-            print(f'Calculating free-bound emission for {self.chianti_ion.Spectroscopic}')
+            print(f' calculating free-bound emission for {self.chianti_ion.Spectroscopic}')
 
         # Load free-bound level data (Fblvl)
         if hasattr(continuum_spectrum, 'Fblvl'):
             fblvl = continuum_spectrum.Fblvl
             if 'errorMessage' in fblvl.keys():
                 continuum_spectrum.FreeBound = fblvl
-                return
+                print(' ' + fblvl['errorMessage'])
+                return np.zeros((Ntemp, Nwvl), dtype=np.float64)
         elif continuum_spectrum.Z == continuum_spectrum.Stage - 1:
             # Fully ionized stage, assign default Fblvl
             continuum_spectrum.Fblvl = {'mult': [1., 1.]}
@@ -477,8 +478,9 @@ class chianti:
                 fblvl = continuum_spectrum.Fblvl
             else:
                 if self.verbose:
-                    print(f'No Fblvl file for ion {self.chianti_ion.Spectroscopic}')
-                return
+                    print(f' no Fblvl file for {self.chianti_ion.Spectroscopic}')
+                    print(' skipping...')
+                return np.zeros((Ntemp, Nwvl), dtype=np.float64)
 
         # Load recombined ion data (rFblvl)
         if hasattr(continuum_spectrum, 'rFblvl'):
@@ -492,8 +494,9 @@ class chianti:
                 rFblvl = continuum_spectrum.rFblvl
             else:
                 if self.verbose:
-                    print(f'No Fblvl file for ion {lower}')
-                return
+                    print(f' no Fblvl file for {self.chianti_ion.Spectroscopic}')
+                    print(' skipping...')
+                return np.zeros((Ntemp, Nwvl), dtype=np.float64)
 
         # Extract information for the recombined ion
         nlvls = len(rFblvl['lvl'])
@@ -580,13 +583,12 @@ class chianti:
                 fbIntensity[ilvl, itemp] = emission_measure[itemp] * fbn[ilvl, itemp]
 
         # Sum up intensities and apply elemental abundance and ion fraction
-        fb = fbIntensity.sum(axis=0) * elemental_abundance * ion_fraction
+        freebound_emission = fbIntensity.sum(axis=0) * elemental_abundance * ion_fraction
 
         if self.verbose:
-            print(f'{self.chianti_ion.Spectroscopic} free-bound emission calculation completed')
+            print(f' {self.chianti_ion.Spectroscopic} free-bound emission calculation completed')
 
-        return fb.squeeze()
-
+        return freebound_emission
 
 
 

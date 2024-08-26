@@ -25,7 +25,6 @@ elements = nebula_pion.chemistry_container['tracer_elements']
 '''
 
 elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si', 'S', 'Fe']
-elements = ['O']
 solar_abundance = 1.0
 ionisation_equilibrium = 1.0
 
@@ -58,8 +57,8 @@ spectrum = xray_emission.xray_intensity(
     elemental_abundances=solar_abundance,
     ion_fractions=ionisation_equilibrium,
     emission_measure=em,
-    bremsstrahlung=False, freebound=True,
-    lines=False, twophoton=False,
+    bremsstrahlung=True, freebound=True,
+    lines=True, twophoton=False,
     multiprocessing=True,
     ncores=12)
 finish_time = time.time()  # Record the finish time
