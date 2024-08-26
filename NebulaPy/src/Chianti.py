@@ -207,7 +207,9 @@ class chianti:
             # Remove unnecessary data from the dictionary
             del self.species_attributes_container[akey]['filename']
             del self.species_attributes_container[akey]['experimental']
-        print()
+
+        if self.verbose:
+            print()
 
         # Finalize the species attributes dictionary
         # At this point, `self.species_attributes` contains all the relevant
@@ -237,7 +239,7 @@ class chianti:
         \[
         \text{em} = \int N_e \, N_H \, d\ell
         \]
-        Intensity has the units \( \text{ergs} \, \text{cm}^{-3} \, \text{s}^{-1} \, \text{str}^{-1} \).
+        Intensity has the units \( \text{ergs} \, \text{cm}^{-2} \, \text{s}^{-1} \, \text{str}^{-1} \).
 
         Parameters
         ----------
