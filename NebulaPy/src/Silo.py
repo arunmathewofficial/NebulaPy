@@ -168,6 +168,7 @@ class pion():
                 # If verbose is enabled, print the chemistry code
                 if self.verbose:
                     print(f" ---------------------------")
+                    print(f" loading chemistry ...")
                     print(f" chemistry: {chemistry_code}")
 
                 # Loop through each process
@@ -366,7 +367,7 @@ class pion():
     ######################################################################################
     # get ion mass fraction values
     ######################################################################################
-    def get_ion(self, ion, silo_instant):
+    def get_ion_values(self, ion, silo_instant):
         '''
         This methods will return the ion mass fraction value set
 

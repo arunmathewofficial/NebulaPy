@@ -51,7 +51,6 @@ class chianti:
 
         if pion_ion is not None:
             self.chianti_ion_name = self.get_chianti_symbol(pion_ion, make=False)
-            print(self.chianti_ion_name)
             self.chianti_ion = ch.ion(self.chianti_ion_name, temperature=self.temperature, eDensity=self.ne,
                                  pDensity='default', radTemperature=None, rStar=None, abundance=None,
                                  setup=True, em=None, verbose=self.verbose)

@@ -1,4 +1,7 @@
 import sys
+
+import numpy as np
+
 from NebulaPy import version
 from pypion.SiloHeader_data import OpenData
 from pypion.ReadData import ReadData
@@ -108,9 +111,12 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
     # close the object
     header_data.close()
 
+    # set number of time instance
+    Ninstances = 0
+
     # for uniform grid *********************************************************************
     if Nlevels == 1:
-        print(f" uniform grid")
+        print(f" grid: uniform")
         silos = sorted(all_silos)
         batched_silos = [[silo] for silo in silos]
         for i, silo in enumerate(batched_silos):
@@ -125,17 +131,20 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                 # Remove the current silo and all remaining silos from the list
                 batched_silos = batched_silos[:i]
                 break
+
+        print(f" {Ninstances} instances found")
         print(" batching completed")
         return batched_silos
 
     # for nested grid *********************************************************************
     else:
-        print(f" nested grid with {Nlevels} levels")
+        print(f" grid: nested with {Nlevels} levels")
         # Pattern to match level 00 files
         pattern = re.compile(r'_level00_0000\.\d+\.silo$')
         # Find and sort level 00 files, one per time instant
         level00_instants = [file for file in all_silos if pattern.search(file)]
         batched_silos = [[file] for file in sorted(level00_instants)]
+        Ninstances = len(batched_silos)
         # check if level 00 batched silos are within the asked time range
         for i, silo in enumerate(batched_silos):
             data = ReadData(silo)
@@ -168,6 +177,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                     # Append the found file to the corresponding time instant group
                     batched_silos[i].append(level_instant_file)
 
+        print(f" {Ninstances} instances found")
         print(" batching completed")
         return batched_silos
 #*************************************************************************************

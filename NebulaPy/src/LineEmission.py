@@ -39,10 +39,10 @@ class line_emission():
 
         '''
 
-        ion = chianti(ion=self.ion, temperature=temperature, ne=ne, verbose=self.verbose)
+        ion = chianti(pion_ion=self.ion, temperature=temperature, ne=ne, verbose=self.verbose)
         self.line_emission_container['temperature'] = temperature
         self.line_emission_container['ne'] = ne
-        self.line_emission_container['spectroscopicName'] = ion.ChiantiInstant.Spectroscopic
+        self.line_emission_container['spectroscopicName'] = ion.chianti_ion.Spectroscopic
 
         #print(ion.get_allLines()) # not in use
 
@@ -57,7 +57,7 @@ class line_emission():
         self.line_emission_container['line'] = line
 
         if self.verbose:
-            print(f' identifying {line} Å from allLines of {ion.ChiantiInstant.Spectroscopic}')
+            print(f' identifying {line} Å from allLines of {ion.chianti_ion.Spectroscopic}')
         index = (np.abs(allLines - line)).argmin()
         tolerance = 10 ** -4
         if np.abs(allLines[index] - line) <= tolerance:
@@ -68,7 +68,7 @@ class line_emission():
         self.line_emission_container['lineIndex'] = index
 
         if self.verbose:
-            print(f' retrieving cell emissivity values for {ion.ChiantiInstant.Spectroscopic} {line}')
+            print(f' retrieving cell emissivity values for {ion.chianti_ion.Spectroscopic} {line}')
 
         emissivity = np.asarray(all_emissivity_data['emiss'][index])
         self.line_emission_container['emiss'] = emissivity
