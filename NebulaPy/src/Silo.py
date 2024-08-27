@@ -169,7 +169,7 @@ class pion():
                 if self.verbose:
                     print(f" ---------------------------")
                     print(f" loading chemistry ...")
-                    print(f" chemistry: {chemistry_code}")
+                    print(f" chemistry module: {chemistry_code}")
 
                 # Loop through each process
                 for index, process in enumerate(processes):
