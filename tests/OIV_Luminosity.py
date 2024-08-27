@@ -30,7 +30,7 @@ batched_silos = util.batch_silos(
     start_time=None,
     finish_time=finish_time,
     time_unit='kyr',
-    out_freq=None
+    out_frequency=None
 )
 
 # Initialize the Pion class from NebulaPy, which handles the simulation data

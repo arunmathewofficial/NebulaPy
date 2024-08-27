@@ -60,7 +60,8 @@ def file_check(file):
 ######################################################################################
 # batch silo files
 ######################################################################################
-def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None, out_freq=None):
+def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None,
+                out_frequency=None):
     '''
     Organizes silo files into groups based on their corresponding time instants.
     This function scans a specified directory for silo files with a given base name,
@@ -134,10 +135,10 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                 break
 
         # Keep files based on the output frequency if specified
-        if out_freq is not None:
+        if out_frequency is not None:
             Ninstances = len(batched_silos)
             # indices to keep: multiples of out_freq, plus the first and last index
-            indices_to_keep = sorted(set(range(0, Ninstances, out_freq)) | {0, Ninstances - 1})
+            indices_to_keep = sorted(set(range(0, Ninstances, out_frequency)) | {0, Ninstances - 1})
             batched_silos = [batched_silos[i] for i in indices_to_keep]
 
         Ninstances = len(batched_silos)
@@ -168,10 +169,10 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                 break
 
         # Keep files based on the output frequency if specified
-        if out_freq is not None:
+        if out_frequency is not None:
             Ninstances = len(batched_silos)
             # indices to keep: multiples of out_freq, plus the first and last index
-            indices_to_keep = sorted(set(range(0, Ninstances, out_freq)) | {0, Ninstances - 1})
+            indices_to_keep = sorted(set(range(0, Ninstances, out_frequency)) | {0, Ninstances - 1})
             batched_silos = [batched_silos[i] for i in indices_to_keep]
 
         # appending other level silos to corresponding time instant
