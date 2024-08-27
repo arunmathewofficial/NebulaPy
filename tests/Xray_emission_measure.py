@@ -29,6 +29,7 @@ pion.spherical_grid(batched_silos[0])
 radius = pion.geometry_container['radius']
 shell_volume = pion.geometry_container['shell_volumes']
 
+'''
 # Loop over each time instant in the batched silo files
 for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()  # Record the start time
@@ -48,7 +49,7 @@ for step, silo_instant in enumerate(batched_silos):
         shellvolume=shell_volume,
         Tmin=1.e+6,
         Tmax=1e+9,
-        Nbins=1000
+        Nbins=100
     )
 
     # Create a plot
@@ -68,20 +69,21 @@ for step, silo_instant in enumerate(batched_silos):
 
 
 '''
-elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si', 'S', 'Fe']
+#elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si', 'S', 'Fe']
+elements = ["H", "He"]
 solar_abundance = 1.0
 ionisation_equilibrium = 1.0
 
 xray_emission = nebula.xray(
-    min_photon_energy=0.04,  # Minimum photon energy in keV
-    max_photon_energy=0.062,  # Maximum photon energy in keV
+    min_photon_energy=0.5,  # Minimum photon energy in keV
+    max_photon_energy=10.0,  # Maximum photon energy in keV
     energy_point_count=1000,
     elements=elements,
-    verbose=False
+    verbose=True
 )
 
-temperature = [2e+6]
-ne = [1e+9]
+temperature = [2e+7]
+ne = [1e+2]
 em = [1e+27]
 
 
@@ -121,5 +123,4 @@ plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
 plt.ylabel('Spectrum', fontsize=14)
 plt.legend(fontsize=14, frameon=False)
 plt.show()
-'''
 

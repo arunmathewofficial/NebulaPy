@@ -10,8 +10,8 @@ import time
 #output_file = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/line_luminosity_OIV25.txt' # Output file for results
 
 # RAZERBLADE: Set up paths and filenames
-#silo_dir = '/home/tony/Desktop/OIV_Luminosity/mpv10-wind-test'  #Directory containing silo files
-#output_file = '/home/tony/Desktop/OIV_Luminosity/line_luminosity_OIV25.txt'  # Output file for results
+silo_dir = '/home/tony/Desktop/OIV_Luminosity/mpv10-wind-test'  #Directory containing silo files
+output_file = '/home/tony/Desktop/OIV_Luminosity/line_luminosity_OIV25.txt'  # Output file for results
 
 filebase = 'e7_WRwind_d1l5n256_v1500'  # Base name of the silo files
 

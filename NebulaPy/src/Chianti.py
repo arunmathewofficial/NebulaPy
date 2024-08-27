@@ -13,6 +13,8 @@ from NebulaPy.tools import util as util
 from ChiantiPy.core.Continuum import continuum
 import ChiantiPy.tools.io as io
 from scipy.interpolate import splev, splrep
+
+
 class chianti:
     """
     The class for calculating emission line spectrum.
