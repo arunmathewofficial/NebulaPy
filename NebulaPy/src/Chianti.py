@@ -303,9 +303,10 @@ class chianti:
         selected_idx = chianti_util.between(lines, wvl_range)
 
         if len(selected_idx) == 0:
-            print(f' no lines found for {self.chianti_ion.Spectroscopic} in the wavelength '
-                  f'range {wvl_range[0]:.2e} - {wvl_range[1]:.2e} Angstrom')
-            print(' skipping ...')
+            if self.verbose:
+                print(f' no lines found for {self.chianti_ion.Spectroscopic} in the wavelength '
+                      f'range {wvl_range[0]:.2e} - {wvl_range[1]:.2e} Angstrom')
+                print(' skipping ...')
         else:
             # Convolve the intensities with the filter for each temperature
             for temp_idx in range(N_temp):

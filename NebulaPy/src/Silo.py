@@ -105,7 +105,7 @@ class pion():
     ######################################################################################
     # get chemistry from the initial silo file
     ######################################################################################
-    def get_chemistry(self):
+    def load_chemistry(self):
         '''
         This method extracts information related to the chemistry and chemical tracers,
         transforming the chemical tracer names to a format that PyPion can directly
@@ -163,7 +163,7 @@ class pion():
             # Check if the chemistry_code is not 'MPv10'
             if not chemistry_code == 'MPv10':
                 # Exit with an error if the chemistry_code is not 'MPv10'
-                util.nebula_exit_with_error("PION is not running MPv10; NelubaPy functionality is limited.")
+                util.nebula_exit_with_error(" PION is not running MPv10; NelubaPy functionality is limited.")
             else:
                 # If verbose is enabled, print the chemistry code
                 if self.verbose:
@@ -184,7 +184,7 @@ class pion():
                 # elements in the tracer list
                 tracer_elements = []
                 # mass_fraction
-                mass_fractions = []
+                mass_fractions = {}
                 # list of element wise tracer list
                 elementWiseTracers = [[] for _ in range(len(const.nebula_elements))]
                 # list of element names from the nebula_elements dictionary keys
@@ -208,7 +208,7 @@ class pion():
                         element = chem_tracer.replace("_", "").replace("X", "")
                         tracer_elements.append(element)
                         # get the full element name from the nebula_elements dictionary
-                        mass_fractions.append({element: f'Tr{i:03}_' + chem_tracer})
+                        mass_fractions[element] = f'Tr{i:03}_' + chem_tracer
                         # if verbose is enabled, print the found element name
                         if self.verbose:
                             print(f" found {const.nebula_elements[element]}")
@@ -231,13 +231,86 @@ class pion():
                 # save mass fraction to chemistry_container dictionary
                 #self.chemistry_container['mass_fractions'] = mass_fractions
                 self.element_list = tracer_elements
+                self.chemistry_container['mass_fractions'] = mass_fractions
                 self.chemistry_container['tracer_elements'] = tracer_elements
                 self.element_wise_tracer_list = elementWiseTracers
         header_data.close()
 
+    ######################################################################################
+    # get elements
+    ######################################################################################
+    def get_elements(self):
+        return np.array(self.chemistry_container['tracer_elements'])
 
     ######################################################################################
-    # get parameter
+    # get chemical tracers
+    ######################################################################################
+    def get_chemical_tracers(self):
+        """
+        Retrieve the list of chemical tracer strings for each tracer in the chemistry
+        container dictionary, processed element by element. Each sublist starts with the
+        mass fraction of the element followed by the tracers.
+
+        Returns:
+            list of lists: Each sublist contains the mass fraction followed by the values of
+            the tracers for a specific element.
+        """
+        elements = self.get_elements()
+        tracers = []
+
+        for element in elements:
+            # Retrieve tracers for the element
+            element_tracers = [self.chemistry_container[f"{element}{q}+" if q > 0 else element]
+                               for q in range(const.atomic_number[element])]
+
+            tracers.append(element_tracers)
+
+        return tracers
+
+    ######################################################################################
+    # get elemental mass fraction
+    ######################################################################################
+    def get_elemental_mass_frac(self, silo_instant):
+
+        elements = self.get_elements()
+        elemental_mass_fraction = []
+        for element in elements:
+            # Retrieve mass fraction
+            element_tracer = self.chemistry_container['mass_fractions'][element]
+            elemental_mass_fraction.append(self.get_parameter(element_tracer, silo_instant))
+
+        return np.array(elemental_mass_fraction)
+
+    ######################################################################################
+    # get tracer values
+    ######################################################################################
+    def get_tracer_values(self, silo_instant):
+        """
+        Retrieves the chemical tracer values for the given time instant from the
+        simulation silo data.
+        Parameters:
+        ----------
+        silo_instant : silo file(s)
+
+        Returns:
+        -------
+        tracer_values : list of lists
+            A 2D list containing the tracer values for each ion in the tracers array.
+        """
+
+        # Retrieve the 2D array of chemical tracers.
+        tracers = self.get_chemical_tracers()
+
+        # Initialize tracer_values using list comprehension for better efficiency.
+        tracer_values = np.array([
+            [self.get_parameter(ion, silo_instant) for ion in element_row]
+            for element_row in tracers
+        ], dtype=object)
+
+        return tracer_values
+
+    ######################################################################################
+    # get parameter //todo: this is not clear
     ######################################################################################
     def get_parameter(self, parameter, silo_instant):
         '''
@@ -295,7 +368,7 @@ class pion():
     ######################################################################################
     def get_ion(self, ion, silo_instant):
         '''
-        This methos will return the ion mass fraction value set
+        This methods will return the ion mass fraction value set
 
         Parameters
         ----------
@@ -328,7 +401,7 @@ class pion():
 
         Returns
         -------
-        electron number density in each cell
+        electron number density in each cell for a specific silo file
         '''
 
         density = self.get_parameter("Density", silo_instant)
@@ -353,6 +426,71 @@ class pion():
             ne += massfrac_sum / const.mass[element_name]
 
         return ne * density
+
+    ######################################################################################
+    # differential emission measure
+    ######################################################################################
+    def differential_emission_measure(self, temperature, ne, shellvolume, Tmin, Tmax, Nbins):
+        """
+        Calculate the differential emission measure (DEM) across temperature bins.
+
+        The temperature range from Tmin to Tmax is divided into Nbins logarithmically spaced bins.
+        The DEM is computed for each bin based on the provided electron density, shell volume,
+        and temperature values. The midpoint of each temperature bin is also calculated.
+
+        Parameters:
+        ----------
+        temperature : numpy.ndarray
+            Array of temperature values.
+        ne : numpy.ndarray
+            Array of electron densities corresponding to the temperature values.
+        shellvolume : numpy.ndarray
+            Array of shell volumes corresponding to the temperature values.
+        Tmin : float
+            The minimum temperature for binning.
+        Tmax : float
+            The maximum temperature for binning.
+        Nbins : int
+            The number of logarithmically spaced bins.
+
+        Returns:
+        -------
+        dem : numpy.ndarray
+            Array of differential emission measure values for each temperature bin.
+        temperature_midpoints : numpy.ndarray
+            Array of the midpoints of logarithmically spaced temperature bins.
+        temperature_bins : numpy.ndarray
+            Array of logarithmically spaced temperature bins.
+        """
+
+        # Calculate the logarithmic step size.
+        dex = np.log10(Tmax / Tmin) / Nbins
+
+        # Generate the temperature bins logarithmically spaced.
+        temperature_bins = np.logspace(np.log10(Tmin), np.log10(Tmax), Nbins + 1)
+
+        # Calculate the midpoints of each bin.
+        temperature_midpoints = np.sqrt(temperature_bins[:-1] * temperature_bins[1:])
+
+        # Initialize the DEM array with zeros.
+        dem = np.zeros(Nbins)
+
+        # Calculate the differential emission measure for each bin.
+        for i in range(Nbins):
+            # Identify the indices of temperature values that fall within the current bin.
+            indices = np.where((temperature >= temperature_bins[i]) & (temperature < temperature_bins[i + 1]))[0]
+
+            # Sum the DEM for the current bin.
+            dem[i] = np.sum(ne[indices] ** 2 * shellvolume[indices])
+
+        return {'DEM': dem, 'Tb': temperature_midpoints}
+
+
+
+
+
+
+
 
 
 

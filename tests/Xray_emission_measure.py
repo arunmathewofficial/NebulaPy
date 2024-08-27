@@ -5,25 +5,69 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-'''
+
 # Set up paths and filenames
-silo_dir = '/home/tony/Desktop/NebulaPy/tests/wind-wind-jm'  # Directory containing silo files
-filebase = 'e7_WRwind_d1l5n256_v0750'  # Base name of the silo files
-output_file = '/home/tony/Desktop/NebulaPy/tests/xray.txt'  # Output file for results
+silo_dir = '/home/tony/Desktop/OIV_Luminosity/wind-wind-equi/'  # Directory containing silo files
+filebase = 'e7_WRwind_d1l5n256_v1500'  # Base name of the silo files
+output_file = '/home/tony/Desktop/OIV_Luminosity/wind-wind-equi/'  # Output file for results
 
 # Batch the silo files according to the time instant
 batched_silos = util.batch_silos(silo_dir, filebase)
 
 # Initialize the Pion class from NebulaPy, which handles the simulation data
-nebula_pion = nebula.pion(batched_silos, verbose=True)
+pion = nebula.pion(batched_silos, verbose=True)
 
 # Extract all chemistry information from the silo files into a chemistry container
 # This uses the first time instant's silo file to initialize
-nebula_pion.get_chemistry()
+pion.load_chemistry()
 
-elements = nebula_pion.chemistry_container['tracer_elements']
+# Initialize spherical grid parameters (e.g., radius, shell volumes)
+# This sets up the grid using the first silo file in the batch
+pion.spherical_grid(batched_silos[0])
+
+# Retrieve the radius and shell volumes from the geometry container
+radius = pion.geometry_container['radius']
+shell_volume = pion.geometry_container['shell_volumes']
+
+# Loop over each time instant in the batched silo files
+for step, silo_instant in enumerate(batched_silos):
+    silo_instant_start_time = time.time()  # Record the start time
+
+    # Read the data from the current silo file
+    #dataio = ReadData(silo_instant)
+    #basic = dataio.get_1Darray('Density')  # Retrieve basic simulation data, such as density
+    #sim_time = (basic['sim_time'] * unit.s).to(unit.kyr)  # Convert simulation time to kiloyears
+    #dataio.close()  # Close the data file
+
+    temperature = pion.get_parameter('Temperature', silo_instant)
+    ne = pion.get_ne(silo_instant)
+
+    dem = pion.differential_emission_measure(
+        temperature=temperature,
+        ne=ne,
+        shellvolume=shell_volume,
+        Tmin=1.e+6,
+        Tmax=1e+9,
+        Nbins=1000
+    )
+
+    # Create a plot
+    plt.figure(figsize=(8, 6))  # Set the figure size
+    plt.plot(np.log10(dem['Tb']), np.log10(dem['DEM']), linestyle='-', color='b')
+    plt.ylabel(r'$\rm log(DEM)$ (cm$^{-3}$)', fontsize=14)
+    plt.xlabel(r'$\rm log(T_b) (K)$', fontsize=14)
+    plt.show()
+
+
+
+    elemental_massfrac = pion.get_elemental_mass_frac(silo_instant)
+    tracer_values = pion.get_tracer_values(silo_instant)
+
+
+
+
+
 '''
-
 elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si', 'S', 'Fe']
 solar_abundance = 1.0
 ionisation_equilibrium = 1.0
@@ -33,7 +77,7 @@ xray_emission = nebula.xray(
     max_photon_energy=0.062,  # Maximum photon energy in keV
     energy_point_count=1000,
     elements=elements,
-    verbose=True
+    verbose=False
 )
 
 temperature = [2e+6]
@@ -77,5 +121,5 @@ plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
 plt.ylabel('Spectrum', fontsize=14)
 plt.legend(fontsize=14, frameon=False)
 plt.show()
-
+'''
 
