@@ -23,12 +23,12 @@ class line_emission():
     ######################################################################################
     # line luminosity
     ######################################################################################
-    def lineluminosity_spherical(self, line, temperature, ne, ns, dV):
+    def lineluminosity_spherical(self, lines, temperature, ne, species_density, shell_volume):
         '''
 
         Parameters
         ----------
-        line
+        lines
         temperature
         ne
         ns
@@ -42,39 +42,43 @@ class line_emission():
         ion = chianti(pion_ion=self.ion, temperature=temperature, ne=ne, verbose=self.verbose)
         self.line_emission_container['temperature'] = temperature
         self.line_emission_container['ne'] = ne
-        self.line_emission_container['spectroscopicName'] = ion.chianti_ion.Spectroscopic
-
-        #print(ion.get_allLines()) # not in use
+        self.line_emission_container['spectroscopic'] = ion.chianti_ion.Spectroscopic
 
         # if the line (wavelength) is given in string, get the corresponding
         # float value
-        if isinstance(line, str):
-            line = const.wvl_dict[line]
+        #if isinstance(line, str):
+        #    line = const.wvl_dict[line]
 
         all_emissivity_data = ion.get_emissivity()
         allLines = all_emissivity_data['wvl']
         self.line_emission_container['allLines'] = allLines
-        self.line_emission_container['line'] = line
+        self.line_emission_container['lines'] = lines
 
-        if self.verbose:
-            print(f' identifying {line} Å from allLines of {ion.chianti_ion.Spectroscopic}')
-        index = (np.abs(allLines - line)).argmin()
-        tolerance = 10 ** -4
-        if np.abs(allLines[index] - line) <= tolerance:
+        indices = []
+        for line in lines:
             if self.verbose:
-                print(f' line {line} Å found at index {index} in allLines')
-        else:
-            util.nebula_exit_with_error('line not found in allLines')
-        self.line_emission_container['lineIndex'] = index
+                print(f' identifying {line} Å from allLines of {ion.chianti_ion.Spectroscopic}')
+            index = (np.abs(allLines - line)).argmin()
+            tolerance = 10 ** -4
+            if np.abs(allLines[index] - line) <= tolerance:
+                if self.verbose:
+                    print(f' line {line} Å found at index {index} in allLines')
+                indices.append(index)
+            else:
+                util.nebula_exit_with_error('line not found in allLines')
+
+        self.line_emission_container['line_indices'] = indices
 
         if self.verbose:
-            print(f' retrieving cell emissivity values for {ion.chianti_ion.Spectroscopic} {line}')
+            print(f' retrieving emissivity values for {ion.chianti_ion.Spectroscopic} lines(s): {lines}')
 
-        emissivity = np.asarray(all_emissivity_data['emiss'][index])
+        emissivity = np.asarray(all_emissivity_data['emiss'][indices])
         self.line_emission_container['emiss'] = emissivity
 
         # Calculating line Luminosity
-        luminosity = 4.0 * const.pi * np.sum(emissivity * ns * dV)
+        if self.verbose:
+            print(f' calculating line luminosity for {ion.chianti_ion.Spectroscopic} lines(s): {lines}')
+        luminosity = [4.0 * const.pi * np.sum(e * species_density * shell_volume) for e in emissivity]
         self.line_emission_container['luminosity'] = luminosity
 
 
