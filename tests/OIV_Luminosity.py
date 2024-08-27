@@ -13,8 +13,8 @@ import time
 silo_dir = '/home/tony/Desktop/OIV_Luminosity/mpv10-wind-test'  #Directory containing silo files
 output_file = '/home/tony/Desktop/OIV_Luminosity/line_luminosity_OIV25.txt'  # Output file for results
 
+# filebase
 filebase = 'e7_WRwind_d1l5n256_v1500'  # Base name of the silo files
-
 
 # Set up the ion and line emission parameters
 ion_pion_name = 'O3+'  # The ion of interest (Oxygen IV)
@@ -29,7 +29,8 @@ batched_silos = util.batch_silos(
     filebase,
     start_time=None,
     finish_time=finish_time,
-    time_unit='kyr'
+    time_unit='kyr',
+    out_freq=None
 )
 
 # Initialize the Pion class from NebulaPy, which handles the simulation data

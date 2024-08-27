@@ -60,7 +60,7 @@ def file_check(file):
 ######################################################################################
 # batch silo files
 ######################################################################################
-def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None):
+def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None, out_freq=None):
     '''
     Organizes silo files into groups based on their corresponding time instants.
     This function scans a specified directory for silo files with a given base name,
@@ -124,6 +124,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
             basic = data.get_1Darray('Density')
             sim_time = (basic['sim_time'] * unit.s).value
             data.close()
+
             if start_time_sec is not None and sim_time < start_time_sec:
                 # Remove the current silo from the list
                 batched_silos.pop(i)
@@ -132,6 +133,14 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                 batched_silos = batched_silos[:i]
                 break
 
+        # Keep files based on the output frequency if specified
+        if out_freq is not None:
+            Ninstances = len(batched_silos)
+            # indices to keep: multiples of out_freq, plus the first and last index
+            indices_to_keep = sorted(set(range(0, Ninstances, out_freq)) | {0, Ninstances - 1})
+            batched_silos = [batched_silos[i] for i in indices_to_keep]
+
+        Ninstances = len(batched_silos)
         print(f" {Ninstances} instances found")
         print(" batching completed")
         return batched_silos
@@ -144,7 +153,6 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
         # Find and sort level 00 files, one per time instant
         level00_instants = [file for file in all_silos if pattern.search(file)]
         batched_silos = [[file] for file in sorted(level00_instants)]
-        Ninstances = len(batched_silos)
         # check if level 00 batched silos are within the asked time range
         for i, silo in enumerate(batched_silos):
             data = ReadData(silo)
@@ -158,6 +166,14 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                 # Remove the current silo and all remaining silos from the list
                 batched_silos = batched_silos[:i]
                 break
+
+        # Keep files based on the output frequency if specified
+        if out_freq is not None:
+            Ninstances = len(batched_silos)
+            # indices to keep: multiples of out_freq, plus the first and last index
+            indices_to_keep = sorted(set(range(0, Ninstances, out_freq)) | {0, Ninstances - 1})
+            batched_silos = [batched_silos[i] for i in indices_to_keep]
+
         # appending other level silos to corresponding time instant
         for i, instant in enumerate(batched_silos):
             # Extract the time instant from the level 00 file
@@ -177,6 +193,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                     # Append the found file to the corresponding time instant group
                     batched_silos[i].append(level_instant_file)
 
+        Ninstances = len(batched_silos)
         print(f" {Ninstances} instances found")
         print(" batching completed")
         return batched_silos
