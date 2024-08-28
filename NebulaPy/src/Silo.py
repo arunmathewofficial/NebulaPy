@@ -431,7 +431,7 @@ class pion():
     ######################################################################################
     # differential emission measure
     ######################################################################################
-    def differential_emission_measure(self, temperature, ne, shellvolume, Tmin, Tmax, Nbins):
+    def DEM(self, temperature, ne, shellvolume, Tmin, Tmax, Nbins):
         """
         Calculate the differential emission measure (DEM) across temperature bins.
 
@@ -464,28 +464,38 @@ class pion():
             Array of logarithmically spaced temperature bins.
         """
 
-        # Calculate the logarithmic step size.
-        dex = np.log10(Tmax / Tmin) / Nbins
+        bin_width = (np.log10(Tmax) - np.log10(Tmin)) / Nbins
 
-        # Generate the temperature bins logarithmically spaced.
-        temperature_bins = np.logspace(np.log10(Tmin), np.log10(Tmax), Nbins + 1)
+        half_bin_width = bin_width / 2
 
+        # Generate the logarithmically spaced temperature bin edges.
+        temperature_edges = np.linspace(np.log10(Tmin), np.log10(Tmax), Nbins + 1)
+        # Generate the temperature bins as pairs of [min, max] for each bin.
+        temperature_bins = [[temperature_edges[i], temperature_edges[i + 1]] for i in range(Nbins)]
         # Calculate the midpoints of each bin.
-        temperature_midpoints = np.sqrt(temperature_bins[:-1] * temperature_bins[1:])
+        Tb = np.array([(bin[0] + bin[1]) / 2 for bin in temperature_bins])
 
-        # Initialize the DEM array with zeros.
-        dem = np.zeros(Nbins)
+        # ne * ne * dV
+        volume_density = ne * ne * shellvolume
+        # initializing differential emission measure
+        DEM = np.zeros(Nbins)
 
-        # Calculate the differential emission measure for each bin.
         for i in range(Nbins):
+            pick = np.zeros_like(temperature)
             # Identify the indices of temperature values that fall within the current bin.
-            indices = np.where((temperature >= temperature_bins[i]) & (temperature < temperature_bins[i + 1]))[0]
+            pick[(np.log10(temperature) >= temperature_bins[i][0]-half_bin_width)
+                 & (np.log10(temperature) < temperature_bins[i][1] + half_bin_width)] = 1
+            DEM[i] += np.sum(volume_density * pick)
 
-            # Sum the DEM for the current bin.
-            dem[i] = np.sum(ne[indices] ** 2 * shellvolume[indices])
+        # Convert DEM to a numpy array
+        DEM = np.array(DEM)
 
-        return {'DEM': dem, 'Tb': temperature_midpoints}
-
+        # Filter out the zero DEM values and their corresponding Tb and temperature_bins
+        non_zero_indices = np.where(DEM > 0)[0]
+        DEM = DEM[non_zero_indices]
+        Tb = Tb[non_zero_indices]
+        temperature_bins = [temperature_bins[i] for i in non_zero_indices]
+        return {'DEM': DEM, 'Tb': Tb, 'temperature_bins': temperature_bins}
 
 
 

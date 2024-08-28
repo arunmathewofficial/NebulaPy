@@ -29,7 +29,7 @@ pion.spherical_grid(batched_silos[0])
 radius = pion.geometry_container['radius']
 shell_volume = pion.geometry_container['shell_volumes']
 
-'''
+
 # Loop over each time instant in the batched silo files
 for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()  # Record the start time
@@ -43,23 +43,23 @@ for step, silo_instant in enumerate(batched_silos):
     temperature = pion.get_parameter('Temperature', silo_instant)
     ne = pion.get_ne(silo_instant)
 
-    dem = pion.differential_emission_measure(
+    # differential emission measure
+    DEM = pion.DEM(
         temperature=temperature,
         ne=ne,
         shellvolume=shell_volume,
-        Tmin=1.e+6,
+        Tmin=1e+5,
         Tmax=1e+9,
         Nbins=100
     )
 
+
     # Create a plot
     plt.figure(figsize=(8, 6))  # Set the figure size
-    plt.plot(np.log10(dem['Tb']), np.log10(dem['DEM']), linestyle='-', color='b')
-    plt.ylabel(r'$\rm log(DEM)$ (cm$^{-3}$)', fontsize=14)
-    plt.xlabel(r'$\rm log(T_b) (K)$', fontsize=14)
+    plt.plot(DEM['Tb'], np.log10(DEM['DEM']), linestyle='-', color='b')
+    plt.ylabel('log(DEM) (cm$^{-3}$)', fontsize=14)
+    plt.xlabel('log(T$_b$) (K)', fontsize=14)
     plt.show()
-
-
 
     elemental_massfrac = pion.get_elemental_mass_frac(silo_instant)
     tracer_values = pion.get_tracer_values(silo_instant)
@@ -124,3 +124,4 @@ plt.ylabel('Spectrum', fontsize=14)
 plt.legend(fontsize=14, frameon=False)
 plt.show()
 
+'''
