@@ -480,6 +480,7 @@ class pion():
         # initializing differential emission measure
         DEM = np.zeros(Nbins)
 
+
         for i in range(Nbins):
             pick = np.zeros_like(temperature)
             # Identify the indices of temperature values that fall within the current bin.
@@ -495,6 +496,7 @@ class pion():
         DEM = DEM[non_zero_indices]
         Tb = Tb[non_zero_indices]
         temperature_bins = [temperature_bins[i] for i in non_zero_indices]
+        print(Tb)
         return {'DEM': DEM, 'Tb': Tb, 'temperature_bins': temperature_bins}
 
 

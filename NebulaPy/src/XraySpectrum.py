@@ -27,6 +27,10 @@ class xray:
             self,
             min_photon_energy, max_photon_energy, energy_point_count,
             elements,
+            Tmin, Tmax,
+            bremsstrahlung=False, freebound=False, lines=False, twophoton=False,
+            filtername=None, filterfactor=None, allLines=True,
+            multiprocessing=False, ncores=None,
             verbose=True
             ):
 
@@ -34,7 +38,29 @@ class xray:
         self.max_energy = max_photon_energy
         self.N_wvl = energy_point_count
         self.elements = elements
+        self.Tmin = Tmin
+        self.Tmax = Tmax
+        self.bremsstrahlung = bremsstrahlung
+        self.freebound = freebound
+        self.lines = lines
+        self.twophoton = twophoton
+        self.filtername = filtername
+        self.filterfactor = filterfactor
+        self.allLines = allLines
+        self.multiprocessing = multiprocessing
+        self.ncores = ncores
         self.verbose = verbose
+
+        if self.verbose:
+            print(f" ---------------------------")
+            print(" initiating X-ray spectrum calculation...")
+            print(f" bremsstrahlung emission = {self.bremsstrahlung}")
+            print(f" free-bound emission = {self.freebound}")
+            print(f" line intensity = {self.lines}")
+            print(f" two photon emission = {self.twophoton}")
+            if not (self.bremsstrahlung or self.freebound or self.lines):
+                util.nebula_exit_with_error(" no emission processes specified")
+
         self.xray_containter = {
             'min_energy': self.min_energy,
             'max_energy': self.max_energy,
@@ -54,14 +80,29 @@ class xray:
         self.wavelength = np.linspace(self.min_wvl, self.max_wvl, self.N_wvl)
         self.xray_containter['wvl_array'] = self.wavelength
 
+        # Initialize the chianti object with the given elements, temperature, and electron density.
+        chianti_obj = chianti(
+            pion_elements=self.elements,
+            temperature=[1.e+7], #dummy temperatute
+            ne=[1.e+9], # dummy electron density
+            verbose=self.verbose
+        )
+
+        # Update the xray_container with the species attributes.
+        self.xray_containter.update(chianti_obj.species_attributes_container)
+        self.species_attributes = chianti_obj.species_attributes_container
+
+        if self.verbose and self.multiprocessing:
+            print(f" multiprocessing with {self.ncores} cores")
+            self.timeout = 0.1
+
+
+
+
     ######################################################################################
     #
     ######################################################################################
-    def xray_intensity(self, temperature, ne,
-                       elemental_abundances, ion_fractions, emission_measure,
-                       bremsstrahlung=False, freebound=False, lines=False, twophoton=False,
-                       filtername=None, filterfactor=None, allLines = True,
-                       multiprocessing=False, ncores=None):
+    def xray_intensity(self, temperature, density, ne, elemental_abundances, ion_fractions, shell_volume):
         """
         Calculate X-ray intensity for given temperature and electron density (ne).
 
@@ -78,27 +119,18 @@ class xray:
         Returns:
         - Total X-ray intensity from selected emission types as a NumPy array.
         """
-        if self.verbose:
-            print(f" ---------------------------")
-            print(" initiating X-ray spectrum calculation...")
-            print(f" bremsstrahlung emission = {bremsstrahlung}")
-            print(f" free-bound emission = {freebound}")
-            print(f" line intensity = {lines}")
-            print(f" two photon emission = {twophoton}")
-            if not (bremsstrahlung or freebound or lines):
-                util.nebula_exit_with_error(" no emission processes specified")
 
-        # Initialize the chianti object with the given elements, temperature, and electron density.
-        chianti_obj = chianti(
-            pion_elements=self.elements,
-            temperature=temperature,
-            ne=ne,
-            verbose=self.verbose
-        )
+        indices = [i for i, T in enumerate(temperature) if self.Tmin <= T < self.Tmax]
+        temperature = temperature[indices]
+        density = density[indices]
+        ne = ne[indices]
+        shell_volume = shell_volume[indices]
+        emission_measure = shell_volume
 
-        # Update the xray_container with the species attributes.
-        self.xray_containter.update(chianti_obj.species_attributes_container)
-        species_attributes = chianti_obj.species_attributes_container
+
+        elemental_abundances = 1
+        ion_fractions = 1
+
 
 
         # Convert the temperature list to a NumPy array for efficient numerical operations.
@@ -112,14 +144,10 @@ class xray:
         twophoton_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
 
         # If multiprocessing is enabled, set up parallel processing.
-        if multiprocessing:
-            ncores = ncores or 3
+        if self.multiprocessing:
+            ncores = self.ncores or 3
             cpu_count = mp.cpu_count()
             proc = min(ncores, cpu_count)
-            timeout = 0.1
-
-            if self.verbose:
-                print(f" multiprocessing with {ncores} cores")
 
             # Define worker and done queues for multiprocessing tasks.
             bremsstrahlung_workerQ, bremsstrahlung_doneQ = (mp.Queue(), mp.Queue())
@@ -127,8 +155,8 @@ class xray:
             line_emission_workerQ, line_emission_doneQ = (mp.Queue(), mp.Queue())
 
             # Populate the worker queues with tasks for the species.
-            for species in species_attributes:
-                if bremsstrahlung and 'ff' in species_attributes[species]['keys']:
+            for species in self.species_attributes:
+                if self.bremsstrahlung and 'ff' in self.species_attributes[species]['keys']:
                     bremsstrahlung_workerQ.put(
                         (species,
                          temperature,
@@ -140,7 +168,7 @@ class xray:
                          )
                     )
 
-                if freebound and 'fb' in species_attributes[species]['keys']:
+                if self.freebound and 'fb' in self.species_attributes[species]['keys']:
                     freebound_workerQ.put(
                         (species,
                          temperature,
@@ -152,7 +180,7 @@ class xray:
                          )
                     )
 
-                if lines and 'line' in species_attributes[species]['keys']:
+                if self.lines and 'line' in self.species_attributes[species]['keys']:
                     line_emission_workerQ.put(
                         (species,
                          temperature,
@@ -161,14 +189,14 @@ class xray:
                          elemental_abundances,
                          ion_fractions,
                          emission_measure,
-                         filtername,
-                         filterfactor,
-                         allLines
+                         self.filtername,
+                         self.filterfactor,
+                         self.allLines
                          )
                     )
 
             # Free-free emission calculation using multiprocessing.
-            if bremsstrahlung:
+            if self.bremsstrahlung:
                 bremsstrahlung_processes = []
                 bremsstrahlung_workerQSize = bremsstrahlung_workerQ.qsize()
                 for i in range(proc):
@@ -178,7 +206,7 @@ class xray:
 
                 for p in bremsstrahlung_processes:
                     if p.is_alive():
-                        p.join(timeout=timeout)
+                        p.join(timeout=self.timeout)
 
                 for index_brem in range(bremsstrahlung_workerQSize):
                     thisFreeFree = bremsstrahlung_doneQ.get()
@@ -189,7 +217,7 @@ class xray:
                         p.terminate()
 
             # Free-bound emission calculation using multiprocessing.
-            if freebound:
+            if self.freebound:
                 freebound_processes = []
                 freebound_workerQSize = freebound_workerQ.qsize()
                 for i in range(proc):
@@ -199,7 +227,7 @@ class xray:
 
                 for p in freebound_processes:
                     if p.is_alive():
-                        p.join(timeout=timeout)
+                        p.join(timeout=self.timeout)
 
                 for index_freebound in range(freebound_workerQSize):
                     thisFreeBound = freebound_doneQ.get()
@@ -210,7 +238,7 @@ class xray:
                         p.terminate()
 
             # line emission calculation using multiprocessing.
-            if lines:
+            if self.lines:
                 line_emission_task = []
                 line_emission_workerQSize = line_emission_workerQ.qsize()
                 for i in range(proc):
@@ -219,7 +247,7 @@ class xray:
                     line_emission_task.append(p)
 
                 for task in line_emission_task:
-                        task.join(timeout=timeout)
+                        task.join(timeout=self.timeout)
 
                 for index_line in range(line_emission_workerQSize):
                     this_line_emission = line_emission_doneQ.get()
