@@ -142,7 +142,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
             batched_silos = [batched_silos[i] for i in indices_to_keep]
 
         Ninstances = len(batched_silos)
-        print(f" {Ninstances} instances found")
+        print(f" {Ninstances} time instances")
         print(" batching completed")
         return batched_silos
 

@@ -39,8 +39,8 @@ xray_emission = nebula.xray(
     elements=elements,
     Tmin=1e+5, Tmax=1e+9,
     bremsstrahlung=True,
-    freebound=True,
-    lines=True,
+    freebound=False,
+    lines=False,
     twophoton=False,
     multiprocessing=True,
     ncores=12,
@@ -86,15 +86,16 @@ for step, silo_instant in enumerate(batched_silos):
 
     # making plots
     generated_wvl_array = xray_emission.xray_containter['wvl_array']
+    filtered_temperature = xray_emission.xray_containter['temperature']
     for i in range(len(spectrum)):
         plt.figure(figsize=(8, 6))  # Set the figure size
-        temp_str = f"{temperature[i]:.2e}".replace('.',
-                                                   'p')  # Format and replace '.' with 'p' to avoid issues in filenames
-        out_filename = filebase + f"_{sim_time.value:.2f}kyr_T{temp_str}.png"
+        # Format and replace '.' with 'p' to avoid issues in filenames
+        temp_str = f"{filtered_temperature[i]:.2e}"
+        out_filename = filebase + f"_time{sim_time.value:.2f}_T{temp_str}.png"
         out_file = os.path.join(output_path, out_filename)
 
         # Plot the spectrum with the corresponding temperature
-        plt.plot(generated_wvl_array, spectrum[i], linestyle='-', color='b', label=f'T = {temperature[i]:.2e} (K)')
+        plt.plot(generated_wvl_array, spectrum[i], linestyle='-', color='b', label=f'T = {filtered_temperature[i]:.2e} (K)')
 
         plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
         plt.ylabel('Spectrum', fontsize=14)
@@ -118,57 +119,12 @@ for step, silo_instant in enumerate(batched_silos):
         Tmax=1e+9,
         Nbins=100
     )
-
-
-    # Create a plot
-    plt.figure(figsize=(8, 6))  # Set the figure size
-    plt.plot(DEM['Tb'], np.log10(DEM['DEM']), linestyle='-', color='b')
-    plt.ylabel('log(DEM) (cm$^{-3}$)', fontsize=14)
-    plt.xlabel('log(T$_b$) (K)', fontsize=14)
-
-    outfile = os.path.join(output_path, f'DEM_{sim_time.value:.2f}kyr.png')
-    plt.savefig(outfile)  # Saves as a PNG file
-    elemental_massfrac = pion.get_elemental_mass_frac(silo_instant)
-    tracer_values = pion.get_tracer_values(silo_instant)
     '''
 
 
 
 
-'''
-#elements = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Si', 'S', 'Fe']
-elements = ["H", "He"]
-solar_abundance = 1.0
-ionisation_equilibrium = 1.0
 
 
 
-temperature = [2e+7]
-ne = [1e+2]
-em = [1e+27]
 
-
-
-#mp.freeze_support()  # Ensures proper support for frozen scripts
-# Assuming that the method is being called within an object method
-# You need to call xray_intensity on an instance of the object, e.g.,
-#if __name__ == '__main__':
-#    mp.freeze_support()
-
-
-runtime = 0.0
-start_time = time.time()
-spectrum = xray_emission.xray_intensity(
-    temperature=temperature,
-    ne=ne,
-    elemental_abundances=solar_abundance,
-    ion_fractions=ionisation_equilibrium,
-    emission_measure=em,
-    bremsstrahlung=True, freebound=True,
-    lines=True, twophoton=False,
-    multiprocessing=True,
-    ncores=12)
-    
-
-
-'''

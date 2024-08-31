@@ -287,7 +287,7 @@ class chianti:
                                   * emissivity[:, temp_idx] \
                                   * emission_measure[temp_idx] / self.ne[temp_idx]
         if self.verbose:
-            print(f" {self.chianti_ion.Spectroscopic} line calculation done")
+            print(f" {self.chianti_ion.Spectroscopic} line calculation completed")
         # Define the wavelength range and number of wavelength points
         wvl_range = [wavelength[0], wavelength[-1]]
         N_wvl = len(wavelength)
@@ -407,7 +407,7 @@ class chianti:
 
         # If verbose, indicate completion
         if self.verbose:
-            print(f' {self.chianti_ion.Spectroscopic} bremsstrahlung emission done')
+            print(f' {self.chianti_ion.Spectroscopic} bremsstrahlung emission calculation completed')
 
         return bremsstrahlung_emission
 

@@ -122,16 +122,14 @@ class xray:
 
         indices = [i for i, T in enumerate(temperature) if self.Tmin <= T < self.Tmax]
         temperature = temperature[indices]
+        self.xray_containter['temperature'] = temperature
         density = density[indices]
         ne = ne[indices]
         shell_volume = shell_volume[indices]
         emission_measure = shell_volume
 
-
-        elemental_abundances = 1
-        ion_fractions = 1
-
-
+        if len(elemental_abundances) != self.elements.size:
+            util.nebula_exit_with_error('elemental abundance count does not match element count')
 
         # Convert the temperature list to a NumPy array for efficient numerical operations.
         temperature = np.array(temperature)
@@ -156,13 +154,38 @@ class xray:
 
             # Populate the worker queues with tasks for the species.
             for species in self.species_attributes:
+
+                # find the element the species belong to
+                element = self.species_attributes[species]['Element']
+                # position of the corresponding element of the species in silo elements array
+                pos = np.where(self.elements == element)[0][0]
+                # charge of the species
+                q = self.species_attributes[species]['Zion']
+                # atomic mass of the species
+                Z = self.species_attributes[species]['Z']
+
+                # calculating species density
+                # if the species is top ion
+                if q == Z:
+                    top_ion = elemental_abundances[pos]
+                    for i in range(Z):
+                        top_ion -= ion_fractions[pos][i]
+                    species_num_density = density * top_ion[indices] / const.mass[element]
+                # otherwise
+                else:
+                    species_num_density = density * ion_fractions[pos][q][indices] / const.mass[element]
+
+                elemental_abundances_dummy = 1
+                ion_fractions_dummy = 1
+
+                # Processes Work Queue =====================================================
                 if self.bremsstrahlung and 'ff' in self.species_attributes[species]['keys']:
                     bremsstrahlung_workerQ.put(
                         (species,
                          temperature,
                          self.wavelength,
-                         elemental_abundances,
-                         ion_fractions,
+                         elemental_abundances_dummy,
+                         ion_fractions_dummy,
                          emission_measure,
                          self.verbose
                          )
@@ -173,8 +196,8 @@ class xray:
                         (species,
                          temperature,
                          self.wavelength,
-                         elemental_abundances,
-                         ion_fractions,
+                         elemental_abundances_dummy,
+                         ion_fractions_dummy,
                          emission_measure,
                          self.verbose
                          )
@@ -186,15 +209,16 @@ class xray:
                          temperature,
                          ne,
                          self.wavelength,
-                         elemental_abundances,
-                         ion_fractions,
+                         elemental_abundances_dummy,
+                         ion_fractions_dummy,
                          emission_measure,
                          self.filtername,
                          self.filterfactor,
                          self.allLines
                          )
                     )
-
+                # End of Processes Work Queue =============================================
+            #exit(1)
             # Free-free emission calculation using multiprocessing.
             if self.bremsstrahlung:
                 bremsstrahlung_processes = []
