@@ -322,7 +322,7 @@ class chianti:
     ######################################################################################
     # get free-free emission
     ######################################################################################
-    def get_bremsstrahlung_emission(self, wavelength, elemental_abundance, ion_fraction, emission_measure):
+    def get_bremsstrahlung_emission(self, wavelength, species_density, shell_volume):
         """
         Calculates the free-free emission (bremsstrahlung) for a single ion using the following formula:
         .. math::
@@ -383,10 +383,10 @@ class chianti:
         prefactor *= Zion ** 2 / np.sqrt(self.temperature)
 
         # Apply the elemental abundance and ion fraction to the prefactor
-        prefactor *= elemental_abundance * ion_fraction
+        #prefactor *= elemental_abundance * ion_fraction
 
         # Include the emission measure in the prefactor
-        prefactor *= emission_measure
+        #prefactor *= emission_measure
 
         # Calculate the exponential factor based on temperature and wavelength
         exp_factor = np.exp(-const.planck * (1.e8 * const.light) / const.boltzmann /
@@ -409,6 +409,8 @@ class chianti:
         if self.verbose:
             print(f' {self.chianti_ion.Spectroscopic} bremsstrahlung emission calculation completed')
 
+        EMV = self.ne * species_density * shell_volume
+        bremsstrahlung_emission = bremsstrahlung_emission * EMV[:, np.newaxis]
         return bremsstrahlung_emission
 
     ######################################################################################

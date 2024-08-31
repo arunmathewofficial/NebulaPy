@@ -39,7 +39,7 @@ xray_emission = nebula.xray(
     elements=elements,
     Tmin=1e+5, Tmax=1e+9,
     bremsstrahlung=True,
-    freebound=False,
+    freebound=True,
     lines=False,
     twophoton=False,
     multiprocessing=True,
@@ -83,26 +83,24 @@ for step, silo_instant in enumerate(batched_silos):
     runtime += dt
     print(f" runtime: {runtime:.4e} s | dt: {dt:.4e} s")
 
-
-    # making plots
+    # making plot
     generated_wvl_array = xray_emission.xray_containter['wvl_array']
-    filtered_temperature = xray_emission.xray_containter['temperature']
-    for i in range(len(spectrum)):
-        plt.figure(figsize=(8, 6))  # Set the figure size
-        # Format and replace '.' with 'p' to avoid issues in filenames
-        temp_str = f"{filtered_temperature[i]:.2e}"
-        out_filename = filebase + f"_time{sim_time.value:.2f}_T{temp_str}.png"
-        out_file = os.path.join(output_path, out_filename)
+    plt.figure(figsize=(8, 6))  # Set the figure size
+    # Format and replace '.' with 'p' to avoid issues in filenames
+    out_filename = filebase + f"_t{sim_time.value:.2f}.png"
+    out_file = os.path.join(output_path, out_filename)
 
-        # Plot the spectrum with the corresponding temperature
-        plt.plot(generated_wvl_array, spectrum[i], linestyle='-', color='b', label=f'T = {filtered_temperature[i]:.2e} (K)')
+    # Plot the spectrum with the corresponding temperature
+    plt.plot(generated_wvl_array, spectrum, linestyle='-', color='b', label=f'time = {sim_time.value:.4e} kyr')
+    plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
+    plt.ylabel('Spectrum', fontsize=14)
+    plt.legend(fontsize=14, frameon=False)
+    plt.savefig(out_file)  # Save as a PNG file
+    plt.close()  # Close the plot to free memory
 
-        plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
-        plt.ylabel('Spectrum', fontsize=14)
-        plt.legend(fontsize=14, frameon=False)
 
-        plt.savefig(out_file)  # Save as a PNG file
-        plt.close()  # Close the plot to free memory
+
+
 
 
 

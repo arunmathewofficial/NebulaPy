@@ -126,7 +126,7 @@ class xray:
         density = density[indices]
         ne = ne[indices]
         shell_volume = shell_volume[indices]
-        emission_measure = shell_volume
+        #emission_measure = shell_volume
 
         if len(elemental_abundances) != self.elements.size:
             util.nebula_exit_with_error('elemental abundance count does not match element count')
@@ -184,9 +184,9 @@ class xray:
                         (species,
                          temperature,
                          self.wavelength,
-                         elemental_abundances_dummy,
-                         ion_fractions_dummy,
-                         emission_measure,
+                         ne,
+                         species_num_density,
+                         shell_volume,
                          self.verbose
                          )
                     )

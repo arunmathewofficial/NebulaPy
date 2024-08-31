@@ -195,7 +195,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                     batched_silos[i].append(level_instant_file)
 
         Ninstances = len(batched_silos)
-        print(f" {Ninstances} instances found")
+        print(f" {Ninstances} time instances")
         print(" batching completed")
         return batched_silos
 #*************************************************************************************
