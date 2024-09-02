@@ -6,12 +6,12 @@ import numpy as np
 import time
 
 # MIMIR: Set up paths and filenames
-#silo_dir = '/mnt/massive-stars/data/mpv10-wind-test'  # Directory containing silo files
-#output_file = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/lines_luminosity_set2.txt' # Output file for results
+silo_dir = '/mnt/massive-stars/data/arun_simulations/wind-wind-equi/silo'  # Directory containing silo files
+output_file = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/line_luminosity_equi.txt'  # Output file for results
 
 # RAZERBLADE: Set up paths and filenames
-silo_dir = '/home/tony/Desktop/wind-wind/mpv10-wind-test'  #Directory containing silo files
-output_file = '/home/tony/Desktop/wind-wind/lines_luminosity_set2.txt'  # Output file for results
+#silo_dir = '/home/tony/Desktop/OIV_Luminosity/mpv10-wind-test'  #Directory containing silo files
+#output_file = '/home/tony/Desktop/OIV_Luminosity/lines_luminosity.txt'  # Output file for results
 
 filebase = 'e7_WRwind_d1l5n256_v1500'  # Base name of the silo files
 
@@ -34,14 +34,14 @@ print(rf" calculating line luminosity of {O5P_pion_ion} lines: {O5P_lines} Angst
 
 # Batch the silo files according to the time instant
 start_time = 0.0
-finish_time = 85.0
+finish_time = 1000.0
 batched_silos = util.batch_silos(
     silo_dir,
     filebase,
     start_time=None,
     finish_time=finish_time,
     time_unit='kyr',
-    out_frequency=100
+    out_frequency=6
 )
 
 # Initialize the Pion class from NebulaPy, which handles the simulation data

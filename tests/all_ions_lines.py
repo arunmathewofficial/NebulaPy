@@ -5,9 +5,9 @@ import os
 temperature = [2e+6]
 ne = [1e+9]
 
-output_path = '/home/tony/Desktop/OIV_Luminosity/'
+output_path = '/home/tony/Desktop/Equi_NonEqui/'
 
-nebula_chianti = nebula.chianti(pion_ion='O2+', temperature=temperature, ne=ne, verbose=True)
+nebula_chianti = nebula.chianti(pion_ion='N3+', temperature=temperature, ne=ne, verbose=True)
 
 spectroscopic_name = nebula_chianti.chianti_ion.Spectroscopic
 
