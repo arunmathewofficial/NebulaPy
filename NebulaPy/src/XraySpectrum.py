@@ -27,9 +27,15 @@ class xray:
             self,
             min_photon_energy, max_photon_energy, energy_point_count,
             elements,
-            bremsstrahlung=False, freebound=False, lines=False, twophoton=False,
-            filtername=None, filterfactor=None, allLines=True,
-            multiprocessing=False, ncores=None,
+            bremsstrahlung=False,
+            freebound=False,
+            lines=False,
+            twophoton=False,
+            filtername=None,
+            filterfactor=None,
+            allLines=True,
+            multiprocessing=False,
+            ncores=None,
             verbose=True
             ):
 

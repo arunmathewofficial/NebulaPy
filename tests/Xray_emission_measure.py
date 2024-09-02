@@ -8,8 +8,8 @@ import astropy.units as unit
 import os
 
 # MIMIR: Set up paths and filenames
-silo_dir = '/mnt/massive-stars/data/arun_simulations/wind-wind-equi/'  # Directory containing silo files
-output_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/'  # Output file for results
+#silo_dir = '/mnt/massive-stars/data/arun_simulations/wind-wind-equi/'  # Directory containing silo files
+#output_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/'  # Output file for results
 
 # RAZERBLADE: Set up paths and filenames
 silo_dir = '/home/tony/Desktop/Equi_NonEqui/nonequi-equi/'  # Directory containing silo files
@@ -34,7 +34,7 @@ pion.spherical_grid(batched_silos[0])
 
 # Retrieve the radius and shell volumes from the geometry container
 radius = pion.geometry_container['radius']
-shell_volume = pion.geometry_container['shell_volumes']
+shell_volume_original = pion.geometry_container['shell_volumes']
 elements = pion.get_elements()
 
 xray_emission = nebula.xray(
@@ -72,15 +72,37 @@ for step, silo_instant in enumerate(batched_silos):
     elemental_mass_fraction = pion.get_elemental_mass_frac(silo_instant)
     ion_fractions = pion.get_tracer_values(silo_instant)
 
-    dem = pion.generate_dem_indices(temperature=temperature, Tmin=1e+5, Tmax=1e+9, Nbins=100)
-    dem_indices = dem['indices']
+    Tmin = 1e+5
+    Tmax = 1e+9
 
+    ##
+    #hack
+    relevant_grid_points = np.where((temperature >= Tmin) & (temperature <= Tmax))[0]
+    temperature = temperature[relevant_grid_points]
+    density = density[relevant_grid_points]
+    ne = ne[relevant_grid_points]
+    shell_volume = shell_volume_original[relevant_grid_points]
+    filtered_elem_mass_frac = []
+    for e in range(len(elemental_mass_fraction)):
+        # Ensure the slice operation is valid for each elemental_mass_fraction[e]
+        filtered_elem_mass_frac.append(elemental_mass_fraction[e][relevant_grid_points])
+
+    filtered_ion_frac = []
+    for e in range(len(ion_fractions)):
+        element_wise = []
+        for i in range(len(ion_fractions[e])):
+            element_wise.append(ion_fractions[e][i][relevant_grid_points])
+        filtered_ion_frac.append(element_wise)
+    ##
+
+    dem = pion.generate_dem_indices(temperature=temperature, Tmin=Tmin, Tmax=Tmax, Nbins=100)
+    dem_indices = dem['indices']
 
     spectrum = xray_emission.xray_intensity(
         temperature=temperature,
         density=density, ne=ne,
-        elemental_abundances=elemental_mass_fraction,
-        ion_fractions=ion_fractions,
+        elemental_abundances=filtered_elem_mass_frac,
+        ion_fractions=filtered_ion_frac,
         shell_volume=shell_volume,
         dem_indices=dem_indices
     )
@@ -125,7 +147,8 @@ for step, silo_instant in enumerate(batched_silos):
     plt.ylabel('Spectrum', fontsize=14)
     plt.legend(fontsize=14, frameon=False)
     plt.savefig(out_file)  # Save as a PNG file
-    plt.close()  # Close the plot to free memory
+    plt.close()
+
 
 
 
