@@ -18,20 +18,19 @@ def do_freefree_Q(inQ, outQ):
     for inputs in iter(inQ.get, 'STOP'):
         ion = inputs[0]
         temperature = inputs[1]
-        wavelength = inputs[2]
-        elemental_abundance = inputs[3]
-        ionfraction = inputs[4]
-        emission_measure = inputs[5]
+        ne = inputs[2]
+        wavelength = inputs[3]
+        ion_density = inputs[4]
+        shell_volume = inputs[5]
         verbose = inputs[6]
 
-        chianti_ion = chianti(chianti_ion=ion, temperature=temperature, ne=None,
+        chianti_ion = chianti(chianti_ion=ion, temperature=temperature, ne=ne,
                               pion_ion=None, pion_elements=None, verbose=verbose)
 
         bremsstrahlung_emission = chianti_ion.get_bremsstrahlung_emission(
             wavelength,
-            elemental_abundance,
-            ionfraction,
-            emission_measure
+            ion_density,
+            shell_volume,
         )
         outQ.put({'intensity': bremsstrahlung_emission})
     return
@@ -53,20 +52,19 @@ def do_freebound_Q(inQ, outQ):
     for inputs in iter(inQ.get, 'STOP'):
         ion = inputs[0]
         temperature = inputs[1]
-        wavelength = inputs[2]
-        elemental_abundance = inputs[3]
-        ionfraction = inputs[4]
-        emission_measure = inputs[5]
+        ne = inputs[2]
+        wavelength = inputs[3]
+        ion_density = inputs[4]
+        shell_volume = inputs[5]
         verbose = inputs[6]
 
-        chianti_ion = chianti(chianti_ion=ion, temperature=temperature, ne=None,
+        chianti_ion = chianti(chianti_ion=ion, temperature=temperature, ne=ne,
                               pion_ion=None, pion_elements=None, verbose=verbose)
 
         freebound_emission = chianti_ion.get_freebound_emission(
             wavelength,
-            elemental_abundance,
-            ionfraction,
-            emission_measure,
+            ion_density,
+            shell_volume,
             verner=True
         )
 
@@ -112,12 +110,11 @@ def do_line_emission_Q(inQ, outQ):
         temperature = inputs[1]
         ne = inputs[2]
         wavelength = inputs[3]
-        abundance = inputs[4]
-        ion_fraction = inputs[5]
-        em = inputs[6]
-        filter_name = inputs[7]
-        filter_factor = inputs[8]
-        allLines = inputs[9]
+        ion_density = inputs[4]
+        shell_volume = inputs[5]
+        filter_name = inputs[6]
+        filter_factor = inputs[7]
+        allLines = inputs[8]
 
         # Create a Chianti ion object with the specified ion, temperature, and electron density
         chianti_ion = chianti(chianti_ion=ion, temperature=temperature, ne=ne, verbose=True)
@@ -126,9 +123,8 @@ def do_line_emission_Q(inQ, outQ):
         # Calculate the line spectrum using the Chianti ion object
         line_spectrum = chianti_ion.get_line_spectrum(
             wavelength,
-            elemental_abundance=abundance,
-            ionfraction=ion_fraction,
-            emission_measure=em,
+            species_density=ion_density,
+            shell_volume=shell_volume,
             filtername=filter_name,
             filterfactor=filter_factor,
             allLines=allLines

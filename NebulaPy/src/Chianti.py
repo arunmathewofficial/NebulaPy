@@ -219,9 +219,8 @@ class chianti:
     ######################################################################################
     # get line spectrum
     ######################################################################################
-    def get_line_spectrum(self, wavelength, elemental_abundance, ionfraction,
-                          emission_measure, allLines=True, filtername=None,
-                          filterfactor=None):
+    def get_line_spectrum(self, wavelength, species_density, shell_volume, allLines=True,
+                          filtername=None, filterfactor=None):
         """
         Calculates the intensities for spectral lines of a specified ion, considering elemental
         abundance, ionization fraction, and emission measure.
@@ -273,6 +272,7 @@ class chianti:
 
         # Number of temperature points and spectral lines
         N_temp = len(self.temperature)
+        emission_measure = np.ones(N_temp)
         lines = self.chianti_ion.Emiss['wvl']
         N_lines = len(lines)
 
@@ -283,9 +283,7 @@ class chianti:
         if self.verbose:
             print(f" calculating line intensity for {self.chianti_ion.Spectroscopic}")
         for temp_idx in range(N_temp):
-            intensity[temp_idx] = elemental_abundance * ionfraction \
-                                  * emissivity[:, temp_idx] \
-                                  * emission_measure[temp_idx] / self.ne[temp_idx]
+            intensity[temp_idx] = emissivity[:, temp_idx] * emission_measure[temp_idx] / self.ne[temp_idx]
         if self.verbose:
             print(f" {self.chianti_ion.Spectroscopic} line calculation completed")
         # Define the wavelength range and number of wavelength points
@@ -315,6 +313,11 @@ class chianti:
                     line = lines[wvl_idx]
                     line_spectrum[temp_idx] += useFilter(wavelength, line, factor=useFactor) \
                                                * intensity[temp_idx, wvl_idx]
+
+        # differential volume emission measure
+        DVEM = self.ne * species_density * shell_volume
+        # multiplying
+        line_spectrum = line_spectrum * DVEM[:, np.newaxis]
 
         return line_spectrum
 
@@ -409,15 +412,17 @@ class chianti:
         if self.verbose:
             print(f' {self.chianti_ion.Spectroscopic} bremsstrahlung emission calculation completed')
 
-        EMV = self.ne * species_density * shell_volume
-        bremsstrahlung_emission = bremsstrahlung_emission * EMV[:, np.newaxis]
+        # differential volume emission measure
+        DVEM = self.ne * species_density * shell_volume
+        # multiplying
+        bremsstrahlung_emission = bremsstrahlung_emission * DVEM[:, np.newaxis]
+
         return bremsstrahlung_emission
 
     ######################################################################################
     # get free-bound emission
     ######################################################################################
-    def get_freebound_emission(self, wavelength, elemental_abundance, ion_fraction,
-                               emission_measure, verner=True):
+    def get_freebound_emission(self, wavelength, species_density, shell_volume, verner=True):
         """
         Calculates the free-bound (radiative recombination) continuum emissivity of an ion.
 
@@ -457,6 +462,7 @@ class chianti:
 
         Nwvl = wavelength.size
         Ntemp = self.temperature.size
+        emission_measure = np.ones(Ntemp)
 
         # Generate a sequence of indices for temperature
         goodT = np.arange(Ntemp)
@@ -587,11 +593,15 @@ class chianti:
                 fbIntensity[ilvl, itemp] = emission_measure[itemp] * fbn[ilvl, itemp]
 
         # Sum up intensities and apply elemental abundance and ion fraction
-        freebound_emission = fbIntensity.sum(axis=0) * elemental_abundance * ion_fraction
+        freebound_emission = fbIntensity.sum(axis=0)
 
         if self.verbose:
             print(f' {self.chianti_ion.Spectroscopic} free-bound emission calculation completed')
 
+        # differential volume emission measure
+        DVEM = self.ne * species_density * shell_volume
+        # multiplying
+        freebound_emission = freebound_emission * DVEM[:, np.newaxis]
         return freebound_emission
 
 

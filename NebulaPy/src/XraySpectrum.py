@@ -27,7 +27,6 @@ class xray:
             self,
             min_photon_energy, max_photon_energy, energy_point_count,
             elements,
-            Tmin, Tmax,
             bremsstrahlung=False, freebound=False, lines=False, twophoton=False,
             filtername=None, filterfactor=None, allLines=True,
             multiprocessing=False, ncores=None,
@@ -38,8 +37,6 @@ class xray:
         self.max_energy = max_photon_energy
         self.N_wvl = energy_point_count
         self.elements = elements
-        self.Tmin = Tmin
-        self.Tmax = Tmax
         self.bremsstrahlung = bremsstrahlung
         self.freebound = freebound
         self.lines = lines
@@ -102,7 +99,10 @@ class xray:
     ######################################################################################
     #
     ######################################################################################
-    def xray_intensity(self, temperature, density, ne, elemental_abundances, ion_fractions, shell_volume):
+    def xray_intensity(self,
+                       temperature, density, ne, elemental_abundances,
+                       ion_fractions, shell_volume, dem_indices
+                       ):
         """
         Calculate X-ray intensity for given temperature and electron density (ne).
 
@@ -120,12 +120,12 @@ class xray:
         - Total X-ray intensity from selected emission types as a NumPy array.
         """
 
-        indices = [i for i, T in enumerate(temperature) if self.Tmin <= T < self.Tmax]
-        temperature = temperature[indices]
-        self.xray_containter['temperature'] = temperature
-        density = density[indices]
-        ne = ne[indices]
-        shell_volume = shell_volume[indices]
+        #indices = [i for i, T in enumerate(temperature) if self.Tmin <= T < self.Tmax]
+        #temperature = temperature[indices]
+        #self.xray_containter['temperature'] = temperature
+        #density = density[indices]
+        #ne = ne[indices]
+        #shell_volume = shell_volume[indices]
         #emission_measure = shell_volume
 
         if len(elemental_abundances) != self.elements.size:
@@ -141,7 +141,7 @@ class xray:
         line_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
         twophoton_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
 
-        # If multiprocessing is enabled, set up parallel processing.
+        # If multiprocessing is enabled, set up parallel processing ##############################
         if self.multiprocessing:
             ncores = self.ncores or 3
             cpu_count = mp.cpu_count()
@@ -170,21 +170,19 @@ class xray:
                     top_ion = elemental_abundances[pos]
                     for i in range(Z):
                         top_ion -= ion_fractions[pos][i]
-                    species_num_density = density * top_ion[indices] / const.mass[element]
+                    species_num_density = density * top_ion / const.mass[element]
                 # otherwise
                 else:
-                    species_num_density = density * ion_fractions[pos][q][indices] / const.mass[element]
+                    species_num_density = density * ion_fractions[pos][q] / const.mass[element]
 
-                elemental_abundances_dummy = 1
-                ion_fractions_dummy = 1
 
                 # Processes Work Queue =====================================================
                 if self.bremsstrahlung and 'ff' in self.species_attributes[species]['keys']:
                     bremsstrahlung_workerQ.put(
                         (species,
                          temperature,
-                         self.wavelength,
                          ne,
+                         self.wavelength,
                          species_num_density,
                          shell_volume,
                          self.verbose
@@ -195,10 +193,10 @@ class xray:
                     freebound_workerQ.put(
                         (species,
                          temperature,
+                         ne,
                          self.wavelength,
-                         elemental_abundances_dummy,
-                         ion_fractions_dummy,
-                         emission_measure,
+                         species_num_density,
+                         shell_volume,
                          self.verbose
                          )
                     )
@@ -209,9 +207,8 @@ class xray:
                          temperature,
                          ne,
                          self.wavelength,
-                         elemental_abundances_dummy,
-                         ion_fractions_dummy,
-                         emission_measure,
+                         species_num_density,
+                         shell_volume,
                          self.filtername,
                          self.filterfactor,
                          self.allLines
@@ -261,7 +258,7 @@ class xray:
                     if p.is_alive():
                         p.terminate()
 
-            # line emission calculation using multiprocessing.
+            # line emission calculation using multiprocessing #################################
             if self.lines:
                 line_emission_task = []
                 line_emission_workerQSize = line_emission_workerQ.qsize()
@@ -281,7 +278,20 @@ class xray:
                 for task in line_emission_task:
                     if task.is_alive():
                         task.terminate()
+        # end of multiprocessing
 
-        # Return the calculated spectra.
-        return bremsstrahlung_spectrum + freebound_spectrum + line_spectrum
+        # summing up all processes
+        total = bremsstrahlung_spectrum + freebound_spectrum + line_spectrum
+
+        # Initialize an array for the spectrum for each value of Tb
+        spectrum = []
+
+        # Sum the values for each set of indices specified in dem_indices
+        for indices in dem_indices:
+            if len(indices) > 0:  # Ensure indices is not empty
+                # sum the total across the specified indices
+                bin_spectrum = np.sum(total[indices], axis=0)
+                spectrum.append(bin_spectrum)
+
+        return spectrum
         ###############################################################################################

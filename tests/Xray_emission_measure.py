@@ -37,10 +37,9 @@ xray_emission = nebula.xray(
     max_photon_energy=10.0,  # Maximum photon energy in keV
     energy_point_count=1000,
     elements=elements,
-    Tmin=1e+5, Tmax=1e+9,
     bremsstrahlung=True,
     freebound=True,
-    lines=False,
+    lines=True,
     twophoton=False,
     multiprocessing=True,
     ncores=12,
@@ -68,13 +67,19 @@ for step, silo_instant in enumerate(batched_silos):
     elemental_mass_fraction = pion.get_elemental_mass_frac(silo_instant)
     ion_fractions = pion.get_tracer_values(silo_instant)
 
+    dem = pion.generate_dem_indices(temperature=temperature, Tmin=1e+5, Tmax=1e+9, Nbins=100)
+    dem_indices = dem['indices']
+
+
     spectrum = xray_emission.xray_intensity(
         temperature=temperature,
         density=density, ne=ne,
         elemental_abundances=elemental_mass_fraction,
         ion_fractions=ion_fractions,
-        shell_volume=shell_volume
+        shell_volume=shell_volume,
+        dem_indices=dem_indices
     )
+
 
     silo_instant_finish_time = time.time()  # Record the finish time
     # Calculate the time spent on the current step
@@ -83,15 +88,34 @@ for step, silo_instant in enumerate(batched_silos):
     runtime += dt
     print(f" runtime: {runtime:.4e} s | dt: {dt:.4e} s")
 
+    # calculate differential emission measure
+    DEM = pion.DEM(
+        dem_indices=dem_indices,
+        ne=ne,
+        shellvolume=shell_volume,
+    )
+
+    # making DEM plot
+    dem_filename = filebase + f"_t{int(sim_time.value)}_dem.png"
+    dem_file = os.path.join(output_path, dem_filename)
+    plt.plot(dem['Tb'], np.log10(DEM), linestyle='-', color='b', label=f'time = {sim_time.value:.4e} kyr')
+    plt.xlabel(r'log(T$_b$) K', fontsize=14)
+    plt.ylabel(r'log(DEM) cm$^{-3}$', fontsize=14)
+    plt.legend(fontsize=14, frameon=False)
+    plt.savefig(dem_file)  # Save as a PNG file
+    plt.close()  # Close the plot to free memory
+
+
     # making plot
     generated_wvl_array = xray_emission.xray_containter['wvl_array']
+    xray_spectrum = np.sum(spectrum, axis=0)
     plt.figure(figsize=(8, 6))  # Set the figure size
     # Format and replace '.' with 'p' to avoid issues in filenames
-    out_filename = filebase + f"_t{sim_time.value:.2f}.png"
+    out_filename = filebase + f"_t{int(sim_time.value)}.png"
     out_file = os.path.join(output_path, out_filename)
 
     # Plot the spectrum with the corresponding temperature
-    plt.plot(generated_wvl_array, spectrum, linestyle='-', color='b', label=f'time = {sim_time.value:.4e} kyr')
+    plt.plot(generated_wvl_array, xray_spectrum, linestyle='-', color='b', label=f'time = {sim_time.value:.4e} kyr')
     plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
     plt.ylabel('Spectrum', fontsize=14)
     plt.legend(fontsize=14, frameon=False)
@@ -107,17 +131,6 @@ for step, silo_instant in enumerate(batched_silos):
 
 
 
-    '''
-    # differential emission measure
-    DEM = pion.DEM(
-        temperature=temperature,
-        ne=ne,
-        shellvolume=shell_volume,
-        Tmin=1e+5,
-        Tmax=1e+9,
-        Nbins=100
-    )
-    '''
 
 
 
