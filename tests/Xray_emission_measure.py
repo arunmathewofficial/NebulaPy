@@ -7,11 +7,16 @@ import numpy as np
 import astropy.units as unit
 import os
 
+# MIMIR: Set up paths and filenames
+silo_dir = '/mnt/massive-stars/data/arun_simulations/wind-wind-equi/'  # Directory containing silo files
+output_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/'  # Output file for results
 
-# Set up paths and filenames
+# RAZERBLADE: Set up paths and filenames
 silo_dir = '/home/tony/Desktop/Equi_NonEqui/nonequi-equi/'  # Directory containing silo files
-filebase = 'e7_WRwind_d1l5n256_v1500'  # Base name of the silo files
 output_path = '/home/tony/Desktop/Equi_NonEqui/nonequi-equi/'  # Output file for results
+
+filebase = 'e7_WRwind_d1l5n256_v1500'  # Base name of the silo files
+# Set up paths and filenames
 
 # Batch the silo files according to the time instant
 batched_silos = util.batch_silos(silo_dir, filebase)
