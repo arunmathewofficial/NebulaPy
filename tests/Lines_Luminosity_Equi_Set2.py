@@ -7,7 +7,7 @@ import time
 
 # MIMIR: Set up paths and filenames
 silo_dir = '/mnt/massive-stars/data/arun_simulations/wind-wind-equi/silo'  # Directory containing silo files
-output_file = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/line_luminosity_equi.txt'  # Output file for results
+output_file = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/line_luminosity_equi_set2.txt'  # Output file for results
 
 # RAZERBLADE: Set up paths and filenames
 #silo_dir = '/home/tony/Desktop/OIV_Luminosity/mpv10-wind-test'  #Directory containing silo files
