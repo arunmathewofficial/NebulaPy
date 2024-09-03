@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as unit
 import os
+from NebulaPy.tools import constants as const
+import pandas as pd
 
 # MIMIR: Set up paths and filenames
 #silo_dir = '/mnt/massive-stars/data/arun_simulations/wind-wind-equi/'  # Directory containing silo files
@@ -135,7 +137,9 @@ for step, silo_instant in enumerate(batched_silos):
 
     # making plot
     generated_wvl_array = xray_emission.xray_containter['wvl_array']
-    xray_spectrum = np.sum(spectrum, axis=0)
+    d = 10 * 3.086e+18 # cm
+    xray_spectrum = 4.0 * const.pi * np.sum(spectrum, axis=0) / (d*d)
+
     plt.figure(figsize=(8, 6))  # Set the figure size
     # Format and replace '.' with 'p' to avoid issues in filenames
     out_filename = filebase + f"_t{int(sim_time.value)}.png"
@@ -144,11 +148,22 @@ for step, silo_instant in enumerate(batched_silos):
     # Plot the spectrum with the corresponding temperature
     plt.plot(generated_wvl_array, xray_spectrum, linestyle='-', color='b', label=f'time = {sim_time.value:.4e} kyr')
     plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
-    plt.ylabel('Spectrum', fontsize=14)
+    plt.ylabel(r'$F_{\lambda} \, (egr \, cm^{-2} \, s^{-1} \, \AA^{-1}$)', fontsize=14)
     plt.legend(fontsize=14, frameon=False)
     plt.savefig(out_file)  # Save as a PNG file
     plt.close()
 
+    # Create a DataFrame with wavelength (x) and spectrum (y)
+    df = pd.DataFrame({
+        'Wavelength': generated_wvl_array,
+        'Spectrum': xray_spectrum
+    })
+
+    # Specify the output path and filename
+    filename = os.path.join(output_path, f'xray_spectrum_t{sim_time.value:.4e}.txt')
+    # Save the DataFrame to a text file
+    print(f"Saving X-ray spectrum into file")
+    df.to_csv(filename, sep='\t', index=False)
 
 
 
