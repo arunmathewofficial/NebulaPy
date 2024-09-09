@@ -44,9 +44,9 @@ xray_emission = nebula.xray(
     max_photon_energy=10.0,  # Maximum photon energy in keV
     energy_point_count=1000,
     elements=elements,
-    bremsstrahlung=True,
+    bremsstrahlung=False,
     freebound=True,
-    lines=True,
+    lines=False,
     twophoton=False,
     multiprocessing=True,
     ncores=12,
@@ -142,7 +142,7 @@ for step, silo_instant in enumerate(batched_silos):
 
     plt.figure(figsize=(8, 6))  # Set the figure size
     # Format and replace '.' with 'p' to avoid issues in filenames
-    out_filename = filebase + f"_t{int(sim_time.value)}.png"
+    out_filename = filebase + f"_t{int(sim_time.value)}_fb.png"
     out_file = os.path.join(output_path, out_filename)
 
     # Plot the spectrum with the corresponding temperature
@@ -160,7 +160,7 @@ for step, silo_instant in enumerate(batched_silos):
     })
 
     # Specify the output path and filename
-    filename = os.path.join(output_path, f'xray_spectrum_t{sim_time.value:.4e}.txt')
+    filename = os.path.join(output_path, f'xray_spectrum_t{sim_time.value:.4e}_fb.txt')
     # Save the DataFrame to a text file
     print(f"Saving X-ray spectrum into file")
     df.to_csv(filename, sep='\t', index=False)
