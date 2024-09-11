@@ -7,7 +7,7 @@ ne = [1e+9]
 
 output_path = '/home/tony/Desktop/Equi_NonEqui/'
 
-nebula_chianti = nebula.chianti(pion_ion='N3+', temperature=temperature, ne=ne, verbose=True)
+nebula_chianti = nebula.chianti(pion_ion='O7+', temperature=temperature, ne=ne, verbose=True)
 
 spectroscopic_name = nebula_chianti.chianti_ion.Spectroscopic
 
