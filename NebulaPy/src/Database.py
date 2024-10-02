@@ -8,6 +8,7 @@ from requests.exceptions import Timeout
 import warnings
 import importlib.resources as pkg_resources
 import NebulaPy.data as compressed_data
+import NebulaPy.version as version
 
 
 
@@ -94,7 +95,7 @@ class download_database:
 
             return True  # Return True if all conditions are met
         except Exception as e:  # Catch any exceptions that occur
-            print(f" error: {e}")  # Print the exception message
+            print(f"\033[91m error: {e} \033[0m")  # Print the exception message
             return False  # Return False if an exception occurs
 
     #########################################################################################
@@ -163,8 +164,9 @@ class download_database:
                                                prefix=prefix_comment, error=err)
                         if err is not None:
                             print(f"\033[91m error: PyMicroPION version"
-                                  #f" {version.__version__} database "
-                                  f"download incomplete, please restart.\033[0m")
+                                  f" {version.__version__} database "
+                                  f"download incomplete, restart download. \033[0m \n"
+                                  f" Use 'install-database'")
                             sys.exit(1)
 
 

@@ -9,20 +9,17 @@ from scipy import integrate
 import matplotlib.pyplot as plt
 import NebulaPy.tools.constants as const
 
-nebula_database = '/Users/tony/Desktop/NebulaPy/Nebula_Database'
-
-
 class sed:
 
-    def __init__(self, energy_bins, plot=None, pion=None, verbose=False):
+    def __init__(self, database, energy_bins, plot=None, pion=None, verbose=False):
         self.EnergyBins = energy_bins
         self.Plot = plot
         self.Pion = pion
         self.Verbose = verbose
         self.container = {'energy_bins': self.EnergyBins,
                           'plot': self.Plot, 'pion': self.Pion}
-        self.AtlasDatabase = nebula_database + '/SED/Atlas/'
-        self.PoWRDatabase = nebula_database + '/SED/PoWR/'
+        self.AtlasDatabase = database + '/SED/Atlas/'
+        self.PoWRDatabase = database + '/SED/PoWR/'
         self.setup_lambda_bin()
 
     ##############################################################################

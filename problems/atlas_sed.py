@@ -12,8 +12,15 @@ EnergyBins = [[7.902470e+00, 1.126030e+01], [1.126030e+01, 1.359840e+01],
 plot_dir = '/Users/tony/Desktop/NebulaPy/problems'
 pion_formar_path = '/Users/tony/Desktop/NebulaPy/problems'
 
-atlas_sed = nebula.sed(EnergyBins, verbose=True, plot=plot_dir, pion=pion_formar_path)
+atlas_sed = nebula.sed(
+    database='/home/tony/Desktop/NebulaPy/NebulaPy-DB',
+    energy_bins=EnergyBins,
+    verbose=True,
+    plot=plot_dir,
+    pion=pion_formar_path
+)
+
 #atlas_sed = nebula.sed(EnergyBins, verbose=True)
 
-atlas_sed.CastelliKuruczAtlas(0.0, 4.5)
-#print(atlas_sed.container)
+atlas_sed.CastelliKuruczAtlas(metallicity=0.0, gravity=4.5)
+print(atlas_sed.container)

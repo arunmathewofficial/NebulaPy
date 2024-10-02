@@ -2,3 +2,5 @@ build/
 NebulaPy.egg-info/
 .idea/
 tests/*.txt
+NebulaPy-DB/
+dist/
