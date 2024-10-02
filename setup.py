@@ -12,6 +12,12 @@ setup(
     author_email='arun@cp.dias.ie',
     url='',
     packages=find_packages(),
+
+    include_package_data=True,  # This is crucial
+    package_data={
+        'NebulaPy': ['data/PoWR.har.xz'],  # Include all .xz files in the data directory
+    },
+
     classifiers=[
         'Development Status :: Planning',
         'Intended Audience :: Science/Research',

@@ -5,17 +5,31 @@ import re
 import time
 import sys
 from requests.exceptions import Timeout
-import version
 import warnings
+import importlib.resources as pkg_resources
+import NebulaPy.data as compressed_data
+
+
+
 warnings.filterwarnings("ignore")
 
 
 class download_database:
 
-    def __init__(self, database_dir=None, verbose=False):
+    def __init__(self, verbose=False):
+        root_directory = os.getcwd()  # get the current working directory
+        database_dir = os.path.join(root_directory, 'NebulaPy-DB')
+        try:
+            os.mkdir(database_dir)
+            print(f" Made database directory")
+        except FileExistsError:
+            print(f" Database directory already exists.")
+        except Exception as e:
+            print(f" An error occurred: {e}")
+
         self.database_dir = database_dir
         self.verbose = verbose
-        #self.download_atlas_database()
+        self.download_atlas_database()
         self.download_postdam_database()
 
     #########################################################################################
@@ -149,7 +163,7 @@ class download_database:
                                                prefix=prefix_comment, error=err)
                         if err is not None:
                             print(f"\033[91m error: PyMicroPION version"
-                                  f" {version.__version__} database "
+                                  #f" {version.__version__} database "
                                   f"download incomplete, please restart.\033[0m")
                             sys.exit(1)
 
@@ -199,27 +213,28 @@ class download_database:
         import tarfile
         import time
 
-        # Path to the tar.xz file
-        tar_xz_path = 'hi.har.xz'
-        # Directory where you want to extract the files
-        extract_path = 'extracted_files'
+
+
+        # Construct the full path to 'hi.har.xz' inside the 'data' subdirectory
+        with pkg_resources.path(compressed_data, 'PoWR.har.xz') as PoWR_xz_path:
+            PoWR_tarfile = str(PoWR_xz_path)
+
         # Delay in seconds
-        delay = 0.1  # Change this to the desired delay
+        delay = 0.05  # Change this to the desired delay
 
         # Open the tar.xz file
-        with tarfile.open(tar_xz_path, 'r:xz') as tar:
+        with tarfile.open(PoWR_tarfile, 'r:xz') as tar:
             # Iterate through the members of the tar archive
             for member in tar.getmembers():
                 print(f'Extracting {member.name}')
-                tar.extract(member, path=extract_path)
+                tar.extract(member, path=self.database_dir)
                 time.sleep(delay)
 
-        print(f'Files have been extracted to {extract_path}')
+        print(f'Files have been extracted to {self.database_dir}')
 
 
-
-# Download all files from the directory
-download_database('./PyMicroPION_database/')
+# download, extract database
+download_database(verbose=True)
 
 
 

@@ -1,0 +1,5 @@
+include NebulaPy/data/hi.har.xz
+recursive-include NebulaPy/data *.xz
+recursive-include NebulaPy *.py
+include README.md
+include LICENSE
