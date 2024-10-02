@@ -228,11 +228,11 @@ class download_database:
         with tarfile.open(PoWR_tarfile, 'r:xz') as tar:
             # Iterate through the members of the tar archive
             for member in tar.getmembers():
-                print(f'Extracting {member.name}')
+                print(f' Extracting {member.name}')
                 tar.extract(member, path=self.database_dir)
                 time.sleep(delay)
 
-        print(f'Files have been extracted to {self.database_dir}')
+        print(f' Files have been extracted to {self.database_dir}')
 
 
 # download, extract database
