@@ -20,8 +20,6 @@ output_path = '/home/tony/Desktop/Equi_NonEqui/nonequi-equi/'  # Output file for
 filebase = 'e7_WRwind_d1l5n256_v1500'  # Base name of the silo files
 # Set up paths and filenames
 
-tailname = 'rsg'
-
 # Batch the silo files according to the time instant
 batched_silos = util.batch_silos(silo_dir, filebase)
 
@@ -72,7 +70,7 @@ for step, silo_instant in enumerate(batched_silos):
     print(f" ---------------------------")
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
-    wind_tracer_mask = pion.get_parameter('Tr008', silo_instant)
+    wind_tracer_mask = pion.get_parameter('Trace8', silo_instant)
 
     '''
     temperature = pion.get_parameter('Temperature', silo_instant)
