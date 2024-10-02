@@ -215,7 +215,7 @@ class download_database:
 
 
 
-        # Construct the full path to 'hi.har.xz' inside the 'data' subdirectory
+        # Get the 'PoWR.har.xz' path from NebulaPy package
         with pkg_resources.path(compressed_data, 'PoWR.har.xz') as PoWR_xz_path:
             PoWR_tarfile = str(PoWR_xz_path)
 
