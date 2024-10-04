@@ -2,6 +2,7 @@ from urllib.parse import urljoin
 import requests
 import os
 import re
+import tarfile
 import time
 import sys
 from requests.exceptions import Timeout
@@ -9,9 +10,6 @@ import warnings
 import importlib.resources as pkg_resources
 import NebulaPy.data as compressed_data
 import NebulaPy.version as version
-
-
-
 warnings.filterwarnings("ignore")
 
 
@@ -19,19 +17,29 @@ class download_database:
 
     def __init__(self, verbose=False):
         root_directory = os.getcwd()  # get the current working directory
-        database_dir = os.path.join(root_directory, 'NebulaPy-DB')
+        database_dir = os.path.join(root_directory, 'NebulaPy-DB', 'SED')  # separate NebulaPy-DB and SED
+
         try:
-            os.mkdir(database_dir)
-            print(f" Made database directory")
-        except FileExistsError:
-            print(f" Database directory already exists.")
+            if not os.path.exists(database_dir):
+                os.makedirs(database_dir)  # make both NebulaPy-DB and SED directories
+                if verbose:
+                    print(" Made database directory and SED subdirectory")
+            else:
+                if verbose:
+                    print(" database directory already exists.")
         except Exception as e:
-            print(f" An error occurred: {e}")
+            print(f" error: {e}")
+
 
         self.database_dir = database_dir
         self.verbose = verbose
         self.download_atlas_database()
-        self.download_postdam_database()
+        #self.download_postdam_database()
+        self.download_cmfgen_database()
+        if verbose:
+            print(" Database download completed")
+
+
 
     #########################################################################################
     # download progress bar
@@ -212,10 +220,6 @@ class download_database:
     # download postdam database
     #########################################################################################
     def download_postdam_database(self):
-        import tarfile
-        import time
-
-
 
         # Get the 'PoWR.har.xz' path from NebulaPy package
         with pkg_resources.path(compressed_data, 'PoWR.har.xz') as PoWR_xz_path:
@@ -234,9 +238,35 @@ class download_database:
 
         print(f' Files have been extracted to {self.database_dir}')
 
+    #########################################################################################
+    # download CMFGEN database
+    #########################################################################################
+    def download_cmfgen_database(self):
 
-# download, extract database
-download_database(verbose=True)
+        # Get the 'PoWR.har.xz' path from NebulaPy package
+        with pkg_resources.path(compressed_data, 'CMFGEN.tar.xz') as CMFGEN_xz_path:
+            CMFGEN_tarfile = str(CMFGEN_xz_path)
+
+        # Delay in seconds
+        delay = 0.05  # Change this to the desired delay
+
+        # Open the tar.xz file
+        with tarfile.open(CMFGEN_tarfile, 'r:xz') as tar:
+            # Iterate through the members of the tar archive
+            for member in tar.getmembers():
+                print(f' Extracting {member.name}')
+                tar.extract(member, path=self.database_dir)
+                time.sleep(delay)
+
+        print(f' Files have been extracted to {self.database_dir}')
+
+
+#if __name__ == "__main__":
+#    download_database(verbose=True)
+
+
+
+
 
 
 

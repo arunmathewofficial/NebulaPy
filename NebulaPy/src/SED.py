@@ -8,6 +8,7 @@ from astropy.io import fits
 from scipy import integrate
 import matplotlib.pyplot as plt
 import NebulaPy.tools.constants as const
+import NebulaPy.version as version
 
 class sed:
 
@@ -20,6 +21,7 @@ class sed:
                           'plot': self.Plot, 'pion': self.Pion}
         self.AtlasDatabase = database + '/SED/Atlas/'
         self.PoWRDatabase = database + '/SED/PoWR/'
+        self.CMFGENDatabase = database + '/SED/CMFGEN/'
         self.setup_lambda_bin()
 
     ##############################################################################
@@ -122,7 +124,7 @@ class sed:
         :return:
         '''
         # generating model grid name
-        grid_name = metallicity.lower() + '-' + composition.lower()
+        grid_name = metallicity.lower().replace(".", "") + '-' + composition.lower()
         self.grid_name = grid_name
         # Construct path to the grid directory
         grid_dir = self.PoWRDatabase + grid_name + '-sed'
@@ -374,7 +376,7 @@ class sed:
         # End of binning model set ######################################################
 
         if self.Plot is not None:
-            self.plotter(self.Plot, binned_flux_set)
+            self.plotter(self.Plot, binned_flux_set, 5.0, 80.0)
 
         # Gathering SED model info
         model_info = f"{self.sed_set_name + '.info'} = " \
@@ -519,7 +521,7 @@ class sed:
         # End of binning model set ######################################################
 
         if self.Plot is not None:
-            self.plotter(self.Plot, binned_flux_set)
+            self.plotter(self.Plot, binned_flux_set, 5.0, 80.0)
 
 
         # Gathering SED model info
@@ -603,7 +605,7 @@ class sed:
     ######################################################################################
     # plotter
     ######################################################################################
-    def plotter(self, plot_path, binned_flux_set):
+    def plotter(self, plot_path, binned_flux_set, min_plot_energy, max_plot_energy):
         '''
 
         :param PlotDir:
@@ -611,8 +613,6 @@ class sed:
         '''
 
         energy_bins = self.EnergyBins
-        min_plot_energy = 5.0
-        max_plot_energy = 80.0
 
         plot_dir = os.path.join(plot_path, self.sed_set_name)
         os.makedirs(plot_dir, exist_ok=True)
@@ -648,6 +648,12 @@ class sed:
                                  f' Grid Model: {self.which_gird_model[model_index]},'
                                  f' T_eff: {Teff} K,'
                                  f' log Mdot: {self.mdot}', fontsize=12)
+            if self.Model == 'CMFGEN':
+                axs[0].set_ylabel(r'$\rm \ F_{\lambda} \  (ergs \, cm^{-2} s^{-1} \AA^{-1})$ at 1 kpc')
+                axs[0].set_title(f'Grid: {self.grid_name.upper().replace("-", " ")},'
+                                 f' Grid Model: {self.which_gird_model[model_index]},'
+                                 f' T_eff: {Teff} K,'
+                                 f' log Mdot: {self.mdot}', fontsize=12)
 
             if self.Model == 'Blackbody':
                 axs[0].set_title(f'Model: {self.Model}, T_eff: {Teff} K', fontsize=12)
@@ -661,7 +667,7 @@ class sed:
             # SubPlot 2: Plot (bar plot) the binned data calculated by PyMicroPion
             axs[1].bar(bin_centers, binned_flux_set[model_index], width=bin_widths,
                        align='center', color='orange',
-                       alpha=0.5, label="NebulaPy")
+                       alpha=0.5, label=f"NebulaPy {version.__version__}")
             axs[1].set_xlabel("Energy, eV")
             axs[1].set_ylabel("log Fractional Binned Flux")
             axs[1].set_yscale('log')
@@ -710,8 +716,232 @@ class sed:
                 outfile.write(', '.join(map(lambda x: f"{x:.6e}", row)))
                 outfile.write("},\n")
             outfile.write("};\n")
-    ################################################################################
 
+    ######################################################################################
+    # bundle up CMFGEN models
+    ######################################################################################
+    def bundle_up_cmfgen_models(self, metallicity, composition, mdot):
+
+        # generating model grid name
+        grid_name = metallicity.lower().replace(".", "") + '-' + composition.lower()
+        self.grid_name = grid_name
+        # Construct path to the grid directory
+        grid_dir = self.CMFGENDatabase + grid_name + '-sed'
+        # get model parameter file
+        modelparameters_file = os.path.join(grid_dir, 'modelparameters.txt')
+
+        # ******************************************************************
+        # exact correct model from 'modelparameters.txt' file, remove model
+        # which do not fall in the parameter space
+        columns = ["MODEL", "STAR", "T_EFF", "R_TRANS", "LOG L", "LOG MDOT", "V_INF", "R_STAR"]
+        modelparams = {column: [] for column in columns}
+
+        with open(modelparameters_file, 'r') as file:
+            lines = file.readlines()
+
+            # Removing first few lines
+            lines = lines[8:]
+
+            for line in lines:
+                parts = line.split()
+                modelparams["MODEL"].append(parts[0])
+                modelparams["STAR"].append(parts[1])
+                modelparams["T_EFF"].append(float(parts[2]))
+                modelparams["R_TRANS"].append(float(parts[3]))
+                modelparams["LOG L"].append(float(parts[4]))
+                modelparams["LOG MDOT"].append(float(parts[5]))
+                modelparams["V_INF"].append(float(parts[6]))
+                modelparams["R_STAR"].append(float(parts[7]))
+
+        bundle_modelparams = {column: [] for column in columns}
+        unique_temperatures = set(modelparams["T_EFF"])
+
+        temp_to_closest_index = {}
+        for temp in unique_temperatures:
+            indices = [i for i, x in enumerate(modelparams["T_EFF"]) if x == temp]
+            closest_index = min(indices, key=lambda i: abs(modelparams["LOG MDOT"][i] + abs(mdot)))
+            temp_to_closest_index[temp] = closest_index
+
+        # Sort temperatures
+        sorted_temps = sorted(temp_to_closest_index.keys())
+
+        # Populate filtered models according to sorted temperatures
+        for temp in sorted_temps:
+            closest_index = temp_to_closest_index[temp]
+            for column in columns:
+                bundle_modelparams[column].append(modelparams[column][closest_index])
+        # ******************************************************************
+
+        # two info to make plot title
+        self.which_gird_model = bundle_modelparams['MODEL']
+        self.Nmodels = len(bundle_modelparams['MODEL'])
+        self.Teff = bundle_modelparams['T_EFF']
+        self.R_star = bundle_modelparams['R_STAR']
+
+        # append bundled model to the container
+        self.container.update(bundle_modelparams)
+
+        Clump = const.ClumpFactor[grid_name]
+        self.container['CLUMP'] = Clump
+
+        # ******************************************************************
+        # Make file paths for all the models in the final bundle
+        bundle_model_files = []
+        for model in bundle_modelparams['MODEL']:
+            model_filename = grid_name + '_' + model + '_sed.txt'
+            model_file = os.path.join(grid_dir, model_filename)
+            bundle_model_files.append(model_file)
+        return bundle_model_files
+
+    ######################################################################################
+    # Binning CMFGEN Spectral Energy Distribution
+    ######################################################################################
+    def CMFGEN(self, metallicity, composition, mdot):
+        '''
+
+        :param metallicity:
+        :param composition:
+        :param mdot:
+        :return:
+        '''
+        self.container['model'] = 'CMFGEN'
+        self.Model = 'CMFGEN'
+        self.container['metallicity'] = metallicity
+        self.metallicity = metallicity
+        self.container['composition'] = composition
+        self.composition = composition
+        self.container['mdot'] = mdot
+        self.mdot = mdot
+
+        # model set corresponding to a specific metallicity, composition and mdot
+        model_set = self.bundle_up_cmfgen_models(metallicity, composition, mdot)
+        # note: model set in already sort according to accending order of T_eff
+
+        # make sed set name
+        self.sed_set_name = 'cmfgen_' + self.grid_name + f'-mdot{str(mdot).replace(".", "").replace("-", "")}'
+
+        # **********************************************************
+
+        # since the data in potsdam models are in log10, converting
+        # lambda_bins to log10 basis.
+        given_loglambda_bins = np.log10(self.given_lambdabins)
+
+        prefix_comment = self.sed_set_name + ' binning'
+        model_lambda_set = []
+        model_flux_set = []
+        binned_flux_set = []
+        total_flux_set = []
+
+        for model_index, model in enumerate(model_set):
+
+            self.progress_bar(model_index, self.Nmodels, prefix=prefix_comment)
+
+            # Reading Model Txt File ###################################################
+            with open(model, 'r') as file:
+                model_logflux = []
+                model_frequency = []
+                model_flux = []
+                # Read the file and get log wavelength and log flux lambda (flam)
+                for line in file:
+                    # Strip leading and trailing whitespace from the line
+                    line = line.strip()
+                    # Check if the line is not empty
+                    if line:
+                        # Split the line into two parts using whitespace as the
+                        # separator
+                        columns = line.split()
+                        # Convert the parts to float and append them to the
+                        # respective arrays
+                        model_frequency.append(float(columns[0])) # given in 10^{15} Herz
+                        model_flux.append(float(columns[1])) # given in Janskys at 1kpc
+
+                # Convert the frequencies (in 10^15 Hz) to angstroms
+                model_lambda = [const.c * 1.0E+8 / (freq * 1e15) for freq in model_frequency]
+                model_loglambda = np.log10(model_lambda)
+                # Convert the fluxes (in jansky at 1 kpc) to erg s-1 cm-2 A-1, correct for the distance, and take log10
+                model_flux = [(flux * 1e-23 * const.c * 1.0E+8 / lam ** 2) for flux, lam in zip(model_flux, model_lambda)]
+                model_logflux = np.log10(model_flux)
+                # Note the model flux is calculated at 1 kpc
+
+                # binning lambda values and flam values according for the given lambda bins
+                binned_log_lambda = []
+                binned_log_flux = []
+                for bin in given_loglambda_bins:
+                    sub_binned_loglambda = []
+                    sub_binned_logflux = []
+                    for loglam, logflam in zip(model_loglambda, model_logflux):
+                        if bin[0] <= loglam <= bin[1]:
+                            sub_binned_loglambda.append(loglam)
+                            sub_binned_logflux.append(logflam)
+                    binned_log_lambda.append(sub_binned_loglambda)
+                    binned_log_flux.append(sub_binned_logflux)
+
+                # Get the original form of binned wavelength and flux arrays from log scaled
+                binned_lambda = [[10 ** lam for lam in row] for row in binned_log_lambda]
+                binned_flux = [[10 ** flam for flam in row] for row in binned_log_flux]
+                del binned_log_lambda
+                del binned_log_flux
+
+                # Perform integration across the entire wavelength domain to obtain the
+                # total flux.
+                total_flux_1kpc = np.trapz(np.asarray(model_flux), np.asarray(model_lambda))
+                # However this is the total flux at 1 kpc. The total flux at the stellar
+                # surface is
+                total_flux_Rstar = total_flux_1kpc * 1000 ** 2.0 / (
+                        self.R_star[model_index] * const.radiusSun / const.parsec) ** 2.0
+                # Append the Total Flux into TotFluxSet
+                total_flux_set.append(total_flux_Rstar)
+
+                # remember, the flam in potsdam models are given at 10 pc
+                model_lambda_set.append(model_lambda)
+                model_flux_set.append(model_flux)
+
+                # calculating flux in each binned flux by integrating within the bin
+                # interval
+                flux_bin = []
+                for i in range(len(binned_lambda)):
+                    flux_bin.append(np.trapz(np.asarray(binned_flux[i]),
+                                             np.asarray(binned_lambda[i])))
+
+                # reverse the order of the flux bins since we are interested in
+                # obtaining flux in energy bins.
+                flux_bin.reverse()
+
+                # determining the normalized flux within each bin.
+                norm_flux_bin = flux_bin / total_flux_1kpc
+                # Removing binned flux array
+                del flux_bin
+
+                # Appending the result fractional flux for each sed effective temperature
+                # to final binned flux set
+                binned_flux_set.append(norm_flux_bin)
+            # End of Reading Model Txt File #############################################
+
+
+        self.binned_flux_set = binned_flux_set
+        self.container['binned_flux'] = binned_flux_set
+        self.container['total_flux'] = total_flux_set
+        self.model_lambda_set = model_lambda_set
+        self.model_flux_set = model_flux_set
+        # End of binning model set ######################################################
+
+
+        if self.Plot is not None:
+            self.plotter(self.Plot, binned_flux_set, 0.1, 100.0)
+
+        # Gathering SED model info
+        model_info = f"{self.sed_set_name + '.info'} = " \
+                     f"\"#COMMENT: SED - {self.Model} Model Atmospheres\\n\"" \
+                     f"\"#COMMENT: SED parameters:\\n\"" \
+                     f"\"#COMMENT: Metallicity: {metallicity}\\n\"" \
+                     f"\"#COMMENT: Composition: {composition}\\n\"" \
+                     f"\"#COMMENT: Mdot: {mdot}\\n\";"
+
+        if self.Pion is not None:
+            self.pion_format(self.Pion, binned_flux_set, model_info)
+
+
+    ################################################################################
 
 
 
