@@ -16,7 +16,7 @@ NebulaPy is a Python library that generates synthetic emission maps from PION si
  `pip`: ```bash pip install package-name
 
 ## Usage
-https://github.com/arunmathewofficial/NebulaPy.wiki.git
+https://github.com/arunmathewofficial/NebulaPy/wiki
 
 ## Author
 Arun Mathew
