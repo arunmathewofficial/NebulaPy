@@ -19,8 +19,14 @@ NebulaPy is a Python library that generates synthetic emission maps from PION si
 https://github.com/arunmathewofficial/NebulaPy/wiki
 
 ## Author
+
 Arun Mathew
 
-Institute: New Numerical Lab, Dept. of Physics, IIT Guwahati.
-Date: 2019
+Astronomy & Astrophysics
+
+Computational and High Energy Astrophysics
+
+Dublin Institute for Advanced Studies (DIAS), Ireland
+
+Date: 2024
 
