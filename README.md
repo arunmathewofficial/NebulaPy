@@ -1,6 +1,6 @@
 # NebulaPy - Version 0.0.1
 
-
+# Wolf-Rayet model grids
 
 | Metallicity | Composition | log L | vfinal | Dmax | XH   | XHe  | XC     | XN     | XO    | XNe    | XFe    |
 |-------------|-------------|-------|--------|------|------|------|--------|--------|-------|--------|--------|
