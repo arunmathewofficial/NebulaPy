@@ -863,6 +863,12 @@ class sed:
                 model_logflux = np.log10(model_flux)
                 # Note the model flux is calculated at 1 kpc
 
+                # print to file the original data
+                #with open('output.txt', 'w') as file:
+                #    # Write x and y values separated by a tab
+                #    for x, y in zip(model_lambda, model_flux):
+                #        file.write(f"{x}\t{y}\n")
+
                 # binning lambda values and flam values according for the given lambda bins
                 binned_log_lambda = []
                 binned_log_flux = []
