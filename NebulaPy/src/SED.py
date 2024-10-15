@@ -933,7 +933,7 @@ class sed:
 
 
         if self.Plot is not None:
-            self.plotter(self.Plot, binned_flux_set, 0.1, 100.0)
+            self.plotter(self.Plot, binned_flux_set, 5.0, 100.0)
 
         # Gathering SED model info
         model_info = f"{self.sed_set_name + '.info'} = " \
