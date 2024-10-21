@@ -91,7 +91,9 @@ PoWRMdotMax = -3.784
 ClumpFactor = {'mw-wne': 4, 'mw-wnl-h20': 4, 'mw-wnl-h50': 4, 'mw-wc': 10, 'lmc-wne': 10,
                'lmc-wnl-h20': 10, 'lmc-wnl-h40': 10, 'lmc-wc': 10, 'smc-wne': 4, 'smc-wnl-h20': 4,
                'smc-wnl-h40': 4, 'smc-wnl-h60': 4, 'smc-wc': 10, 'z007-wne': 10,
-               'z007-wnl-h20': 10, 'z007-wnl-h40': 10, 'z007-wnl-h60': 10, 'z007-wc': 10, 'z086-wo': 0.4}
+               'z007-wnl-h20': 10, 'z007-wnl-h40': 10, 'z007-wnl-h60': 10, 'z007-wc': 10, 'z086-wo': 0.4,
+               'mw-ob-i': 10, 'lmc-ob-i': 10, 'smc-ob-vd3': 10, 'smc-ob-i': 10, 'smc-ob-ii': 10,
+               'smc-ob-iii': 10}
 data = {
     "Galactic Metallicity": {
         "MW WNE": {"log L": 5.3, "vfinal": 1600, "Dmax": 4, "XH": None, "XHe": None,
