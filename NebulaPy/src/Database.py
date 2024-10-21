@@ -222,7 +222,7 @@ class download_database:
     def download_postdam_database(self):
 
         # Get the 'PoWR.har.xz' path from NebulaPy package
-        with pkg_resources.path(compressed_data, 'PoWR.har.xz') as PoWR_xz_path:
+        with pkg_resources.path(compressed_data, 'PoWR.tar.xz') as PoWR_xz_path:
             PoWR_tarfile = str(PoWR_xz_path)
 
         # Delay in seconds
