@@ -226,7 +226,7 @@ class download_database:
             PoWR_tarfile = str(PoWR_xz_path)
 
         # Delay in seconds
-        delay = 0.05  # Change this to the desired delay
+        delay = 0.001  # Change this to the desired delay
 
         # Open the tar.xz file
         with tarfile.open(PoWR_tarfile, 'r:xz') as tar:
@@ -248,7 +248,7 @@ class download_database:
             CMFGEN_tarfile = str(CMFGEN_xz_path)
 
         # Delay in seconds
-        delay = 0.05  # Change this to the desired delay
+        delay = 0.01  # Change this to the desired delay
 
         # Open the tar.xz file
         with tarfile.open(CMFGEN_tarfile, 'r:xz') as tar:
