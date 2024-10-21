@@ -34,7 +34,7 @@ class download_database:
         self.database_dir = database_dir
         self.verbose = verbose
         self.download_atlas_database()
-        #self.download_postdam_database()
+        self.download_postdam_database()
         self.download_cmfgen_database()
         if verbose:
             print(" Database download completed")

@@ -4,3 +4,4 @@ NebulaPy.egg-info/
 tests/*.txt
 NebulaPy-DB/
 dist/
+problems/*.txt
