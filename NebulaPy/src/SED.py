@@ -10,6 +10,11 @@ import matplotlib.pyplot as plt
 import NebulaPy.tools.constants as const
 import NebulaPy.version as version
 
+# TODO: Include tolerance for mdot value in potsdam model
+# TODO: Mdot value for SMC-OB-Vd3 and other SMC check
+# TODO: Include these new model in wiki page
+
+
 class sed:
 
     def __init__(self, database, energy_bins, plot=None, pion=None, verbose=False):
