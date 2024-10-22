@@ -14,6 +14,10 @@ import NebulaPy.version as version
 # TODO: Mdot value for SMC-OB-Vd3 and other SMC check
 # TODO: Include these new model in wiki page
 
+# TODO: few important info about the sed must be printed on to the
+#  outfile like metalicity, massfractions, type, original mdot values,
+#  original clumb size used etc
+
 
 class sed:
 
