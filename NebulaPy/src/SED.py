@@ -18,6 +18,9 @@ import NebulaPy.version as version
 #  outfile like metalicity, massfractions, type, original mdot values,
 #  original clumb size used etc
 
+# TODO: In the output file, when writing pion format, name
+#  has to be all with underscore rather than bar
+
 
 class sed:
 
