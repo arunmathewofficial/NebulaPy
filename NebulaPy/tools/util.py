@@ -24,6 +24,8 @@ def nebula_exit_with_error(errorMessage):
     print(f' NebulaPy {version.__version__} exiting ...')
     sys.exit()
 
+
+
 ######################################################################################
 # Nebula Warning
 ######################################################################################
@@ -37,6 +39,8 @@ def nebula_warning(warnMessage):
     print(f' error: {RED}{warnMessage}{RESET}')
     sys.exit()
 
+
+
 ######################################################################################
 # Nebula version
 ######################################################################################
@@ -46,16 +50,6 @@ def nebula_version():
     :param message: Optional exit message.
     """
     return f'NebulaPy {version.__version__}'
-
-######################################################################################
-# file check
-######################################################################################
-def file_check(file):
-    """
-    return NebulaPy version
-    :param message: Optional exit message.
-    """
-
 
 ######################################################################################
 # batch silo files
@@ -93,7 +87,11 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
     finish_time_sec = finish_time * factor if finish_time is not None else None
 
     print(" ---------------------------")
-    print(" batching silo files into time instances")
+    print(" batching silo files into time instances:")
+    print(f" starting time: {start_time} {time_unit}")
+    print(f" finishing time: {finish_time} {time_unit}")
+    print(f" output frequency: {out_frequency}")
+
 
     # Construct search pattern for silo files
     search_pattern = os.path.join(dir, f"{filebase}_*.silo")
@@ -107,6 +105,8 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
     header_data = OpenData(all_silos)
     # Set the directory to '/header'
     header_data.db.SetDir('/header')
+    # Retrieve what coordinate system is used
+    coord_sys = header_data.db.GetVar("coord_sys")
     # Retrieve no of nested grid levels
     Nlevels = header_data.db.GetVar("grid_nlevels")
     # close the object
@@ -157,7 +157,14 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
         # check if level 00 batched silos are within the asked time range
         for i, silo in enumerate(batched_silos):
             data = ReadData(silo)
-            basic = data.get_1Darray('Density')
+
+            if coord_sys == 3:
+                basic = data.get_1Darray('Density')
+            elif coord_sys == 2:
+                basic = data.get_2Darray('Density')
+            elif coord_sys == 1:
+                basic = data.get_3Darray('Density')
+
             sim_time = (basic['sim_time'] * unit.s).value
             data.close()
             if start_time_sec is not None and sim_time < start_time_sec:
@@ -189,7 +196,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                 level_instant_file = next((file for file in all_silos if level_pattern.search(file)), None)
 
                 if level_instant_file is None:
-                    nebula_exit_with_error(f"missing file for level {level} instant {instant_extension}")
+                    nebula_exit_with_error(f"missing silo file for level {level} instant {instant_extension}")
                 else:
                     # Append the found file to the corresponding time instant group
                     batched_silos[i].append(level_instant_file)

@@ -15,6 +15,9 @@ output_file = '/home/tony/Desktop/Equi_NonEqui/line_luminosity_equi_OVII&OVIII.t
 
 filebase = 'e7_WRwind_d1l5n256_v1500'  # Base name of the silo files
 
+
+print(f" ---------------------------")
+print(" task:")
 # Set up the ion and line emission parameters
 O6P_pion_ion = 'O6+'  # The ion of interest (Oxygen IV)
 mass_O = 2.6567628e-23  # Mass of an Oxygen atom (in grams)
@@ -47,7 +50,7 @@ pion.load_chemistry()
 
 # Initialize spherical grid parameters (e.g., radius, shell volumes)
 # This sets up the grid using the first silo file in the batch
-pion.spherical_grid(batched_silos[0])
+pion.load_geometry(batched_silos[0])
 
 # Retrieve the radius and shell volumes from the geometry container
 radius = pion.geometry_container['radius']

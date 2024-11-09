@@ -19,6 +19,34 @@ class pion():
         self.geometry_container = {}
         self.chemistry_container = {}
 
+
+    def load_geometry(self, silo_instant):
+        # If verbose is enabled, print the chemistry code
+        if self.verbose:
+            print(f" ---------------------------")
+            print(f" loading geometry:")
+
+        # Open the data for the first silo instant silo
+        header_data = OpenData(silo_instant)
+        # Set the directory to '/header'
+        header_data.db.SetDir('/header')
+        # Retrieve what coordinate system is used
+        coord_sys = header_data.db.GetVar("coord_sys")
+
+        if coord_sys == 3:
+            if self.verbose:
+                print(f" geometry: {const.coordinate_system[coord_sys]}")
+                self.spherical_grid(silo_instant)
+        elif coord_sys == 2:
+            if self.verbose:
+                print(f" geometry: {const.coordinate_system[coord_sys]}")
+                self.cylindrical_grid(silo_instant)
+        elif coord_sys == 1:
+            if self.verbose:
+                print(f" geometry: {const.coordinate_system[coord_sys]}")
+                util.nebula_exit_with_error(f"{const.coordinate_system[coord_sys]} not defined, todo list")
+
+
     ######################################################################################
     # spherical grid
     ######################################################################################
@@ -41,8 +69,6 @@ class pion():
         self.geometry_container['coordinate_sys'] = const.coordinate_system[coord_sys]
         self.geometry_container['Nlevels'] = Nlevels
         if self.verbose:
-            print(f" ---------------------------")
-            print(f" geometry: {const.coordinate_system[coord_sys]}")
             print(f" N grid levels: {Nlevels}")
 
         # read silo file
@@ -100,6 +126,12 @@ class pion():
 
         self.geometry_container['radius'] = radius
         self.geometry_container['shell_volumes'] = shell_volumes
+
+    ######################################################################################
+    # cylindrical grid
+    ######################################################################################
+    def cylindrical_grid(self, silo_instant):
+        pass
 
 
     ######################################################################################
@@ -163,13 +195,13 @@ class pion():
             # Check if the chemistry_code is not 'MPv10'
             if not chemistry_code == 'MPv10':
                 # Exit with an error if the chemistry_code is not 'MPv10'
-                util.nebula_exit_with_error(" PION is not running MPv10; NelubaPy functionality is limited.")
+                util.nebula_exit_with_error(" PION is not running NEMO v1.0; NelubaPy functionality is limited.")
             else:
                 # If verbose is enabled, print the chemistry code
                 if self.verbose:
                     print(f" ---------------------------")
-                    print(f" loading chemistry ...")
-                    print(f" chemistry module: {chemistry_code}")
+                    print(f" loading chemistry:")
+                    print(f" chemistry module: NEMO v1.0")
 
                 # Loop through each process
                 for index, process in enumerate(processes):
@@ -356,7 +388,11 @@ class pion():
                 fine_level = np.append(fine_level, coarse_level)
             return np.array(fine_level)
         # end of 1 dimensional ***********************************************************
+
         # 2 dimensional (cylindrical) ####################################################
+        if self.geometry_container['coordinate_sys'] == 'cylindrical':
+            pass
+
         # end of 2 dimensional ***********************************************************
         # 3 dimensional (cylindrical) ####################################################
         # end of 3 dimensional ***********************************************************
