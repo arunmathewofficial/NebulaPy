@@ -6,6 +6,6 @@ from .LineEmission import line_emission
 from .XraySpectrum import xray
 from .SED import sed
 from .ChiantiMultiProc import *
-from .ChiantiCooling import *
+from .Cooling import *
 from .PION import pion
 

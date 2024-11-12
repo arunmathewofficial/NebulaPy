@@ -15,7 +15,7 @@ setup(
 
     include_package_data=True,  # This is crucial
     package_data={
-        'NebulaPy': ['data/PoWR.har.xz'],  # Include all .xz files in the data directory
+        'NebulaPy': ['data/PoWR.tar.xz', 'data/CMFGEN.tar.xz', 'data/Chianti.tar.xz'],
     },
 
     classifiers=[

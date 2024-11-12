@@ -1,5 +1,3 @@
-
-
 from pypion.ReadData import ReadData
 import astropy.units as unit
 import numpy as np
@@ -42,3 +40,23 @@ print(pion.geometry_container)
 # This uses the first time instant's silo file to initialize
 pion.load_chemistry()
 print(pion.chemistry_container)
+
+cooling = nebula.cooling(
+    database='/home/tony/Desktop/NebulaPy/NebulaPy-DB',
+    pion_ion='O3+',
+    verbose=True
+)
+
+temperature = [[5000, 6000], [200, 100]]
+ne = [[100, 100], [100, 100]]
+
+#temperature = [5000, 6000]
+#ne = [100, 100]
+
+# temperature and ne array can be 1D, 2D, 3D
+cooling_map = cooling.generate_cooling_map(
+    temperature=temperature,
+    ne=ne
+)
+
+print(cooling_map)

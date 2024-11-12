@@ -17,13 +17,13 @@ class download_database:
 
     def __init__(self, verbose=False):
         root_directory = os.getcwd()  # get the current working directory
-        database_dir = os.path.join(root_directory, 'NebulaPy-DB', 'SED')  # separate NebulaPy-DB and SED
 
+        sed_database_dir = os.path.join(root_directory, 'NebulaPy-DB', 'SED')  # separate NebulaPy-DB and SED
         try:
-            if not os.path.exists(database_dir):
-                os.makedirs(database_dir)  # make both NebulaPy-DB and SED directories
+            if not os.path.exists(sed_database_dir):
+                os.makedirs(sed_database_dir)  # make both NebulaPy-DB and SED directories
                 if verbose:
-                    print(" Made database directory and SED subdirectory")
+                    print(" made database directory and SED subdirectory")
             else:
                 if verbose:
                     print(" database directory already exists.")
@@ -31,14 +31,28 @@ class download_database:
             print(f" error: {e}")
 
 
-        self.database_dir = database_dir
+        self.sed_database_dir = sed_database_dir
         self.verbose = verbose
         self.download_atlas_database()
         self.download_postdam_database()
         self.download_cmfgen_database()
+
+        cool_database_dir = os.path.join(root_directory, 'NebulaPy-DB', 'Cooling')  # separate NebulaPy-DB and SED
+        try:
+            if not os.path.exists(cool_database_dir):
+                os.makedirs(cool_database_dir)  # make both NebulaPy-DB and SED directories
+                if verbose:
+                    print(" made cooling table subdirectory")
+            else:
+                if verbose:
+                    print(" cooling table directory already exists.")
+        except Exception as e:
+            print(f" error: {e}")
+
+        self.cool_database_dir = cool_database_dir
+        self.download_cooling_table()
         if verbose:
             print(" Database download completed")
-
 
 
     #########################################################################################
@@ -137,7 +151,7 @@ class download_database:
                         'ckp02/', 'ckp05/']
         Nfiles = [76, 76, 76, 76, 76, 76, 76, 76]
         atlas_info = ['AA_README', 'catalog.fits']
-        atlas_dir = os.path.join(self.database_dir, 'Atlas/')
+        atlas_dir = os.path.join(self.sed_database_dir, 'Atlas/')
         os.makedirs(atlas_dir, exist_ok=True)
 
         # Downloading all atlas models ######################################################
@@ -233,10 +247,10 @@ class download_database:
             # Iterate through the members of the tar archive
             for member in tar.getmembers():
                 print(f' Extracting {member.name}')
-                tar.extract(member, path=self.database_dir)
+                tar.extract(member, path=self.sed_database_dir)
                 time.sleep(delay)
 
-        print(f' Files have been extracted to {self.database_dir}')
+        print(f' Files have been extracted to {self.sed_database_dir}')
 
     #########################################################################################
     # download CMFGEN database
@@ -255,11 +269,32 @@ class download_database:
             # Iterate through the members of the tar archive
             for member in tar.getmembers():
                 print(f' Extracting {member.name}')
-                tar.extract(member, path=self.database_dir)
+                tar.extract(member, path=self.sed_database_dir)
                 time.sleep(delay)
 
-        print(f' Files have been extracted to {self.database_dir}')
+        print(f' Files have been extracted to {self.sed_database_dir}')
 
+    #########################################################################################
+    # download CMFGEN database
+    #########################################################################################
+    def download_cooling_table(self):
+
+        # Get the 'PoWR.har.xz' path from NebulaPy package
+        with pkg_resources.path(compressed_data, 'Chianti.tar.xz') as CoolTab_xz_path:
+            CoolTab_tarfile = str(CoolTab_xz_path)
+
+        # Delay in seconds
+        delay = 0.01  # Change this to the desired delay
+
+        # Open the tar.xz file
+        with tarfile.open(CoolTab_tarfile, 'r:xz') as tar:
+            # Iterate through the members of the tar archive
+            for member in tar.getmembers():
+                print(f' Extracting {member.name}')
+                tar.extract(member, path=self.cool_database_dir)
+                time.sleep(delay)
+
+        print(f' Files have been extracted to {self.cool_database_dir}')
 
 #if __name__ == "__main__":
 #    download_database(verbose=True)
