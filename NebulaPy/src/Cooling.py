@@ -21,6 +21,7 @@ class cooling():
             FileNotFoundError: If the required database or cooling table is missing.
         """
         self.verbose = verbose
+        self.ion = pion_ion
 
         # Check if the database exists, exit if missing
         if not os.path.exists(database):
@@ -29,12 +30,18 @@ class cooling():
         # Get the corresponding CHIANTI ion symbol for the given pion_ion
         chinati_ion = self.get_chianti_symbol(pion_ion)
 
+        if self.verbose:
+            print(f" ---------------------------")
+            print(f" cooling rate mapping:")
         # Construct the filename for the ion cooling table based on the ion symbol
         ion_cooling_filename = chinati_ion + '.txt'
         cooling_database = database + '/Cooling/Chianti/'
 
         # Full path to the cooling table
         self.ion_cooling_file = os.path.join(cooling_database, ion_cooling_filename)
+
+        if self.verbose:
+            print(f' retrieving {pion_ion} cooling rate data from the database')
 
         # Check if the cooling file exists, exit if not found
         if not os.path.exists(self.ion_cooling_file):
@@ -58,6 +65,9 @@ class cooling():
         This method processes the cooling data file by removing the temperature data and
         performing an interpolation to get a smooth cooling rate function.
         """
+
+        print(f" computing interpolation function for {self.ion} cooling rate")
+
         # Prepare a list of temperatures (in Kelvin) from log(10) scale, ranging from 10^1 to 10^8
         nemo_temperature = []
         for i in range(81):

@@ -41,6 +41,9 @@ print(pion.geometry_container)
 pion.load_chemistry()
 print(pion.chemistry_container)
 
+
+
+
 cooling = nebula.cooling(
     database='/home/tony/Desktop/NebulaPy/NebulaPy-DB',
     pion_ion='O3+',
@@ -60,3 +63,5 @@ cooling_map = cooling.generate_cooling_map(
 )
 
 print(cooling_map)
+
+del cooling
