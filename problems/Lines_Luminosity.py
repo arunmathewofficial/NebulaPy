@@ -79,14 +79,10 @@ runtime = 0.0
 for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()  # Record the start time
 
-    # Read the data from the current silo file
-    dataio = ReadData(silo_instant)
-    basic = dataio.get_1Darray('Density')  # Retrieve basic simulation data, such as density
-    sim_time = (basic['sim_time'] * unit.s).to(unit.kyr)  # Convert simulation time to kiloyears
-    dataio.close()  # Close the data file
 
-    # Print the current time instant
     print(f" ---------------------------")
+    # Print the current simulation time instant
+    sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
     # Extract necessary physical parameters for the current time instant

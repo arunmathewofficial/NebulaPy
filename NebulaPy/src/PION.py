@@ -20,7 +20,20 @@ class pion():
         self.chemistry_container = {}
 
 
-    def load_geometry(self, silo_instant):
+    def load_geometry(self, silo_instant, scale='cm'):
+        '''
+        This method will load geometry of the simulation from
+        the given silo file.
+
+        Parameters
+        ----------
+        silo_instant
+        scale
+
+        Returns
+        -------
+
+        '''
         # If verbose is enabled, print the chemistry code
         if self.verbose:
             print(f" ---------------------------")
@@ -36,11 +49,11 @@ class pion():
         if coord_sys == 3:
             if self.verbose:
                 print(f" geometry: {const.coordinate_system[coord_sys]}")
-                self.spherical_grid(silo_instant)
+                self.spherical_grid(silo_instant, scale=scale)
         elif coord_sys == 2:
             if self.verbose:
                 print(f" geometry: {const.coordinate_system[coord_sys]}")
-                self.cylindrical_grid(silo_instant)
+                self.cylindrical_grid(silo_instant, scale=scale)
         elif coord_sys == 1:
             if self.verbose:
                 print(f" geometry: {const.coordinate_system[coord_sys]}")
@@ -50,7 +63,7 @@ class pion():
     ######################################################################################
     # spherical grid
     ######################################################################################
-    def spherical_grid(self, silo_instant):
+    def spherical_grid(self, silo_instant, scale='cm'):
 
         # Open the data for the first silo instant silo
         header_data = OpenData(silo_instant)
@@ -130,9 +143,68 @@ class pion():
     ######################################################################################
     # cylindrical grid
     ######################################################################################
-    def cylindrical_grid(self, silo_instant):
-        pass
+    def cylindrical_grid(self, silo_instant, scale='cm'):
+        # Open the data for the first silo instant silo
+        header_data = OpenData(silo_instant)
+        # Set the directory to '/header'
+        header_data.db.SetDir('/header')
+        # Retrieve what coordinate system is used
+        coord_sys = header_data.db.GetVar("coord_sys")
+        if not coord_sys == 2:
+            util.nebula_exit_with_error(f"geometry mismatch {const.coordinate_system[coord_sys]}")
+        # Retrieve no of nested grid levels
+        Nlevels = header_data.db.GetVar("grid_nlevels")
+        # close the object
+        header_data.close()
 
+        # save the dynamics and chemistry_flag values in the chemistry_container dictionary
+        self.geometry_container['coordinate_sys'] = const.coordinate_system[coord_sys]
+        self.geometry_container['Nlevels'] = Nlevels
+        if self.verbose:
+            print(f" N grid levels: {Nlevels}")
+
+        # Read the data from the current silo file
+        dataio = ReadData(silo_instant)
+        basic = dataio.get_2Darray('Density')  # Retrieve basic simulation data, such as density
+        dataio.close()  # Close the data file
+
+        if scale == 'cm':
+            dims_max = (basic['max_extents'] * unit.cm)
+            dims_min = (basic['min_extents'] * unit.cm)
+            self.geometry_container['edges_min'] = dims_min
+            self.geometry_container['edges_max'] = dims_max
+        elif scale == 'pc':
+            dims_max = (basic['max_extents'] * unit.cm).to(unit.pc)
+            dims_min = (basic['min_extents'] * unit.cm).to(unit.pc)
+            self.geometry_container['edges_min'] = dims_min
+            self.geometry_container['edges_max'] = dims_max
+
+
+    ######################################################################################
+    # get simulation time
+    ######################################################################################
+    def get_simulation_time(self, silo_instant, time_unit='sec'):
+
+        if self.geometry_container['coordinate_sys'] == 'spherical':
+            # Read the data from the current silo file
+            dataio = ReadData(silo_instant)
+            basic = dataio.get_1Darray('Density')  # Retrieve basic simulation data, such as density
+            dataio.close()  # Close the data file
+
+            if time_unit == 'sec':
+                return (basic['sim_time'] * unit.s)
+            elif time_unit == 'kyr':
+                return (basic['sim_time'] * unit.s).to(unit.kyr)
+
+        elif self.geometry_container['coordinate_sys'] == 'cylindrical':
+            # Read the data from the current silo file
+            dataio = ReadData(silo_instant)
+            basic = dataio.get_2Darray('Density')  # Retrieve basic simulation data, such as density
+            dataio.close()  # Close the data file
+            if time_unit == 'sec':
+                return (basic['sim_time'] * unit.s)
+            elif time_unit == 'kyr':
+                return (basic['sim_time'] * unit.s).to(unit.kyr)
 
     ######################################################################################
     # get chemistry from the initial silo file
@@ -391,13 +463,20 @@ class pion():
 
         # 2 dimensional (cylindrical) ####################################################
         if self.geometry_container['coordinate_sys'] == 'cylindrical':
-            pass
 
+            # get nested grid level
+            Nlevels = self.geometry_container['Nlevels']
+            # pypion ReadDate object
+            data = ReadData(silo_instant)
+            # get parameter values
+            parameter = data.get_2Darray(parameter)['data']
+            # get mask
+            mask = data.get_2Darray("NG_Mask")['data']
+            data.close()
+            return parameter
         # end of 2 dimensional ***********************************************************
-        # 3 dimensional (cylindrical) ####################################################
+        # 3 dimensional (cartesian) ######################################################
         # end of 3 dimensional ***********************************************************
-
-
 
 
     ######################################################################################
@@ -440,29 +519,92 @@ class pion():
         -------
         electron number density in each cell for a specific silo file
         '''
+        # 1 dimensional (spherical) ######################################################
+        if self.geometry_container['coordinate_sys'] == 'spherical':
 
-        density = self.get_parameter("Density", silo_instant)
-        ne = np.zeros(len(density))
+            density = self.get_parameter("Density", silo_instant)
+            ne = np.zeros(len(density))
+            for e, element in enumerate(self.element_wise_tracer_list):
+                if not element:  # Check if the element is empty
+                    continue
+                massfrac_sum = np.zeros(len(density))
+                element_name = self.element_list[e]
+                atomic_number = len(element) - 1
+                top_ion = self.get_parameter(element[0], silo_instant)
 
-        for e, element in enumerate(self.element_wise_tracer_list):
-            if not element:  # Check if the element is empty
-                continue
-            massfrac_sum = np.zeros(len(density))
-            element_name = self.element_list[e]
-            atomic_number = len(element) - 1
-            top_ion = self.get_parameter(element[0], silo_instant)
+                for i, ion in enumerate(element[1:], start=1):
+                    charge = i - 1
+                    ion_density = self.get_parameter(ion, silo_instant)
+                    top_ion -= ion_density
+                    massfrac_sum += charge * ion_density
 
-            for i, ion in enumerate(element[1:], start=1):
-                charge = i - 1
-                ion_density = self.get_parameter(ion, silo_instant)
-                top_ion -= ion_density
-                massfrac_sum += charge * ion_density
+                massfrac_sum += atomic_number * np.maximum(top_ion, 0.0)
 
-            massfrac_sum += atomic_number * np.maximum(top_ion, 0.0)
+                ne += massfrac_sum / const.mass[element_name]
 
-            ne += massfrac_sum / const.mass[element_name]
+            return ne * density
 
-        return ne * density
+        # 2 dimensional (cylindrical) ####################################################
+        if self.geometry_container['coordinate_sys'] == 'cylindrical':
+
+            # Get the number of nested grid levels in the geometry container.
+            Nlevels = self.geometry_container['Nlevels']
+
+            # Determine the number of grid levels for electron density calculation.
+            if Nlevels == 1:
+                print(" calculating electron number density for a single grid level")
+            elif Nlevels > 1:
+                print(" calculating electron number density for each grid levels")
+
+            # Retrieve the density data from the input file at the current simulation instant.
+            density = self.get_parameter("Density", silo_instant)
+
+            # Identify the shape of each density array to ensure compatibility with other parameters.
+            shape_list = [arr.shape for arr in density]
+
+            # Initialize arrays for electron number density (ne) and mass fraction sum,
+            # with zeroes matching the shape of the density data.
+            ne = [np.zeros(shape) for shape in shape_list]
+            massfrac_sum = [np.zeros(shape) for shape in shape_list]
+
+            # Loop through each element in the tracer list to calculate contributions from individual ions.
+            for e, element in enumerate(self.element_wise_tracer_list):
+
+                # If the current element has no associated tracers, skip to the next element.
+                if not element:
+                    continue
+
+                # Get the element name and compute its atomic number (total ions minus one).
+                element_name = self.element_list[e]
+                atomic_number = len(element) - 1
+
+                # Get the top ion density data (for the element's highest ionization state).
+                top_ion = self.get_parameter(element[0], silo_instant)
+
+                # For each subsequent ion (starting from the next lowest ionization state), calculate contributions:
+                for i, ion in enumerate(element[1:], start=1):
+                    charge = i - 1  # Charge is one less than ionization state index.
+                    ion_density = self.get_parameter(ion, silo_instant)
+
+                    # Update the top ion and mass fraction sum for each grid level.
+                    for level in range(Nlevels):
+                        top_ion[level] -= ion_density[
+                            level]  # Adjust top ion density to reflect current ion's contribution.
+                        massfrac_sum[level] += charge * ion_density[level]  # Update mass fraction sum by ion charge.
+
+                # Finalize mass fraction sum and update electron density for each grid level.
+                for level in range(Nlevels):
+                    # Add contribution of the top ion with atomic number, ensuring non-negative values.
+                    massfrac_sum[level] += atomic_number * np.maximum(top_ion[level], 0.0)
+                    # Calculate electron number density using mass fraction sum and atomic mass.
+                    ne[level] += massfrac_sum[level] / const.mass[element_name]
+
+            # Scale the electron number density by the density for each grid level.
+            ne = [density[level] * ne[level] for level in range(Nlevels)]
+
+            # Return the calculated electron number density array for each grid level.
+            return ne
+
 
     ######################################################################################
     # differential emission measure

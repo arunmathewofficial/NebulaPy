@@ -135,7 +135,7 @@ class cooling():
     ######################################################################################
     # generate cooling map
     ######################################################################################
-    def generate_cooling_map(self, temperature, ne):
+    def generate_cooling_rate_map(self, temperature, ne):
         """
         Generates a cooling rate map for a given temperature and electron density array.
 
