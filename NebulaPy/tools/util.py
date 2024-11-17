@@ -24,8 +24,6 @@ def nebula_exit_with_error(errorMessage):
     print(f' NebulaPy {version.__version__} exiting ...')
     sys.exit()
 
-
-
 ######################################################################################
 # Nebula Warning
 ######################################################################################
@@ -34,12 +32,9 @@ def nebula_warning(warnMessage):
     Custom exit function display error before exiting.
     :param message: Optional exit message.
     """
-    RED = "\033[91m"
+    YELLOW = "\033[93m"
     RESET = "\033[0m"
-    print(f' error: {RED}{warnMessage}{RESET}')
-    sys.exit()
-
-
+    print(f'{YELLOW} warn: {warnMessage}{RESET}')
 
 ######################################################################################
 # Nebula version

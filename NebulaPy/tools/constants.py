@@ -5,6 +5,7 @@ A set of physical constants, and constants strings.
 import numpy as np
 from scipy import special
 
+########################################################################################
 # Physical constants
 pi = 3.1415926535897931
 h  = 6.6260693e-27              #erg s
@@ -16,6 +17,7 @@ q = 4.80320425e-10  # the units of charge
 
 stefanBoltzmann = 5.670373e-5   # cgs - ergs cm^-2 K^-4 s^-1
 
+########################################################################################
 # Convertions factors
 ev2Erg = 1.602176487e-12
 ev2Ang = 12.39841875e+3
@@ -29,6 +31,9 @@ radiusSun = 6.955e+10    # mean radius of Sun in cm
 luminositySun = 3.86e+33 # ergs/s
 parsec = 3.08568025e+18  # cm
 
+
+########################################################################################
+# NebulaPy PION parameters
 nebula_elements = {
     'H': "Hydrogen",
     'He': "Helium",
@@ -38,9 +43,7 @@ nebula_elements = {
     'Ne': "Neon",
     'Si': "Silicon",
     'S': "Sulfur",
-    'Fe': "Iron"
-}
-
+    'Fe': "Iron"}
 mass = {
     'H': 1.6738e-24,
     'He': 6.6464768e-24,
@@ -50,9 +53,7 @@ mass = {
     'Ne': 3.3509177e-23,
     'Si': 4.6637066e-23,
     'S': 5.3245181e-23,
-    'Fe': 9.2732796e-23
-}
-
+    'Fe': 9.2732796e-23}
 atomic_number = {
     'H': 1,
     'He': 2,
@@ -62,10 +63,8 @@ atomic_number = {
     'Ne': 10,
     'Si': 14,
     'S': 16,
-    'Fe': 26
-}
-
-
+    'Fe': 26}
+top_level_ions = {'H1+', 'He2+', 'C6+', 'N7+', 'O8+', 'Ne10+', 'Si14+', 'S16+', 'Fe26+'}
 coordinate_system = {
     3: "spherical",
     2: "cylindrical",
@@ -330,11 +329,9 @@ blackbody_temp_table = [3.500000e+03, 3.750000e+03, 4.000000e+03, 4.250000e+03,
                         4.700000e+04, 4.800000e+04, 4.900000e+04]
 
 
-
-
-periodic_tab = ['h','he','li','be','b','c','n','o','f','ne','na', 'mg','al','si',
-                'p','s','cl','ar','k','ca','sc','ti', 'v','cr','mn','fe','co',
-                'ni','cu','zn', 'ga','ge','as','se','br','kr']
+periodic_tab = ['h', 'he', 'li', 'be', 'b', 'c', 'n', 'o', 'f', 'ne', 'na', 'mg', 'al', 'si',
+                'p', 's', 'cl', 'ar', 'k', 'ca', 'sc', 'ti', 'v', 'cr', 'mn', 'fe', 'co',
+                'ni', 'cu', 'zn', 'ga', 'ge', 'as', 'se', 'br', 'kr']
 
 ########################################################################################
 # Ion class

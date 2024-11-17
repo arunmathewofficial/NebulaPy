@@ -341,6 +341,7 @@ class pion():
                 self.element_wise_tracer_list = elementWiseTracers
         header_data.close()
 
+
     ######################################################################################
     # get elements
     ######################################################################################
@@ -385,6 +386,42 @@ class pion():
             elemental_mass_fraction.append(self.get_parameter(element_tracer, silo_instant))
 
         return np.array(elemental_mass_fraction)
+
+    ######################################################################################
+    # get element symbol for a specific ion
+    ######################################################################################
+    def get_element_symbol(self, ion):
+        """
+        Extracts the element symbol from an ion identifier by filtering out non-alphabetic characters.
+
+        Parameters:
+        ion (str): The ion identifier, which may include both alphabetic and non-alphabetic characters
+                   (e.g., 'He1+', 'O2+', 'C5+').
+
+        Returns:
+        str: The element symbol extracted from the ion identifier (e.g., 'He' from 'He1+', 'O' from 'O2+').
+        """
+        return ''.join(filter(str.isalpha, ion))
+
+    ######################################################################################
+    # get elemental mass fraction
+    ######################################################################################
+    def get_ion_tracer(self, ion):
+        """
+        Retrieves the tracer for a specific ion from the chemistry container.
+
+        Parameters:
+        ion (str): The key corresponding to the specific ion (e.g., 'H+', 'He++').
+
+        Returns:
+        tracer: The value associated with the provided ion key in the chemistry container.
+
+        Raises:
+        KeyError: If the specified ion key does not exist in the chemistry container.
+        """
+        if ion not in self.chemistry_container:
+            util.nebula_exit_with_error(f" ion {ion} not found in the chemistry container")
+        return self.chemistry_container[ion]
 
     ######################################################################################
     # get tracer values
@@ -496,9 +533,14 @@ class pion():
         ion mass fraction
         '''
 
+        element = self.get_element_symbol(ion)
         ion_tracer = None
         if ion not in self.chemistry_container:
-            util.nebula_exit_with_error(f"ion {ion} not in {self.chemistry_container['chemistry_code']} chemistry")
+            if ion in const.top_level_ions and element in self.chemistry_container['mass_fractions'] :
+                util.nebula_warning(f"ion {ion} is a top-level ion but not a recognized species in NEMO v1.0 chemistry")
+                return None
+            else:
+                util.nebula_exit_with_error(f"ion {ion} is not in silo file")
         else:
             ion_tracer = self.chemistry_container[ion]
 
@@ -605,91 +647,101 @@ class pion():
             # Return the calculated electron number density array for each grid level.
             return ne
 
+    ######################################################################################
+    # get top ion mass fraction
+    ######################################################################################
+    def get_top_ion_massfrac(self, ion, silo_instant):
+
+        # Extract the element string from ion string
+        element = self.get_element_symbol(ion)
+        atomic_number = const.atomic_number[element]
+        element_tracer = self.chemistry_container['mass_fractions'][element]
+        # set elemental mass fraction to top level ion mass fraction
+        top_level_mass_frac = self.get_parameter(element_tracer, silo_instant)
+
+        if self.geometry_container['coordinate_sys'] == 'cylindrical':
+            # Get the number of nested grid levels in the geometry container.
+            Nlevels = self.geometry_container['Nlevels']
+
+            for charge in range(atomic_number):
+                if charge == 0:
+                    ion = f"{element}"
+                    ion_value = self.get_ion_values(ion, silo_instant)
+                    top_level_mass_frac = [top_level_mass_frac[level] - ion_value[level] for level in range(Nlevels)]
+
+                else:
+                    ion = f"{element}{charge}+"  # Adding + for positive ions
+                    ion_value = self.get_ion_values(ion, silo_instant)
+                    top_level_mass_frac = [top_level_mass_frac[level] - ion_value[level] for level in range(Nlevels)]
+
+        top_level_mass_frac = [np.maximum(top_level_mass_frac[level], 0.0) for level in range(Nlevels)]
+
+        return top_level_mass_frac
+
 
     ######################################################################################
-    # differential emission measure
+    # get get ion number density
     ######################################################################################
-    import numpy as np
-
-    def DEM(self, dem_indices, ne, shellvolume):
+    def get_ion_number_density(self, ion, silo_instant):
         """
-        Calculate the differential emission measure (DEM) across temperature bins.
+        Calculates the number density of a given ion across different nested grid levels.
+
+        This method is currently implemented for a cylindrical 2D coordinate system.
+        A 1D spherically symmetric case will require separate handling (TODO).
 
         Parameters:
-        ----------
-        dem_indices : list of numpy.ndarray
-            List where each element is an array of indices corresponding to a temperature bin.
-        ne : numpy.ndarray
-            Array of electron densities corresponding to the temperature values.
-        shellvolume : numpy.ndarray
-            Array of shell volumes corresponding to the temperature values.
+        ion (str): The identifier for the ion (e.g., 'H+', 'O++').
+        silo_instant: The current simulation time or instant for which the calculation is performed.
 
         Returns:
-        -------
-        DEM : numpy.ndarray
-            Array of differential emission measure values for each temperature bin.
+        list: A list of arrays containing the ion number density for each nested grid level.
         """
 
-        # Calculate ne * ne * dV for all elements
-        volume_ne_square = ne * ne * shellvolume
+        # Retrieve the density parameter at the given simulation instant
+        density = self.get_parameter('Density', silo_instant)
 
-        # Initialize an array for DEM with the same length as dem_indices
-        DEM = np.zeros(len(dem_indices))
+        # Identify the shape of each density array for consistency
+        shape_list = [arr.shape for arr in density]
 
-        # Use list comprehension and NumPy's array indexing to sum the values for each bin
-        for i, indices in enumerate(dem_indices):
-            if indices.size > 0:
-                DEM[i] = np.sum(volume_ne_square[indices])
+        # Initialize arrays to store the ion number density
+        ion_num_density = [np.zeros(shape) for shape in shape_list]
 
-        # Remove zero values from DEM
-        DEM = DEM[DEM > 0]
-        return DEM
+        # Extract the element symbol from the ion identifier
+        element = self.get_element_symbol(ion)
 
-    ######################################################################################
-    # generate differential emission measure indices
-    ######################################################################################
-    def generate_dem_indices(self, temperature, Tmin, Tmax, Nbins):
-        # Calculate the logarithmic width of each bin
-        bin_width = (np.log10(Tmax) - np.log10(Tmin)) / Nbins
-        # Half the width of a bin for adjusting bin edges
-        half_bin_width = bin_width / 2
+        # Get the mass of the element from constants
+        element_mass = const.mass[element]
 
-        # Generate the logarithmically spaced temperature bin edges.
-        # This will create Nbins+1 edges to define the boundaries of Nbins.
-        temperature_edges = np.linspace(np.log10(Tmin), np.log10(Tmax), Nbins + 1)
+        if self.geometry_container['coordinate_sys'] == 'spherical':
+            # TODO: Implement the calculation for 1D spherically symmetric coordinate system
+            raise NotImplementedError(
+                "Ion number density calculation for spherically symmetric 1D geometry is not yet implemented.")
 
-        # Create temperature bins by pairing adjacent edges.
-        # Each bin is represented as [bin_min, bin_max].
-        temperature_bins = [[temperature_edges[i], temperature_edges[i + 1]] for i in range(Nbins)]
+        # Currently implemented for cylindrical 2D coordinate system
+        elif self.geometry_container['coordinate_sys'] == 'cylindrical':
+            # Get the number of nested grid levels in the geometry container
+            Nlevels = self.geometry_container['Nlevels']
 
-        # Calculate the midpoints of each bin for potential further use.
-        # These midpoints are the average of the logarithmic bin edges.
-        Tb = np.array([(bin[0] + bin[1]) / 2 for bin in temperature_bins])
+            # Check if the ion is a top-level ion (no sub-ion values available)
+            if self.get_ion_values(ion, silo_instant) is None:
+                print(f" proceeding to compute the number density for the top-level ion: {ion}")
+                # Retrieve the mass fraction for the top-level ion
+                ion_mass_frac = self.get_top_ion_massfrac(ion, silo_instant)
 
-        # Initialize an empty list to store indices of temperatures within each bin.
-        dem_indices = []
+                # Calculate the ion number density for each grid level
+                for level in range(Nlevels):
+                    ion_num_density[level] = density[level] * ion_mass_frac[level] / element_mass
+            else:
+                # Retrieve the mass fraction for sub-level ions
+                ion_mass_frac = self.get_ion_values(ion, silo_instant)
 
-        # Loop through each bin to identify temperature values that fall within the bin's range.
-        for i in range(Nbins):
-            # Find the indices of temperature values that fall within the current bin.
-            # The condition checks if the logarithm of the temperature is within the bin range,
-            # slightly adjusted by half_bin_width to ensure proper capturing of boundary values.
-            indices = np.where((np.log10(temperature) >= temperature_bins[i][0] - half_bin_width) &
-                               (np.log10(temperature) < temperature_bins[i][1] + half_bin_width))[0]
+                # Calculate the ion number density for each grid level
+                for level in range(Nlevels):
+                    ion_num_density[level] = density[level] * ion_mass_frac[level] / element_mass
 
-            # Append the array of indices to the dem_indices list.
-            dem_indices.append(indices)
+        elif self.geometry_container['coordinate_sys'] == 'cartesian':
+            # TODO: Implement the calculation for 3D cartesian coordinate system
+            raise NotImplementedError(
+                "Ion number density calculation for 3D cartesian geometry is not yet implemented.")
 
-        # Filter Tb values for which dem_indices[i] is not empty
-        Tb = [Tb[i] for i in range(Nbins) if len(dem_indices[i]) > 0]
-
-        # Return the list of indices for further processing or analysis.
-        return {'indices': dem_indices, 'Tb': Tb}
-
-
-
-
-
-
-
-
+        return ion_num_density

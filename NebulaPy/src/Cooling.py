@@ -6,11 +6,11 @@ from scipy import interpolate
 class cooling():
 
     ######################################################################################
-    # initializing the class emissionline
+    # initializing the class cooling
     ######################################################################################
     def __init__(self, database, pion_ion, verbose=True):
         """
-        Initializes the emissionline class for a specific ion and sets up the cooling table.
+        Initializes the cooling class for a specific pion ion
 
         Args:
             database (str): Path to the database directory containing the required data files.
@@ -32,7 +32,7 @@ class cooling():
 
         if self.verbose:
             print(f" ---------------------------")
-            print(f" cooling rate mapping:")
+            print(f" initializing cooling class")
         # Construct the filename for the ion cooling table based on the ion symbol
         ion_cooling_filename = chinati_ion + '.txt'
         cooling_database = database + '/Cooling/Chianti/'
@@ -41,7 +41,7 @@ class cooling():
         self.ion_cooling_file = os.path.join(cooling_database, ion_cooling_filename)
 
         if self.verbose:
-            print(f' retrieving {pion_ion} cooling rate data from the database')
+            print(f' retrieving {pion_ion} cooling rate data from database')
 
         # Check if the cooling file exists, exit if not found
         if not os.path.exists(self.ion_cooling_file):
