@@ -7,12 +7,16 @@ import NebulaPy.src as nebula
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.ticker import MultipleLocator, ScalarFormatter
+import warnings
+# Suppress specific warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
+
 
 output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'  # Output image directory
 # Set up paths and filenames
 silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'  # Directory containing silo files
 filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
-ion = 'N7+'
+ion = 'O4+'
 
 # Batch the silo files according to the time instant
 start_time = 0.0
