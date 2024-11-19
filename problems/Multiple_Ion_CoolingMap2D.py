@@ -3,7 +3,7 @@ Multiple Ion 2D Cooling Function Map
 Description: Generate cooling function map from
 2D PION simulation silo files
 Author: Arun Mathew
-Date: <Creation Date>
+Date: 20 Nov 2024
 """
 
 import numpy as np
@@ -20,7 +20,7 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
 # MIMIR
-output_dir = '/home/arun/Desktop/plots/BowShock/simple'  # Output image directory
+output_dir = '/mnt/massive-stars/data/arun_simulations/simple-bowshock-coolmap'  # Output image directory
 # Set up paths and filenames
 silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'  # Directory containing silo files
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
@@ -79,7 +79,7 @@ pion.load_chemistry()
 for ion in ion_list:
 
     cooling = nebula.cooling(
-        database='/home/tony/Desktop/NebulaPy/NebulaPy-DB',
+        database=database_path,
         pion_ion=ion,
         verbose=True
     )

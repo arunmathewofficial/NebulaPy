@@ -3,7 +3,7 @@ Single Ion 2D Cooling Function Map
 Description: Generate cooling function map from
 2D PION simulation silo files
 Author: Arun Mathew
-Date: <Creation Date>
+Date: 17 Nov 2024
 """
 
 import numpy as np
