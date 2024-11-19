@@ -1,3 +1,11 @@
+"""
+Single Ion 2D Cooling Function Map
+Description: Generate cooling function map from
+2D PION simulation silo files
+Author: Arun Mathew
+Date: <Creation Date>
+"""
+
 import numpy as np
 import os
 import time
@@ -23,7 +31,7 @@ database_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/NebulaPy/Neb
 # Set up paths and filenames
 #silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'  # Directory containing silo files
 #filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
-
+#database_path = '/home/tony/Desktop/NebulaPy/NebulaPy-DB'
 
 
 ion = 'H'
