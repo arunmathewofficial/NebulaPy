@@ -26,7 +26,7 @@ database_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/NebulaPy/Neb
 
 
 
-ion = 'O4+'
+ion = 'H'
 
 # Batch the silo files according to the time instant
 start_time = 0.0
