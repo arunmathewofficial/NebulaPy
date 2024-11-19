@@ -388,22 +388,6 @@ class pion():
         return np.array(elemental_mass_fraction)
 
     ######################################################################################
-    # get element symbol for a specific ion
-    ######################################################################################
-    def get_element_symbol(self, ion):
-        """
-        Extracts the element symbol from an ion identifier by filtering out non-alphabetic characters.
-
-        Parameters:
-        ion (str): The ion identifier, which may include both alphabetic and non-alphabetic characters
-                   (e.g., 'He1+', 'O2+', 'C5+').
-
-        Returns:
-        str: The element symbol extracted from the ion identifier (e.g., 'He' from 'He1+', 'O' from 'O2+').
-        """
-        return ''.join(filter(str.isalpha, ion))
-
-    ######################################################################################
     # get elemental mass fraction
     ######################################################################################
     def get_ion_tracer(self, ion):
@@ -533,7 +517,7 @@ class pion():
         ion mass fraction
         '''
 
-        element = self.get_element_symbol(ion)
+        element = util.get_element_symbol(ion)
         ion_tracer = None
         if ion not in self.chemistry_container:
             if ion in const.top_level_ions and element in self.chemistry_container['mass_fractions'] :
@@ -653,7 +637,7 @@ class pion():
     def get_top_ion_massfrac(self, ion, silo_instant):
 
         # Extract the element string from ion string
-        element = self.get_element_symbol(ion)
+        element = util.get_element_symbol(ion)
         atomic_number = const.atomic_number[element]
         element_tracer = self.chemistry_container['mass_fractions'][element]
         # set elemental mass fraction to top level ion mass fraction
@@ -707,7 +691,7 @@ class pion():
         ion_num_density = [np.zeros(shape) for shape in shape_list]
 
         # Extract the element symbol from the ion identifier
-        element = self.get_element_symbol(ion)
+        element = util.get_element_symbol(ion)
 
         # Get the mass of the element from constants
         element_mass = const.mass[element]

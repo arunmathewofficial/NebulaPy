@@ -200,4 +200,19 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
         print(f" {Ninstances} time instances")
         print(" batching completed")
         return batched_silos
-#*************************************************************************************
+
+######################################################################################
+# get element symbol for a specific ion
+######################################################################################
+def get_element_symbol(ion):
+    """
+    Extracts the element symbol from an ion identifier by filtering out non-alphabetic characters.
+
+    Parameters:
+    ion (str): The ion identifier, which may include both alphabetic and non-alphabetic characters
+               (e.g., 'He1+', 'O2+', 'C5+').
+
+    Returns:
+    str: The element symbol extracted from the ion identifier (e.g., 'He' from 'He1+', 'O' from 'O2+').
+    """
+    return ''.join(filter(str.isalpha, ion))
