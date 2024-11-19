@@ -11,11 +11,21 @@ import warnings
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
-
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'  # Output image directory
+# MIMIR
+output_dir = '/home/arun/Desktop/plots/BowShock/simple'  # Output image directory
 # Set up paths and filenames
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'  # Directory containing silo files
-filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
+silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'  # Directory containing silo files
+filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+database_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/NebulaPy/NebulaPy-DB'
+
+#Razer Blade 
+#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'  # Output image directory
+# Set up paths and filenames
+#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'  # Directory containing silo files
+#filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
+
+
+
 ion = 'O4+'
 
 # Batch the silo files according to the time instant
@@ -46,7 +56,7 @@ mesh_edges_max = pion.geometry_container['edges_max']
 pion.load_chemistry()
 
 cooling = nebula.cooling(
-    database='/home/tony/Desktop/NebulaPy/NebulaPy-DB',
+    database=database_path,
     pion_ion=ion,
     verbose=True
 )
