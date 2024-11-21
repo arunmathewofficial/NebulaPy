@@ -128,7 +128,7 @@ class chianti:
     ######################################################################################
     # Get emissivity
     ######################################################################################
-    def get_emissivity(self):
+    def get_emissivity(self, allLines=True):
         """
         Retrieve the emissivity values for all spectral lines associated
         with a specified ion.
@@ -139,9 +139,37 @@ class chianti:
         if self.verbose:
             print(' retrieving emissivity values for all spectral lines '
                   'of', self.chianti_ion.Spectroscopic)
-        self.chianti_ion.emiss(True)
+        self.chianti_ion.emiss(allLines=allLines)
         emissivity = self.chianti_ion.Emiss
         return emissivity
+
+    ######################################################################################
+    # get line emissivity
+    ######################################################################################
+    def get_line_emissivity(self, line_list):
+
+        all_lines = self.get_allLines()
+        if self.verbose:
+            print(" retrieving line index for the given line(s)")
+
+        # Check if every line in line_list exists in all_lines
+        missing_lines = [line for line in line_list if line not in all_lines]
+        if missing_lines:
+            util.nebula_exit_with_error(f" following lines are not found: {missing_lines}")
+
+        # Retrieve indices of lines in line_list
+        line_indices = [i for i, x in enumerate(all_lines) if x in line_list]
+
+        # get emissivity
+        emissivity = self.get_emissivity(allLines=False)['emiss']
+
+        line_emissivity = {}
+        for i, index in enumerate(line_indices):
+            line_str = str(line_list[i])
+            specific_line_emissivity = emissivity[index]
+            line_emissivity[line_str] = specific_line_emissivity
+
+        return line_emissivity
 
     ######################################################################################
     # get attributes of all elements in chianti element list
