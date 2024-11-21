@@ -32,7 +32,7 @@ pion_ion = 'O2+'  # Ion of interest (Oxygen IV)
 lines = [4960.295, 5008.240]  # Wavelengths of the emission lines in Angstroms
 
 # Print the line luminosity calculation information
-print(rf" calculating line luminosity of {pion_ion} lines: {lines} Angstrom")
+print(rf" calculating line emissivity map of {pion_ion} lines: {lines} Angstrom")
 
 # Batch the silo files based on time intervals (start_time, finish_time, etc.)
 batched_silos = util.batch_silos(
@@ -52,10 +52,11 @@ pion.load_chemistry()
 pion.load_geometry(batched_silos[0])
 
 # Extract geometry-related parameters
-coordinate_sys = pion.geometry_container['coordinate_sys']  # Coordinate system
-N_grid_level = pion.geometry_container['Nlevels']  # Number of grid levels
-mesh_edges_min = pion.geometry_container['edges_min']  # Minimum mesh edges
-mesh_edges_max = pion.geometry_container['edges_max']  # Maximum mesh edges
+geometry = pion.geometry_container
+coordinate_sys = geometry['coordinate_sys']  # Coordinate system
+N_grid_level = geometry['Nlevels']  # Number of grid levels
+mesh_edges_min = geometry['edges_min']  # Minimum mesh edges
+mesh_edges_max = geometry['edges_max']  # Maximum mesh edges
 
 # Convert line wavelengths to string format for later use
 lines_str = [str(line) for line in lines]
@@ -67,9 +68,12 @@ ion_name = pion_ion.replace('+', 'p')
 ion_output_dir = os.path.join(output_dir, ion_name)
 os.makedirs(ion_output_dir, exist_ok=True)  # Create directory if it doesn't exist
 
+# initializing line emisssion class
+line_emission = nebula.line_emission(pion_ion, verbose=True)  # Initialize the emission line calculation
+
+
 # Initialize the runtime counter
 runtime = 0.0
-
 # Loop over each time instant (step) in the batched silo files
 for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()  # Track start time for each simulation step
@@ -82,6 +86,11 @@ for step, silo_instant in enumerate(batched_silos):
     # Extract physical parameters for the current simulation step
     temperature = pion.get_parameter('Temperature', silo_instant)  # Temperature data
     ne = pion.get_ne(silo_instant)  # Electron density
+
+    emissivity_map_dict = line_emission.line_emissivity_cylindrical(lines, temperature,
+                                                                    ne, geometry)
+
+    '''
     rows = len(temperature[0])  # Number of inner arrays in 2D temperature data
 
     # Initialize a list to store emissivity maps
@@ -112,6 +121,8 @@ for step, silo_instant in enumerate(batched_silos):
                 emissivity_map_dict[line][level][row] = lines_emissivity_row[line]
 
         print(f" completed emissivity calculations for line(s) at level {level}")
+        '''
+
 
     # Loop through each emission line and plot the corresponding emissivity map
     for line in lines_str:
