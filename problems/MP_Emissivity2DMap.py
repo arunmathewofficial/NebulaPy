@@ -1,5 +1,5 @@
 """
-2D Emissivity Map Generator for Multi-Line Single Ion Emissions
+Parallelized 2D Emissivity Map Generator for Multi-Line Emissions of a Single Ion
 Description: Generate Emissivity Map from 2D PION simulation silo files
 Author: Arun Mathew
 Date: 21 Nov 2024
@@ -87,7 +87,7 @@ for step, silo_instant in enumerate(batched_silos):
     temperature = pion.get_parameter('Temperature', silo_instant)  # Temperature data
     ne = pion.get_ne(silo_instant)  # Electron density
 
-    emissivity_map_dict = line_emission.line_emissivity_cylindrical(lines, temperature, ne, geometry)
+    emissivity_map_dict = line_emission.MP_line_emissivity_cylindrical(lines, temperature, ne, geometry, ncores=2)
 
     # Loop through each emission line and plot the corresponding emissivity map
     for line in lines_str:

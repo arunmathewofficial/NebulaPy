@@ -14,6 +14,12 @@ from ChiantiPy.core.Continuum import continuum
 import ChiantiPy.tools.io as io
 from scipy.interpolate import splev, splrep
 
+# Limit the number of threads used by OpenMP and Intel MKL to 1.
+# This prevents oversubscription of CPU cores when running multiprocessing tasks
+# and ensures efficient resource utilization in parallel workflows.
+os.environ["OMP_NUM_THREADS"] = "1"  # Restrict OpenMP to 1 thread
+os.environ["MKL_NUM_THREADS"] = "1"  # Restrict Intel MKL to 1 thread
+
 
 class chianti:
     """
