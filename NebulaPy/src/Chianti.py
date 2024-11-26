@@ -62,6 +62,7 @@ class chianti:
             self.chianti_ion = ch.ion(self.chianti_ion_name, temperature=self.temperature, eDensity=self.ne,
                                  pDensity='default', radTemperature=None, rStar=None, abundance=None,
                                  setup=True, em=None, verbose=self.verbose)
+            self.get_ion_attributes()
 
         if chianti_ion is not None:
             self.chianti_ion = ch.ion(chianti_ion, temperature=self.temperature, eDensity=self.ne,
@@ -249,6 +250,51 @@ class chianti:
         # Finalize the species attributes dictionary
         # At this point, `self.species_attributes` contains all the relevant
         # attributes for the species in `chianti_element_list`
+
+    ######################################################################################
+    # get ion attributes
+    ######################################################################################
+    def get_ion_attributes(self):
+
+        AbundanceName = 'unity'
+        abundAll = chdata.Abundance[AbundanceName]['abundance']
+
+        species = specTrails()  # Create an instance of specTrails to manage species data
+        species.AbundAll = abundAll
+        species.Temperature = self.temperature  # Set the temperature for the species
+
+        ion_list = [self.chianti_ion_name]
+        species.ionGate(ionList=ion_list,
+            minAbund=None, doLines=True,
+            doContinuum=True, doWvlTest=0,
+            doIoneqTest=0, verbose=False
+        )
+
+        self.species_attributes_container = {}
+
+        # Loop through the sorted keys in the dictionary of species
+        if self.verbose:
+            print(f" retrieving species attributes")
+
+        count = 0
+        for akey in sorted(species.Todo.keys()):
+            self.species_attributes_container[akey] = chianti_util.convertName(akey)  # Convert the key and store it
+            # If verbose mode is enabled, print the spectroscopic name
+            if self.verbose:
+                # Print a comma-separated list of names with up to 10 items per line
+                print(f" {self.species_attributes_container[akey]['spectroscopic']}", end='')
+                count += 1
+                # Print a newline after every 10 items
+                if count % 10 == 0:
+                    print()  # Move to the next line
+                else:
+                    print(", ", end='')  # Continue on the same line
+
+            self.species_attributes_container[akey]['keys'] = species.Todo[akey]  # Store relevant data
+            # Remove unnecessary data from the dictionary
+            del self.species_attributes_container[akey]['filename']
+            del self.species_attributes_container[akey]['experimental']
+
 
     ######################################################################################
     # get line spectrum

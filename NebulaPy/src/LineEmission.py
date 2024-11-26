@@ -133,6 +133,104 @@ class line_emission():
             print(f" returning emissivity map for line(s) at level {level}       ")
         return emissivity_map_dict
 
+
+    ######################################################################################
+    # get dominant lines of a ion for give temperature and electron number density
+    ######################################################################################
+    def get_dominant_lines(self, temperature, ne, Nlines, geometry_container):
+
+        coordinate_sys = geometry_container['coordinate_sys']
+        # Define a tolerance for electron density (avoid division by zero)
+        electron_tolerance = 1.E-08
+
+        dominant_lines_container = {
+            'ion': self.ion,
+            'electron_tolerance': electron_tolerance,
+        }
+
+        ###########################################################################################
+        # For cylindrical coordinate system
+        if coordinate_sys == 'cylindrical':
+            N_grid_level = geometry_container['Nlevels']  # Number of grid levels
+            rows = len(temperature[0])  # Number of inner arrays in 2D temperature data
+
+            wvls = [np.zeros((Nlines,)) for _ in range(N_grid_level)]
+            largest_emissivity = [np.zeros((Nlines,)) for _ in range(N_grid_level)]
+
+            # all emission lines of the ion
+            all_wvls = []
+
+            # Loop over each grid level in the simulation
+            for level in range(N_grid_level):
+                ne[level] = np.array(ne[level])
+                ne[level][ne[level] == 0] = electron_tolerance  # Replace zero values with tolerance
+
+                previous_largest_emissivity = np.zeros(Nlines)
+                previous_largest_emissivity_index = np.zeros(Nlines, dtype=int)
+
+                # Loop over each row in the grid
+                for row in range(rows):
+                    print(
+                        f" retrieving emissivity of all lines of {self.ion} at level {level}, row {row}  ",
+                        end='\r'
+                    )
+                    # Get temperature and electron density for the current row
+                    temperature_row = temperature[level][row]
+                    ne_row = ne[level][row]
+
+                    # Create a Chianti object for line emissivity calculation
+                    ion = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
+                    chianti_ion_name = ion.chianti_ion_name
+
+                    if 'line' in ion.species_attributes_container[chianti_ion_name]['keys']:
+                        # Get the emissivity for wavelengths
+                        emissivity_data = ion.get_emissivity()
+                        emissivity_for_wvl = emissivity_data['emiss']
+                        all_wvls = np.array(emissivity_data['wvl'])
+                        emissivity_for_wvl_1D = np.max(emissivity_for_wvl, axis=1)
+                        del ion.species_attributes_container
+
+                        # Find the indices of the Nlines largest values
+                        current_largest_emissivity_index = np.argsort(emissivity_for_wvl_1D)[-Nlines:]
+                        current_largest_emissivity = emissivity_for_wvl_1D[current_largest_emissivity_index]
+
+                        # Update previous arrays elements using current array element
+                        for i in range(Nlines):
+                            if current_largest_emissivity[i] > previous_largest_emissivity[i]:
+                                previous_largest_emissivity[i] = current_largest_emissivity[i]
+                                previous_largest_emissivity_index[i] = current_largest_emissivity_index[i]
+
+                        wvls[level] = all_wvls[previous_largest_emissivity_index]
+                        largest_emissivity[level] = previous_largest_emissivity
+
+                    else:
+                        if self.verbose:
+                            print(f" grid level {level}: {self.ion} has no line emission, skipping ..." + " " * 10)
+                        break
+
+            dominant_lines_container['emiss'] = largest_emissivity
+            dominant_lines_container['wvls'] = wvls
+            print(f" completed identifying the dominant lines for ion {self.ion} in the current silo instance")
+        else:
+            if self.verbose:
+                util.nebula_exit_with_error(" Coordinate system is not cylindrical")
+        # End of cylindrical section ##########################################################
+
+        return dominant_lines_container
+    ###########################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
     ######################################################################################
     # multi-processing line emissivity calculation
     ######################################################################################

@@ -407,6 +407,73 @@ class pion():
             util.nebula_exit_with_error(f" ion {ion} not found in the chemistry container")
         return self.chemistry_container[ion]
 
+
+    ######################################################################################
+    # check if the ion is top pion
+    ######################################################################################
+    def top_ion_check(self, ion):
+        """
+        Check if a given ion qualifies as a top-level ion based on predefined criteria.
+
+        Args:
+            ion (str): The ion to check (e.g., 'H+', 'C++').
+
+        Returns:
+            bool: True if the ion is a top-level ion, False otherwise.
+        """
+
+        # Extract the element symbol from the ion string using the utility function.
+        # For example, 'C++' would return 'C'.
+        element = util.get_element_symbol(ion)
+
+        # Check if the ion meets the criteria for being a top-level ion:
+        # 1. It is listed in the predefined set of top-level ions (const.top_level_ions).
+        # 2. Its associated element is a recognized tracer element in the chemistry model.
+        if ion in const.top_level_ions and element in self.chemistry_container['tracer_elements']:
+            if self.verbose:
+                # If verbose mode is enabled, print a message indicating that the ion
+                # is a top-level ion but is not recognized as a species in NEMO v1.0 chemistry.
+                print(f" ion '{ion}' is a top-level ion but not a recognized species in NEMO v1.0 chemistry")
+            return True  # The ion qualifies as a top-level ion.
+        else:
+            # If the ion does not meet the criteria, return False.
+            return False
+
+    ######################################################################################
+    # check if the ion exist in pion simulation file
+    ######################################################################################
+    def ion_check(self, ion, top_ion_check=False, terminate=False):
+        """
+        Checks if the given ion is valid based on the chemistry model and optional top-level ion conditions.
+
+        Parameters:
+        ion (str): The ion to check (e.g., 'O+2', 'H+1').
+        top_ion_check (bool): If True, checks if the ion is a top-level ion using the top_ion_check method.
+        terminate (bool): If True and the ion is not found, raise an exception.
+
+        Returns:
+        bool: True if the ion is valid, False otherwise.
+        """
+        found_ion = False
+        if top_ion_check:
+            # Check if the ion is a top-level ion.
+            if self.top_ion_check(ion):
+                found_ion = True
+            else:
+                found_ion = ion in self.chemistry_container
+            if not found_ion and terminate:
+                # Raise an exception if terminate is True and the ion is not found.
+                raise util.nebula_exit_with_error(f"ion '{ion}' is not recognized in the chemistry container")
+        else:
+            # Check if the ion exists in the chemistry container.
+            found_ion = ion in self.chemistry_container
+
+        if not found_ion and terminate:
+            # Raise an exception if terminate is True and the ion is not found.
+            raise util.nebula_exit_with_error(f"ion '{ion}' is not recognized in the chemistry container")
+
+        return found_ion
+
     ######################################################################################
     # get tracer values
     ######################################################################################
@@ -520,7 +587,7 @@ class pion():
         element = util.get_element_symbol(ion)
         ion_tracer = None
         if ion not in self.chemistry_container:
-            if ion in const.top_level_ions and element in self.chemistry_container['mass_fractions'] :
+            if ion in const.top_level_ions and element in self.chemistry_container['mass_fractions']:
                 util.nebula_warning(f"ion {ion} is a top-level ion but not a recognized species in NEMO v1.0 chemistry")
                 return None
             else:
@@ -580,7 +647,7 @@ class pion():
             if Nlevels == 1:
                 print(" calculating electron number density for a single grid level")
             elif Nlevels > 1:
-                print(" calculating electron number density for each grid levels")
+                print(" calculating electron number density for each grid level(s)")
 
             # Retrieve the density data from the input file at the current simulation instant.
             density = self.get_parameter("Density", silo_instant)
@@ -641,7 +708,7 @@ class pion():
         atomic_number = const.atomic_number[element]
         element_tracer = self.chemistry_container['mass_fractions'][element]
         # set elemental mass fraction to top level ion mass fraction
-        top_level_mass_frac = self.get_parameter(element_tracer, silo_instant)
+        top_ion_mass_frac = self.get_parameter(element_tracer, silo_instant)
 
         if self.geometry_container['coordinate_sys'] == 'cylindrical':
             # Get the number of nested grid levels in the geometry container.
@@ -651,16 +718,16 @@ class pion():
                 if charge == 0:
                     ion = f"{element}"
                     ion_value = self.get_ion_values(ion, silo_instant)
-                    top_level_mass_frac = [top_level_mass_frac[level] - ion_value[level] for level in range(Nlevels)]
+                    top_ion_mass_frac = [top_ion_mass_frac[level] - ion_value[level] for level in range(Nlevels)]
 
                 else:
                     ion = f"{element}{charge}+"  # Adding + for positive ions
                     ion_value = self.get_ion_values(ion, silo_instant)
-                    top_level_mass_frac = [top_level_mass_frac[level] - ion_value[level] for level in range(Nlevels)]
+                    top_ion_mass_frac = [top_ion_mass_frac[level] - ion_value[level] for level in range(Nlevels)]
 
-        top_level_mass_frac = [np.maximum(top_level_mass_frac[level], 0.0) for level in range(Nlevels)]
+        top_ion_mass_frac = [np.maximum(top_ion_mass_frac[level], 0.0) for level in range(Nlevels)]
 
-        return top_level_mass_frac
+        return top_ion_mass_frac
 
 
     ######################################################################################
