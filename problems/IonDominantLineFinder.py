@@ -38,9 +38,9 @@ silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'
 
 # OutPut directory and filebase configurationRazer Blade
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'
-filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
+#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'
+#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'
+#filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
 
 # List of ions to analyze
 ion_list = ['H1+', 'He1+', 'C2+', 'N1+', 'N2+', 'O1+', 'O2+', 'Ne1+', 'Ne2+', 'S1+', 'S2+', 'S3+']
