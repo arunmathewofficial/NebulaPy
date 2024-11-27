@@ -5,4 +5,4 @@ ipyparallel
 ChiantiPy
 pypion
 requests
-
+pandas

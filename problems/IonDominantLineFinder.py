@@ -38,9 +38,9 @@ silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'
 
 # OutPut directory and filebase configurationRazer Blade
-#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'
-#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'
-#filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'
+filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
 
 # List of ions to analyze
 ion_list = ['H1+', 'He1+', 'C2+', 'N1+', 'N2+', 'O1+', 'O2+', 'Ne1+', 'Ne2+', 'S1+', 'S2+', 'S3+']
@@ -114,8 +114,15 @@ for step, silo_instant in enumerate(batched_silos):
             file.write(f"Ion: {ion}\n\n")
             file.write("Grid Level | " + " | ".join([f"Level {i}" for i in range(len(df_wvls))]) + "\n")
             file.write("-" * (12 + (len(df_wvls.columns) * 4)) + "\n")
-            file.write("Lines (Amstrong) | " + " | ".join(df_wvls.applymap("{:.6f}".format).values.flatten()) + "\n")
-            file.write("Emissivity (ergs s^-1 str^-1) | " + " | ".join(df_emiss.applymap("{:.6e}".format).values.flatten()) + "\n\n")
+            file.write("Lines (Amstrong) | ")
+            for i in range(len(df_wvls)):
+                file.write("  ".join(f"{wvl:.6f}" for wvl in df_wvls.iloc[i].values) + " | ")
+            file.write("\n")
+            file.write("Emissivity (ergs s^-1 str^-1) | ")
+            for i in range(len(df_wvls)):
+                file.write("  ".join(f"{wvl:.6e}" for wvl in df_emiss.iloc[i].values) + " | ")
+            file.write("\n\n")
+
 
     # Update and log the runtime for the current step
     silo_instant_finish_time = time.time()
