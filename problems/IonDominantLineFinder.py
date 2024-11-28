@@ -38,23 +38,23 @@ silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'
 
 # OutPut directory and filebase configurationRazer Blade
-#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'
-#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'
-#filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'
+filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
 
 # List of ions to analyze
 ion_list = ['H1+', 'He1+', 'C2+', 'N1+', 'N2+', 'O1+', 'O2+', 'Ne1+', 'Ne2+', 'S1+', 'S2+', 'S3+']
 
 # Batch the silo files for analysis within the specified time range
-start_time = 100.0
-finish_time = None
+start_time = 10
+finish_time = 13
 batched_silos = util.batch_silos(
     silo_dir,
     filebase,
     start_time=start_time,
-    finish_time=None,
-    time_unit='kyr',
-    out_frequency=20
+    finish_time=finish_time,
+    time_unit= 'kyr',
+    out_frequency=None
 )
 
 # Initialize the Pion class to handle simulation data and load chemistry and geometry
@@ -90,6 +90,7 @@ for step, silo_instant in enumerate(batched_silos):
     print(f" ---------------------------")
     sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
+    exit(1)
     with open(outfile, "a") as file:
         file.write(f"Step: {step} | Simulation Time: {sim_time:.6e}\n\n")
 
