@@ -87,7 +87,6 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
     print(f" finishing time: {finish_time} {time_unit}")
     print(f" output frequency: {out_frequency}")
 
-
     # Construct search pattern for silo files
     search_pattern = os.path.join(dir, f"{filebase}_*.silo")
     all_silos = glob.glob(search_pattern)
@@ -106,7 +105,6 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
     Nlevels = header_data.db.GetVar("grid_nlevels")
     # close the object
     header_data.close()
-
     # set number of time instance
     Ninstances = 0
 
@@ -115,25 +113,25 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
         print(f" grid: uniform")
         silos = sorted(all_silos)
         batched_silos = [[silo] for silo in silos]
+        selected_silos = []
         for i, silo in enumerate(batched_silos):
             data = ReadData(silo)
             basic = data.get_1Darray('Density')
             sim_time = (basic['sim_time'] * unit.s).value
             data.close()
 
-            if start_time_sec is not None and sim_time < start_time_sec:
-                # Remove the current silo from the list
-                batched_silos.pop(i)
-            elif finish_time_sec is not None and sim_time > finish_time_sec:
-                # Remove the current silo and all remaining silos from the list
-                batched_silos = batched_silos[:i]
-                break
+            if (start_time_sec is not None and sim_time < start_time_sec) or \
+                    (finish_time_sec is not None and sim_time > finish_time_sec):
+                continue  # Skip this silo if it doesn't meet the criteria
+            selected_silos.append(silo)
 
+        batched_silos = selected_silos
         # Keep files based on the output frequency if specified
         if out_frequency is not None:
             Ninstances = len(batched_silos)
             # indices to keep: multiples of out_freq, plus the first and last index
-            indices_to_keep = sorted(set(range(0, Ninstances, out_frequency)) | {0, Ninstances - 1})
+            #indices_to_keep = sorted(set(range(0, Ninstances, out_frequency)) | {0, Ninstances - 1})
+            indices_to_keep = sorted(set(range(0, Ninstances, out_frequency)))
             batched_silos = [batched_silos[i] for i in indices_to_keep]
 
         Ninstances = len(batched_silos)
@@ -149,26 +147,26 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
         # Find and sort level 00 files, one per time instant
         level00_instants = [file for file in all_silos if pattern.search(file)]
         batched_silos = [[file] for file in sorted(level00_instants)]
+
         # check if level 00 batched silos are within the asked time range
+        selected_silos = []
         for i, silo in enumerate(batched_silos):
             data = ReadData(silo)
-
             if coord_sys == 3:
                 basic = data.get_1Darray('Density')
             elif coord_sys == 2:
                 basic = data.get_2Darray('Density')
             elif coord_sys == 1:
                 basic = data.get_3Darray('Density')
-
             sim_time = (basic['sim_time'] * unit.s).value
             data.close()
-            if start_time_sec is not None and sim_time < start_time_sec:
-                # Remove the current silo from the list
-                batched_silos.pop(i)
-            elif finish_time_sec is not None and sim_time > finish_time_sec:
-                # Remove the current silo and all remaining silos from the list
-                batched_silos = batched_silos[:i]
-                break
+
+            if (start_time_sec is not None and sim_time < start_time_sec) or \
+                    (finish_time_sec is not None and sim_time > finish_time_sec):
+                continue  # Skip this silo if it doesn't meet the criteria
+            selected_silos.append(silo)
+
+        batched_silos = selected_silos
 
         # Keep files based on the output frequency if specified
         if out_frequency is not None:
@@ -199,6 +197,8 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
         Ninstances = len(batched_silos)
         print(f" {Ninstances} time instances")
         print(" batching completed")
+        if not batched_silos:
+            nebula_exit_with_error('no silo files found in the specified time range, check your selection criteria')
         return batched_silos
 
 ######################################################################################
