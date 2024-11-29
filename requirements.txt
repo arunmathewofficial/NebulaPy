@@ -6,3 +6,4 @@ ChiantiPy
 pypion
 requests
 pandas
+h5py
