@@ -26,7 +26,6 @@ Installation and Setup (Linux: Debian/Ubuntu)
 2. Install dependencies:
    ```
    pip install -r requirements.txt
-   pip install chiantipy
    ```
 
 3. Download and set up the CHIANTI database:
