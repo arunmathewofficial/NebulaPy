@@ -76,9 +76,11 @@ outfile = os.path.join(output_dir, filename)
 
 # get geometry container
 geometry = pion.geometry_container
-N_grid_level = geometry['Nlevels']
+N_grid_level = geometry['Nlevel']
 
-pion.get_cylindrical_grid_volume()
+print(pion.get_cylindrical_cell_volume())
+
+exit(1)
 
 # Write the initial header to the output file
 with open(outfile, "w") as file:

@@ -243,51 +243,40 @@ class pion():
     ######################################################################################
     # cylindrical grid 2D volume
     ######################################################################################
-    def get_cylindrical_grid_volume(self):
+    def get_cylindrical_cell_volume(self):
+        """
+        Computes the volume of grid cells in a cylindrical coordinate system.
 
-        #Note: this is fine as far as the grids is not adaptive. In PION the grid is static
-        # but has different static refinement. It was adaptive one has to calculate the
-        # grid point volume for each time instant in that case we would have another argument of silo instant is require.
+        This function assumes a static grid with multiple refinement levels.
+        The volume of each cylindrical shell segment is calculated using the difference
+        in squared radii multiplied by the cell height.
 
-        Ngrid = self.geometry_container['Ngrid']
-        Nlevel = self.geometry_container['Nlevel']
-        grid_edges_min = self.geometry_container['edges_min']
-        grid_edges_max = self.geometry_container['edges_max']
-        mask = self.geometry_container['mask']
+        Returns:
+            list[np.ndarray]: A list of 2D arrays containing cell volumes in the selected unit ('cm' or 'pc').
+        """
 
-        # Initialize an array with Nlevel of grid levels of same shape
-        cell_volume = [np.zeros(shape) for shape in [arr.shape for arr in mask]]
+        # Extract necessary grid parameters
+        Ngrid, Nlevel = self.geometry_container['Ngrid'], self.geometry_container['Nlevel']
+        edges_min, edges_max = self.geometry_container['edges_min'], self.geometry_container['edges_max']
+        mask_shapes = [mask.shape for mask in self.geometry_container['mask']]
 
+        # Initialize cell volumes
+        cell_volume = [np.zeros(shape) for shape in mask_shapes]
+
+        # compute cell volume for each refinement level
         for level in range(Nlevel):
-            print(level)
+            delta_z = (edges_max[level][0].value - edges_min[level][0].value) / Ngrid[0]
+            delta_r = (edges_max[level][1].value - edges_min[level][1].value) / Ngrid[1]
 
+            r_cells = np.arange(Ngrid[1]) * delta_r
+            r_squares = (r_cells + delta_r) ** 2 - r_cells ** 2
 
-        # Calculates the volume of each cell in the image grid
-        '''
-        xmax, xmin, ngrid
+            # Compute cell volumes
+            cell_volume[level][:, :] = delta_z * np.pi * r_squares[:, None]
 
-        xmax = xmax
-        xmin = xmin
-        ngrid = ngrid
-        # Calculate the size of each cell in the x, y, and z-direction:
-        delta_z = (xmax[0] - xmin[0]) / ngrid[0]
-        delta_R = (xmax[1] - xmin[1]) / ngrid[1]
-        # Create a 2D array of zeros with the same dimensions as ngrid:
-        v = np.zeros((ngrid[1], ngrid[0]))
-        # Loop through each element in the Volume array:
-        for ycells in range(ngrid[1]):
-            rmin = ycells * delta_R
-            rmax = (ycells + 1) * delta_R
-            for xcells in range(ngrid[0]):
-                v[ycells, xcells] = delta_z * np.pi * (rmax ** 2 - rmin ** 2)
-        del delta_z
-        del delta_R
-        del xmax
-        del xmin
-        del ngrid
-        return v
-        '''
-
+        # Convert to appropriate units
+        unit_factors = {'cm': unit.cm ** 3, 'pc': unit.pc ** 3}  # Add more cases as needed
+        return cell_volume * unit_factors[self.dim_scale]
 
 
     # ==================================================================================#
