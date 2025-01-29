@@ -15,7 +15,7 @@ Author: Arun Mathew
 Date: 22 Nov 2024
 """
 
-import numpy as np
+#import numpy as np
 import os
 import time
 from NebulaPy.tools import util
@@ -106,7 +106,7 @@ for step, silo_instant in enumerate(batched_silos):
     for ion in ion_list:
         print(f" computing dominant lines for ion: {ion}")
         ion_lines = nebula.line_emission(ion=ion, verbose=True)
-        dominant_lines = ion_lines.get_dominant_lines(
+        dominant_lines = ion_lines.get_dominant_lines_cylindrical(
             temperature=temperature, ne=ne, Nlines=10, geometry_container=geometry
         )
 

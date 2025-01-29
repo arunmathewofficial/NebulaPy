@@ -196,6 +196,10 @@ class pion():
         header_data = OpenData(silo_instant)
         # Set the directory to '/header'
         header_data.db.SetDir('/header')
+
+        print(header_data.db)
+        exit(1)
+
         # Retrieve what coordinate system is used
         coord_sys = header_data.db.GetVar("coord_sys")
         if not coord_sys == 2:
@@ -235,6 +239,35 @@ class pion():
         if self.verbose:
             print(f" grid points ..............????")
 
+        ######################################################################################
+        # cylindrical grid 2D volume
+        ######################################################################################
+        def get_cylindrical_grid_volume(self, silo_instant):
+
+            # Calculates the volume of each cell in the image grid
+
+            xmax, xmin, ngrid
+
+            xmax = xmax
+            xmin = xmin
+            ngrid = ngrid
+            # Calculate the size of each cell in the x, y, and z-direction:
+            delta_z = (xmax[0] - xmin[0]) / ngrid[0]
+            delta_R = (xmax[1] - xmin[1]) / ngrid[1]
+            # Create a 2D array of zeros with the same dimensions as ngrid:
+            v = np.zeros((ngrid[1], ngrid[0]))
+            # Loop through each element in the Volume array:
+            for ycells in range(ngrid[1]):
+                rmin = ycells * delta_R
+                rmax = (ycells + 1) * delta_R
+                for xcells in range(ngrid[0]):
+                    v[ycells, xcells] = delta_z * np.pi * (rmax ** 2 - rmin ** 2)
+            del delta_z
+            del delta_R
+            del xmax
+            del xmin
+            del ngrid
+            return v
 
     # ==================================================================================#
     # ******************************* LOAD CHEMISTRY ***********************************#
