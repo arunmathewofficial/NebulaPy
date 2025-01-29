@@ -37,10 +37,10 @@ output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res'
 silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'
 
-# OutPut directory and filebase configurationRazer Blade
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'
-filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
+# OutPut directory and filebase configuration for Razer Blade
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
+filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 # Batch the silo files for analysis within the specified time range
 batched_silos = util.batch_silos(
@@ -60,16 +60,15 @@ pion.load_chemistry()
 # generate geometry container
 pion.load_geometry(scale='cm')
 
-
 print(f" ---------------------------")
 # The task begins here: identifying the dominant spectral lines for the list of ions.
 # List of ions to analyze
 ion_list = ['H1+', 'He1+', 'C2+', 'N1+', 'N2+', 'O1+', 'O2+', 'Ne1+', 'Ne2+', 'S1+', 'S2+', 'S3+']
 # Filter the ion list to include only those present in the simulation
-print(" task: finding dominant spectral lines for ions")
-print(" ion check: ")
-ion_list = [ion for ion in ion_list if pion.ion_check(ion, top_ion_check=True, terminate=False)]
-print(f" filtered ion list: {ion_list}")
+print(" task: determining the dominant spectral lines for the given ions")
+# Check the batch of ions listed in chemistry container
+ion_list = pion.ion_batch_check(ion_list=ion_list, top_ion_check=True, terminate=False)
+
 
 # Prepare output file for results
 filename = filebase + '_dominantLines.txt'
@@ -78,6 +77,8 @@ outfile = os.path.join(output_dir, filename)
 # get geometry container
 geometry = pion.geometry_container
 N_grid_level = geometry['Nlevels']
+
+pion.get_cylindrical_grid_volume()
 
 # Write the initial header to the output file
 with open(outfile, "w") as file:

@@ -196,35 +196,37 @@ class pion():
         header_data = OpenData(silo_instant)
         # Set the directory to '/header'
         header_data.db.SetDir('/header')
-
-        print(header_data.db)
-        exit(1)
-
+        #print(header_data.db.GetToc())
         # Retrieve what coordinate system is used
         coord_sys = header_data.db.GetVar("coord_sys")
         if not coord_sys == 2:
             util.nebula_exit_with_error(f"geometry mismatch {const.coordinate_system[coord_sys]}")
         # Retrieve no of nested grid levels
-        Nlevels = header_data.db.GetVar("grid_nlevels")
+        Nlevel = header_data.db.GetVar("grid_nlevels")
+        Ngrid = header_data.db.GetVar("NGrid")
         # close the object
         header_data.close()
 
         # save the dynamics and chemistry_flag values in the chemistry_container dictionary
         self.geometry_container['coordinate_sys'] = const.coordinate_system[coord_sys]
-        self.geometry_container['Nlevels'] = Nlevels
+        self.geometry_container['Nlevel'] = Nlevel
+        self.geometry_container['Ngrid'] = Ngrid
         self.geometry_container['dim_scale'] = self.dim_scale
         if self.verbose:
-            print(f" N grid levels: {Nlevels}")
+            print(f" N grid levels: {Nlevel}")
             print(f" dimensional scale: {self.dim_scale}")
-
 
         # Read the data from the current silo file
         dataio = ReadData(silo_instant)
         basic = dataio.get_2Darray('Density')  # Retrieve basic simulation data, such as density
+        mask = dataio.get_2Darray('NG_Mask')['data']
         dataio.close()  # Close the data file
 
         if self.verbose:
-            print(f" retrieving the simulation boundaries")
+            print(f" retrieving the simulation info")
+
+        self.geometry_container['mask'] = mask
+        del mask
         if self.dim_scale == 'cm':
             dims_max = (basic['max_extents'] * unit.cm)
             dims_min = (basic['min_extents'] * unit.cm)
@@ -235,39 +237,52 @@ class pion():
             dims_min = (basic['min_extents'] * unit.cm).to(unit.pc)
             self.geometry_container['edges_min'] = dims_min
             self.geometry_container['edges_max'] = dims_max
+        del basic
 
-        if self.verbose:
-            print(f" grid points ..............????")
 
-        ######################################################################################
-        # cylindrical grid 2D volume
-        ######################################################################################
-        def get_cylindrical_grid_volume(self, silo_instant):
+    ######################################################################################
+    # cylindrical grid 2D volume
+    ######################################################################################
+    def get_cylindrical_grid_volume(self):
 
-            # Calculates the volume of each cell in the image grid
+        #Note: this is fine as far as the grids is not adaptive. In PION the grid is static
+        # but has different static refinement. It was adaptive one has to calculate the
+        # grid point volume for each time instant in that case we would have another argument of silo instant is require.
 
-            xmax, xmin, ngrid
+        Ngrid = self.geometry_container['Ngrid']
+        print(Ngrid)
+        grid_edges_min = self.geometry_container['edges_min']
+        grid_edges_max = self.geometry_container['edges_max']
 
-            xmax = xmax
-            xmin = xmin
-            ngrid = ngrid
-            # Calculate the size of each cell in the x, y, and z-direction:
-            delta_z = (xmax[0] - xmin[0]) / ngrid[0]
-            delta_R = (xmax[1] - xmin[1]) / ngrid[1]
-            # Create a 2D array of zeros with the same dimensions as ngrid:
-            v = np.zeros((ngrid[1], ngrid[0]))
-            # Loop through each element in the Volume array:
-            for ycells in range(ngrid[1]):
-                rmin = ycells * delta_R
-                rmax = (ycells + 1) * delta_R
-                for xcells in range(ngrid[0]):
-                    v[ycells, xcells] = delta_z * np.pi * (rmax ** 2 - rmin ** 2)
-            del delta_z
-            del delta_R
-            del xmax
-            del xmin
-            del ngrid
-            return v
+
+
+        # Calculates the volume of each cell in the image grid
+        '''
+        xmax, xmin, ngrid
+
+        xmax = xmax
+        xmin = xmin
+        ngrid = ngrid
+        # Calculate the size of each cell in the x, y, and z-direction:
+        delta_z = (xmax[0] - xmin[0]) / ngrid[0]
+        delta_R = (xmax[1] - xmin[1]) / ngrid[1]
+        # Create a 2D array of zeros with the same dimensions as ngrid:
+        v = np.zeros((ngrid[1], ngrid[0]))
+        # Loop through each element in the Volume array:
+        for ycells in range(ngrid[1]):
+            rmin = ycells * delta_R
+            rmax = (ycells + 1) * delta_R
+            for xcells in range(ngrid[0]):
+                v[ycells, xcells] = delta_z * np.pi * (rmax ** 2 - rmin ** 2)
+        del delta_z
+        del delta_R
+        del xmax
+        del xmin
+        del ngrid
+        return v
+        '''
+
+
 
     # ==================================================================================#
     # ******************************* LOAD CHEMISTRY ***********************************#
@@ -495,7 +510,7 @@ class pion():
             if self.verbose:
                 # If verbose mode is enabled, print a message indicating that the ion
                 # is a top-level ion but is not recognized as a species in NEMO v1.0 chemistry.
-                print(f" ion '{ion}' is a top-level ion but not a recognized species in NEMO v1.0 chemistry")
+                print(f" ion '{ion}' is a top-level ion, not a recognized species in NEMO")
             return True  # The ion qualifies as a top-level ion.
         else:
             # If the ion does not meet the criteria, return False.
@@ -504,37 +519,107 @@ class pion():
     ######################################################################################
     # check if the ion exist in pion simulation file
     ######################################################################################
-    def ion_check(self, ion, top_ion_check=False, terminate=False):
+    def ion_batch_check(self, ion=None, ion_list=None, top_ion_check=False, terminate=False):
         """
-        Checks if the given ion is valid based on the chemistry model and optional top-level ion conditions.
+        This method checks if the given ion(s) are valid according to the chemistry model and optional top-level ion conditions.
+        It allows for checking a single ion or a list of ions, and can either raise an exception or print warnings when ions are invalid.
 
         Parameters:
-        ion (str): The ion to check (e.g., 'O+2', 'H+1').
-        top_ion_check (bool): If True, checks if the ion is a top-level ion using the top_ion_check method.
-        terminate (bool): If True and the ion is not found, raise an exception.
+        ion (str): The ion to check (e.g., 'O+2', 'H+1'). If provided, only this single ion will be checked.
+        ion_list (list): A list of ions to check (e.g., ['O+2', 'H+1']). If provided, each ion in the list will be checked.
+        top_ion_check (bool): If True, checks if the ion is a top-level ion using the top_ion_check method. Defaults to False.
+        terminate (bool): If True and the ion is not found, an exception will be raised. If False, a warning is logged instead. Defaults to False.
 
         Returns:
-        bool: True if the ion is valid, False otherwise.
+        list: A list of valid ions that passed the check.
         """
-        found_ion = False
-        if top_ion_check:
-            # Check if the ion is a top-level ion.
-            if self.top_ion_check(ion):
+        # Printing separator for clarity
+        print(f" ---------------------------")
+
+        # Checking if both ion and ion_list are provided, which is an error
+        if ion is not None and ion_list is not None:
+            util.nebula_exit_with_error("ion batch check - provide either 'ion' or 'ionlist', but not both")
+
+        # If neither ion nor ion_list is provided, exit with an error
+        if ion is None and ion_list is None:
+            util.nebula_exit_with_error("provide either 'ion' or 'ionlist' for ion batch check")
+
+        filtered_ion_list = []  # List to hold ions that pass the check
+
+        # Case 1: Single ion check
+        if ion is not None:
+            found_ion = False
+            # If top_ion_check is enabled, check if the ion is a top-level ion
+            if top_ion_check:
+                # Check if the ion is a top-level ion
+                if self.top_ion_check(ion):
+                    filtered_ion_list.append(ion)
+                    found_ion = True
+                # If the ion is found in the chemistry container, add it to the filtered list
+                elif ion in self.chemistry_container:
+                    filtered_ion_list.append(ion)
+                    found_ion = True
+                # If ion is not in the container and terminate is False, log a warning
+                elif ion not in self.chemistry_container and terminate is False:
+                    util.nebula_warning(f"ion '{ion}' not recognized")
+                # If ion is not in the container and terminate is True, exit with an error
+                elif ion not in self.chemistry_container and terminate:
+                    util.nebula_exit_with_error(f"ion '{ion}' not recognized")
+
+            # If top_ion_check is False, just check if the ion exists in the chemistry container
+            elif ion in self.chemistry_container:
+                filtered_ion_list.append(ion)
                 found_ion = True
+            # If the ion is not found, log a warning or exit based on terminate flag
             else:
-                found_ion = ion in self.chemistry_container
-            if not found_ion and terminate:
-                # Raise an exception if terminate is True and the ion is not found.
-                raise util.nebula_exit_with_error(f"ion '{ion}' is not recognized in the chemistry container")
-        else:
-            # Check if the ion exists in the chemistry container.
-            found_ion = ion in self.chemistry_container
+                if terminate:
+                    util.nebula_exit_with_error(f"ion '{ion}' not recognized")
+                elif not terminate:
+                    util.nebula_warning(f"ion '{ion}' not recognized")
 
-        if not found_ion and terminate:
-            # Raise an exception if terminate is True and the ion is not found.
-            raise util.nebula_exit_with_error(f"ion '{ion}' is not recognized in the chemistry container")
+            # If verbose mode is enabled and the ion is found, print confirmation
+            if self.verbose and found_ion:
+                print(f" ion check: {ion:<{4}} found in chemistry container")
 
-        return found_ion
+            return filtered_ion_list
+
+        # Case 2: List of ions check
+        elif ion_list is not None:
+            for ion in ion_list:
+                found_ion = False
+                # If top_ion_check is enabled, check if the ion is a top-level ion
+                if top_ion_check:
+                    # Check if the ion is a top-level ion
+                    if self.top_ion_check(ion):
+                        filtered_ion_list.append(ion)
+                        found_ion = True
+                    # If the ion is found in the chemistry container, add it to the filtered list
+                    elif ion in self.chemistry_container:
+                        filtered_ion_list.append(ion)
+                        found_ion = True
+                    # If ion is not in the container and terminate is False, log a warning
+                    elif ion not in self.chemistry_container and terminate is False:
+                        util.nebula_warning(f"ion '{ion}' not recognized")
+                    # If ion is not in the container and terminate is True, exit with an error
+                    elif ion not in self.chemistry_container and terminate:
+                        util.nebula_exit_with_error(f"ion '{ion}' not recognized")
+
+                # If top_ion_check is False, just check if the ion exists in the chemistry container
+                elif ion in self.chemistry_container:
+                    filtered_ion_list.append(ion)
+                    found_ion = True
+                # If the ion is not found, log a warning or exit based on terminate flag
+                else:
+                    if terminate:
+                        util.nebula_exit_with_error(f"ion '{ion}' not recognized")
+                    elif not terminate:
+                        util.nebula_warning(f"ion '{ion}' not recognized")
+
+                # If verbose mode is enabled and the ion is found, print confirmation
+                if self.verbose and found_ion:
+                    print(f" ion check: {ion:<{4}} found in chemistry container")
+
+            return filtered_ion_list
 
     ######################################################################################
     # get tracer values

@@ -125,7 +125,7 @@ class line_emission():
 
         print(f" returning emissivity map for line(s) at level {level}       ")
 
-    return emissivity_map_dict
+        return emissivity_map_dict
 
     def get_dominant_lines_cylindrical(self, temperature, ne, Nlines, geometry_container):
         pass

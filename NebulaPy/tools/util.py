@@ -34,7 +34,7 @@ def nebula_warning(warnMessage):
     """
     YELLOW = "\033[93m"
     RESET = "\033[0m"
-    print(f'{YELLOW} warn: {warnMessage}{RESET}')
+    print(f'{YELLOW} warning: {warnMessage}{RESET}')
 
 ######################################################################################
 # Nebula version
