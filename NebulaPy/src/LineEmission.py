@@ -22,9 +22,9 @@ class line_emission():
 
 
     ######################################################################################
-    # line luminosity
+    # line luminosity in 1D spherical setting
     ######################################################################################
-    def lineluminosity_spherical(self, lines, temperature, ne, species_density, shell_volume):
+    def line_luminosity_spherical(self, lines, temperature, ne, species_density, shell_volume):
         '''
 
         Parameters
@@ -124,7 +124,7 @@ class line_emission():
                 # Create a Chianti object for line emissivity calculation
                 ion = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
                 # Calculate the line emissivity for each specified line
-                lines_emissivity_row = ion.get_line_emissivity(line_list=lines)
+                 lines_emissivity_row = ion.get_line_emissivity(line_list=lines)
 
                 # Store the computed emissivity for the current line
                 for line in lines_str:

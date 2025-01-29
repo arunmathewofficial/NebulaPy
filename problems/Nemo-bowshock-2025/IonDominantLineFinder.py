@@ -42,29 +42,29 @@ output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'
 silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'
 filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
 
-# List of ions to analyze
-ion_list = ['H1+', 'He1+', 'C2+', 'N1+', 'N2+', 'O1+', 'O2+', 'Ne1+', 'Ne2+', 'S1+', 'S2+', 'S3+']
-
 # Batch the silo files for analysis within the specified time range
-start_time = 10
-finish_time = 13
 batched_silos = util.batch_silos(
     silo_dir,
     filebase,
-    start_time=start_time,
-    finish_time=finish_time,
+    start_time=10,
+    finish_time=13,
     time_unit= 'kyr',
     out_frequency=None
 )
 
-# Initialize the Pion class to handle simulation data and load chemistry and geometry
+# Initialize the PION class to handle simulation data, load geometry, and chemistry
 pion = nebula.pion(batched_silos, verbose=True)
+# following are routine steps when processing PION silo files.
+# generate chemistry container
 pion.load_chemistry()
-pion.load_geometry(batched_silos[0])
-geometry = pion.geometry_container
-N_grid_level = geometry['Nlevels']
+# generate geometry container
+pion.load_geometry(scale='cm')
+
 
 print(f" ---------------------------")
+# The task begins here: identifying the dominant spectral lines for the list of ions.
+# List of ions to analyze
+ion_list = ['H1+', 'He1+', 'C2+', 'N1+', 'N2+', 'O1+', 'O2+', 'Ne1+', 'Ne2+', 'S1+', 'S2+', 'S3+']
 # Filter the ion list to include only those present in the simulation
 print(" task: finding dominant spectral lines for ions")
 print(" ion check: ")
@@ -74,6 +74,10 @@ print(f" filtered ion list: {ion_list}")
 # Prepare output file for results
 filename = filebase + '_dominantLines.txt'
 outfile = os.path.join(output_dir, filename)
+
+# get geometry container
+geometry = pion.geometry_container
+N_grid_level = geometry['Nlevels']
 
 # Write the initial header to the output file
 with open(outfile, "w") as file:

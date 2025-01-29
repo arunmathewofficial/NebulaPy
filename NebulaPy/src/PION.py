@@ -19,8 +19,50 @@ class pion():
         self.geometry_container = {}
         self.chemistry_container = {}
 
+    ######################################################################################
+    # get simulation time
+    ######################################################################################
+    def get_simulation_time(self, silo_instant, time_unit='sec'):
 
-    def load_geometry(self, silo_instant, scale='cm'):
+        # Open the data for the first silo instant silo
+        header_data = OpenData(silo_instant)
+        # Set the directory to '/header'
+        header_data.db.SetDir('/header')
+        # Retrieve what coordinate system is used
+        coord_sys = header_data.db.GetVar("coord_sys")
+
+        # spherical coordinate
+        if coord_sys == 3:
+            # Read the data from the current silo file
+            dataio = ReadData(silo_instant)
+            basic = dataio.get_1Darray('Density')  # Retrieve basic simulation data, such as density
+            dataio.close()  # Close the data file
+            if time_unit == 'sec':
+                return (basic['sim_time'] * unit.s)
+            elif time_unit == 'kyr':
+                return (basic['sim_time'] * unit.s).to(unit.kyr)
+
+        # cylindrical coordinates
+        elif coord_sys == 2:
+            # Read the data from the current silo file
+            dataio = ReadData(silo_instant)
+            basic = dataio.get_2Darray('Density')  # Retrieve basic simulation data, such as density
+            dataio.close()  # Close the data file
+            if time_unit == 'sec':
+                return (basic['sim_time'] * unit.s)
+            elif time_unit == 'kyr':
+                return (basic['sim_time'] * unit.s).to(unit.kyr)
+
+        # cartesian coordinate
+        elif coord_sys == 1:
+            if self.verbose:
+                util.nebula_exit_with_error(f"{const.coordinate_system[coord_sys]} coordinates not defined, todo list")
+
+
+    # ==================================================================================#
+    # ******************************** LOAD GEOMETRY ***********************************#
+    # ==================================================================================#
+    def load_geometry(self, scale='cm'):
         '''
         This method will load geometry of the simulation from
         the given silo file.
@@ -37,33 +79,35 @@ class pion():
         # If verbose is enabled, print the chemistry code
         if self.verbose:
             print(f" ---------------------------")
-            print(f" loading geometry:")
+            print(f" loading geometry: ", end="")
 
         # Open the data for the first silo instant silo
-        header_data = OpenData(silo_instant)
+        header_data = OpenData(self.silo_set[0])
         # Set the directory to '/header'
         header_data.db.SetDir('/header')
         # Retrieve what coordinate system is used
         coord_sys = header_data.db.GetVar("coord_sys")
+        # Dimension scale
+        self.dim_scale = scale
 
         if coord_sys == 3:
             if self.verbose:
-                print(f" geometry: {const.coordinate_system[coord_sys]}")
-                self.spherical_grid(silo_instant, scale=scale)
+                print(f"{const.coordinate_system[coord_sys]} coordinates")
+                self.spherical_grid(self.silo_set[0])
         elif coord_sys == 2:
             if self.verbose:
-                print(f" geometry: {const.coordinate_system[coord_sys]}")
-                self.cylindrical_grid(silo_instant, scale=scale)
+                print(f"{const.coordinate_system[coord_sys]} coordinates")
+                self.cylindrical_grid(self.silo_set[0])
         elif coord_sys == 1:
             if self.verbose:
-                print(f" geometry: {const.coordinate_system[coord_sys]}")
-                util.nebula_exit_with_error(f"{const.coordinate_system[coord_sys]} not defined, todo list")
+                print(f"{const.coordinate_system[coord_sys]}")
+                util.nebula_exit_with_error(f"{const.coordinate_system[coord_sys]} coordinates not defined, todo list")
 
 
     ######################################################################################
-    # spherical grid
+    # spherical grid # todo: redo this section, move volume calculation and mind dim scaling
     ######################################################################################
-    def spherical_grid(self, silo_instant, scale='cm'):
+    def spherical_grid(self, silo_instant):
 
         # Open the data for the first silo instant silo
         header_data = OpenData(silo_instant)
@@ -83,6 +127,8 @@ class pion():
         self.geometry_container['Nlevels'] = Nlevels
         if self.verbose:
             print(f" N grid levels: {Nlevels}")
+            print(f" dimensional scale: {self.dim_scale}")
+
 
         # read silo file
         data = ReadData(silo_instant)
@@ -127,6 +173,7 @@ class pion():
         if Nlevels == 1:
             radius = radius[0] * mask[0]
 
+        # Todo: This has to be a separate method
         # calculating shell volumes
         if self.verbose:
             print(' calculating shell volumes')
@@ -143,7 +190,8 @@ class pion():
     ######################################################################################
     # cylindrical grid
     ######################################################################################
-    def cylindrical_grid(self, silo_instant, scale='cm'):
+    def cylindrical_grid(self, silo_instant):
+
         # Open the data for the first silo instant silo
         header_data = OpenData(silo_instant)
         # Set the directory to '/header'
@@ -160,55 +208,37 @@ class pion():
         # save the dynamics and chemistry_flag values in the chemistry_container dictionary
         self.geometry_container['coordinate_sys'] = const.coordinate_system[coord_sys]
         self.geometry_container['Nlevels'] = Nlevels
+        self.geometry_container['dim_scale'] = self.dim_scale
         if self.verbose:
             print(f" N grid levels: {Nlevels}")
+            print(f" dimensional scale: {self.dim_scale}")
+
 
         # Read the data from the current silo file
         dataio = ReadData(silo_instant)
         basic = dataio.get_2Darray('Density')  # Retrieve basic simulation data, such as density
         dataio.close()  # Close the data file
 
-        if scale == 'cm':
+        if self.verbose:
+            print(f" retrieving the simulation boundaries")
+        if self.dim_scale == 'cm':
             dims_max = (basic['max_extents'] * unit.cm)
             dims_min = (basic['min_extents'] * unit.cm)
             self.geometry_container['edges_min'] = dims_min
             self.geometry_container['edges_max'] = dims_max
-        elif scale == 'pc':
+        elif self.dim_scale == 'pc':
             dims_max = (basic['max_extents'] * unit.cm).to(unit.pc)
             dims_min = (basic['min_extents'] * unit.cm).to(unit.pc)
             self.geometry_container['edges_min'] = dims_min
             self.geometry_container['edges_max'] = dims_max
 
+        if self.verbose:
+            print(f" grid points ..............????")
 
-    ######################################################################################
-    # get simulation time
-    ######################################################################################
-    def get_simulation_time(self, silo_instant, time_unit='sec'):
 
-        if self.geometry_container['coordinate_sys'] == 'spherical':
-            # Read the data from the current silo file
-            dataio = ReadData(silo_instant)
-            basic = dataio.get_1Darray('Density')  # Retrieve basic simulation data, such as density
-            dataio.close()  # Close the data file
-
-            if time_unit == 'sec':
-                return (basic['sim_time'] * unit.s)
-            elif time_unit == 'kyr':
-                return (basic['sim_time'] * unit.s).to(unit.kyr)
-
-        elif self.geometry_container['coordinate_sys'] == 'cylindrical':
-            # Read the data from the current silo file
-            dataio = ReadData(silo_instant)
-            basic = dataio.get_2Darray('Density')  # Retrieve basic simulation data, such as density
-            dataio.close()  # Close the data file
-            if time_unit == 'sec':
-                return (basic['sim_time'] * unit.s)
-            elif time_unit == 'kyr':
-                return (basic['sim_time'] * unit.s).to(unit.kyr)
-
-    ######################################################################################
-    # get chemistry from the initial silo file
-    ######################################################################################
+    # ==================================================================================#
+    # ******************************* LOAD CHEMISTRY ***********************************#
+    # ==================================================================================#
     def load_chemistry(self):
         '''
         This method extracts information related to the chemistry and chemical tracers,
@@ -272,8 +302,7 @@ class pion():
                 # If verbose is enabled, print the chemistry code
                 if self.verbose:
                     print(f" ---------------------------")
-                    print(f" loading chemistry:")
-                    print(f" chemistry module: NEMO v1.0")
+                    print(f" loading chemistry module: NEMO v1.0")
 
                 # Loop through each process
                 for index, process in enumerate(processes):
