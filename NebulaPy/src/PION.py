@@ -250,10 +250,16 @@ class pion():
         # grid point volume for each time instant in that case we would have another argument of silo instant is require.
 
         Ngrid = self.geometry_container['Ngrid']
-        print(Ngrid)
+        Nlevel = self.geometry_container['Nlevel']
         grid_edges_min = self.geometry_container['edges_min']
         grid_edges_max = self.geometry_container['edges_max']
+        mask = self.geometry_container['mask']
 
+        # Initialize an array with Nlevel of grid levels of same shape
+        cell_volume = [np.zeros(shape) for shape in [arr.shape for arr in mask]]
+
+        for level in range(Nlevel):
+            print(level)
 
 
         # Calculates the volume of each cell in the image grid
