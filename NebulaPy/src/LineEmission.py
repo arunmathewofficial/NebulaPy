@@ -50,7 +50,7 @@ class line_emission():
         #if isinstance(line, str):
         #    line = const.wvl_dict[line]
 
-        all_emissivity_data = ion.get_emissivity()
+        all_emissivity_data = ion.get_line_emissivity()
         allLines = all_emissivity_data['wvl']
         self.line_emission_container['allLines'] = allLines
         self.line_emission_container['lines'] = lines
@@ -85,9 +85,9 @@ class line_emission():
 
 
     ######################################################################################
-    # line emissivity in cylindrical coordinate system
+    # line luminosity for a given list of lines in cylindrical coordinate system
     ######################################################################################
-    def line_luminosity_cylindrical(self, lines, temperature, ne, NGlevel):
+    def line_luminosity_cylindrical(self, lines, temperature, ne):
 
         # Convert line wavelengths to string format for later use
         lines_str = [str(line) for line in lines]
@@ -97,6 +97,7 @@ class line_emission():
 
         rows = len(temperature[0])  # Number of inner arrays in 2D temperature data
 
+        '''
         # Initialize a list to store emissivity maps
         emissivity_map = [np.zeros(shape) for shape in [arr.shape for arr in temperature]]
         emissivity_map_dict = {line: emissivity_map for line in lines_str}  # Map emission lines to maps
@@ -117,7 +118,7 @@ class line_emission():
                 # Create a Chianti object for line emissivity calculation
                 ion = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
                 # Calculate the line emissivity for each specified line
-                lines_emissivity_row = ion.get_line_emissivity(line_list=lines)
+                lines_emissivity_row = ion.get_line_emissivity_for_list(line_list=lines)
 
             # Store the computed emissivity for the current line
             for line in lines_str:
@@ -126,7 +127,57 @@ class line_emission():
         print(f" returning emissivity map for line(s) at level {level}       ")
 
         return emissivity_map_dict
+        '''
+    ######################################################################################
+    # line emissivity map for a given list of lines in cylindrical coordinate system
+    ######################################################################################
+    def line_emissivity_map_cylindrical(self, lines, temperature, ne):
 
+
+        # Define a tolerance for electron density (avoid division by zero)
+        electron_tolerance = 1.E-08
+
+        NGlevels = len(temperature)
+        print(NGlevels)
+
+        '''
+        rows = len(temperature[0])  # Number of inner arrays in 2D temperature data
+
+        # Initialize a list to store emissivity maps
+        emissivity_map = [np.zeros(shape) for shape in [arr.shape for arr in temperature]]
+        # Convert line wavelengths to string format for later use
+        lines_str = [str(line) for line in lines]
+        emissivity_map_dict = {line: emissivity_map for line in lines_str}  # Map emission lines to maps
+
+        # Loop over each grid level in the simulation
+        for level in range(NGlevel):
+            ne[level] = np.array(ne[level])
+            ne[level][ne[level] == 0] = electron_tolerance  # Replace zero values with tolerance
+
+            # Loop over each row in the grid
+            for row in range(rows):
+                print(f" computing emissivity for line(s) at level {level}, row {row}", end='\r')
+
+                # Get temperature and electron density for the current row
+                temperature_row = temperature[level][row]
+                ne_row = ne[level][row]
+
+                # Create a Chianti object for line emissivity calculation
+                ion = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
+                # Calculate the line emissivity for each specified line
+                lines_emissivity_row = ion.get_line_emissivity_for_list(line_list=lines)
+
+            # Store the computed emissivity for the current line
+            for line in lines_str:
+                emissivity_map_dict[line][level][row] = lines_emissivity_row[line]
+
+        print(f" returning emissivity map for line(s) at level {level}       ")
+
+        return emissivity_map_dict
+        '''
+    ######################################################################################
+    # get dominant list of lines for a simulation snapshot in cylindrical coordinate system
+    ######################################################################################
     def get_dominant_lines_cylindrical(self, temperature, ne, Nlines, geometry_container):
         pass
 

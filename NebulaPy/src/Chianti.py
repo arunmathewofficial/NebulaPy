@@ -135,7 +135,7 @@ class chianti:
     ######################################################################################
     # Get emissivity
     ######################################################################################
-    def get_emissivity(self, allLines=True):
+    def get_line_emissivity(self, allLines=True):
         """
         Retrieve the emissivity values for all spectral lines associated
         with a specified ion.
@@ -153,7 +153,7 @@ class chianti:
     ######################################################################################
     # get line emissivity
     ######################################################################################
-    def get_line_emissivity(self, line_list):
+    def get_line_emissivity_for_list(self, line_list):
 
         all_lines = self.get_allLines()
         if self.verbose:
@@ -168,7 +168,7 @@ class chianti:
         line_indices = [i for i, x in enumerate(all_lines) if x in line_list]
 
         # get emissivity
-        emissivity = self.get_emissivity(allLines=False)['emiss']
+        emissivity = self.get_line_emissivity(allLines=False)['emiss']
 
         line_emissivity = {}
         for i, index in enumerate(line_indices):

@@ -109,10 +109,14 @@ for step, silo_instant in enumerate(batched_silos):
     for ion in ion_list:
         print(f" computing dominant lines for ion: {ion}")
         ion_lines = nebula.line_emission(ion=ion, verbose=True)
-        dominant_lines = ion_lines.get_dominant_lines_cylindrical(
-            temperature=temperature, ne=ne, Nlines=10, geometry_container=geometry
-        )
 
+        ion_lines.line_emissivity_map_cylindrical(lines=[1.2], temperature=temperature, ne=ne, NGlevel=N_grid_level)
+
+        #dominant_lines = ion_lines.get_dominant_lines_cylindrical(
+        #    temperature=temperature, ne=ne, Nlines=10, geometry_container=geometry
+        #)
+        exit(1)
+        '''
         # Format the results as a DataFrame
         df_wvls = pd.DataFrame(dominant_lines['wvls'])
         df_emiss = pd.DataFrame(dominant_lines['emiss'])
@@ -130,7 +134,7 @@ for step, silo_instant in enumerate(batched_silos):
             for i in range(len(df_wvls)):
                 file.write("  ".join(f"{wvl:.6e}" for wvl in df_emiss.iloc[i].values) + " | ")
             file.write("\n\n")
-
+        '''
 
     # Update and log the runtime for the current step
     silo_instant_finish_time = time.time()
