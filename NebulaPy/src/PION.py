@@ -664,7 +664,7 @@ class pion():
         # 1 dimensional (spherical) ######################################################
         if self.geometry_container['coordinate_sys'] == 'spherical':
             # get nested grid level
-            Nlevels = self.geometry_container['Nlevels']
+            Nlevel = self.geometry_container['Nlevel']
 
             # pypion ReadDate object
             data = ReadData(silo_instant)
@@ -674,14 +674,14 @@ class pion():
             mask = data.get_1Darray("NG_Mask")['data']
             data.close()
             # if the data is single level (uniform grid)
-            if Nlevels == 1:
+            if Nlevel == 1:
                 return parameter[0] * mask[0]
 
             # last element of the parameter array parameter[Nlevels - 1]
-            fine_level = parameter[Nlevels - 1]
+            fine_level = parameter[Nlevel - 1]
             # Loop through the parameter array starting from the second-to-last element down to the first element,
             # goes from Nlevels - 2 (second-to-last element) to 0 (first element)
-            for i in range(Nlevels - 2, -1, -1):
+            for i in range(Nlevel - 2, -1, -1):
                 # Use the mask array to selectively delete certain elements from parameter[i]. np.where(mask[i] == 0)
                 # finds the indices in mask[i] where the value is 0. np.delete(parameter[i], np.where(mask[i] == 0))
                 # removes the elements from parameter[i] at those indices.
@@ -695,7 +695,7 @@ class pion():
         if self.geometry_container['coordinate_sys'] == 'cylindrical':
 
             # get nested grid level
-            Nlevels = self.geometry_container['Nlevels']
+            Nlevel = self.geometry_container['Nlevel']
             # pypion ReadDate object
             data = ReadData(silo_instant)
             # get parameter values
@@ -783,12 +783,12 @@ class pion():
         if self.geometry_container['coordinate_sys'] == 'cylindrical':
 
             # Get the number of nested grid levels in the geometry container.
-            Nlevels = self.geometry_container['Nlevels']
+            Nlevel = self.geometry_container['Nlevel']
 
             # Determine the number of grid levels for electron density calculation.
-            if Nlevels == 1:
+            if Nlevel == 1:
                 print(" calculating electron number density for a single grid level")
-            elif Nlevels > 1:
+            elif Nlevel > 1:
                 print(" calculating electron number density for each grid level(s)")
 
             # Retrieve the density data from the input file at the current simulation instant.
@@ -822,20 +822,20 @@ class pion():
                     ion_density = self.get_parameter(ion, silo_instant)
 
                     # Update the top ion and mass fraction sum for each grid level.
-                    for level in range(Nlevels):
+                    for level in range(Nlevel):
                         top_ion[level] -= ion_density[
                             level]  # Adjust top ion density to reflect current ion's contribution.
                         massfrac_sum[level] += charge * ion_density[level]  # Update mass fraction sum by ion charge.
 
                 # Finalize mass fraction sum and update electron density for each grid level.
-                for level in range(Nlevels):
+                for level in range(Nlevel):
                     # Add contribution of the top ion with atomic number, ensuring non-negative values.
                     massfrac_sum[level] += atomic_number * np.maximum(top_ion[level], 0.0)
                     # Calculate electron number density using mass fraction sum and atomic mass.
                     ne[level] += massfrac_sum[level] / const.mass[element_name]
 
             # Scale the electron number density by the density for each grid level.
-            ne = [density[level] * ne[level] for level in range(Nlevels)]
+            ne = [density[level] * ne[level] for level in range(Nlevel)]
 
             # Return the calculated electron number density array for each grid level.
             return ne
@@ -854,20 +854,20 @@ class pion():
 
         if self.geometry_container['coordinate_sys'] == 'cylindrical':
             # Get the number of nested grid levels in the geometry container.
-            Nlevels = self.geometry_container['Nlevels']
+            Nlevel = self.geometry_container['Nlevel']
 
             for charge in range(atomic_number):
                 if charge == 0:
                     ion = f"{element}"
                     ion_value = self.get_ion_values(ion, silo_instant)
-                    top_ion_mass_frac = [top_ion_mass_frac[level] - ion_value[level] for level in range(Nlevels)]
+                    top_ion_mass_frac = [top_ion_mass_frac[level] - ion_value[level] for level in range(Nlevel)]
 
                 else:
                     ion = f"{element}{charge}+"  # Adding + for positive ions
                     ion_value = self.get_ion_values(ion, silo_instant)
-                    top_ion_mass_frac = [top_ion_mass_frac[level] - ion_value[level] for level in range(Nlevels)]
+                    top_ion_mass_frac = [top_ion_mass_frac[level] - ion_value[level] for level in range(Nlevel)]
 
-        top_ion_mass_frac = [np.maximum(top_ion_mass_frac[level], 0.0) for level in range(Nlevels)]
+        top_ion_mass_frac = [np.maximum(top_ion_mass_frac[level], 0.0) for level in range(Nlevel)]
 
         return top_ion_mass_frac
 
@@ -913,7 +913,7 @@ class pion():
         # Currently implemented for cylindrical 2D coordinate system
         elif self.geometry_container['coordinate_sys'] == 'cylindrical':
             # Get the number of nested grid levels in the geometry container
-            Nlevels = self.geometry_container['Nlevels']
+            Nlevel = self.geometry_container['Nlevel']
 
             # Check if the ion is a top-level ion (no sub-ion values available)
             if self.get_ion_values(ion, silo_instant) is None:
@@ -922,14 +922,14 @@ class pion():
                 ion_mass_frac = self.get_top_ion_massfrac(ion, silo_instant)
 
                 # Calculate the ion number density for each grid level
-                for level in range(Nlevels):
+                for level in range(Nlevel):
                     ion_num_density[level] = density[level] * ion_mass_frac[level] / element_mass
             else:
                 # Retrieve the mass fraction for sub-level ions
                 ion_mass_frac = self.get_ion_values(ion, silo_instant)
 
                 # Calculate the ion number density for each grid level
-                for level in range(Nlevels):
+                for level in range(Nlevel):
                     ion_num_density[level] = density[level] * ion_mass_frac[level] / element_mass
 
         elif self.geometry_container['coordinate_sys'] == 'cartesian':

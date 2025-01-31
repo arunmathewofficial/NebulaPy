@@ -55,7 +55,7 @@ class chianti:
 
         # If more than one argument is not None, raise a ValueError
         if non_none_count > 1:
-            util.nebula_exit_with_error(" invalid arguments: set only one of 'chianti_ion', 'pion_ion', or 'pion_elements")
+            util.nebula_exit_with_error("invalid arguments: set only one of 'chianti_ion', 'pion_ion', or 'pion_elements")
 
         if pion_ion is not None:
             self.chianti_ion_name = self.get_chianti_symbol(pion_ion, make=False)
@@ -117,66 +117,6 @@ class chianti:
             # Return the element symbol followed by the ionization level, separated
             # by an underscore (e.g., 'h_2')
             return f"{element}_{chianti_level}"
-
-    ######################################################################################
-    # get all lines of the ion
-    ######################################################################################
-    def get_allLines(self):
-        """
-        Retrieve all spectral lines associated with a specified ion
-        :return: wave-length array
-        """
-        if self.verbose:
-            print(' retrieving all spectral lines of ', self.chianti_ion.Spectroscopic)
-        wvl = np.asarray(self.chianti_ion.Wgfa['wvl'], np.float64)
-        wvl = np.abs(wvl)
-        return wvl
-
-    ######################################################################################
-    # Get emissivity
-    ######################################################################################
-    def get_line_emissivity(self, allLines=True):
-        """
-        Retrieve the emissivity values for all spectral lines associated
-        with a specified ion.
-
-        :return: Dict Emiss. Emiss has several quantities, namely, ion,
-        # wvl(angstrom), emissivity (ergs s^-1 str^-1), pretty1, pretty2.
-        """
-        if self.verbose:
-            print(' retrieving emissivity values for all spectral lines '
-                  'of', self.chianti_ion.Spectroscopic)
-        self.chianti_ion.emiss(allLines=allLines)
-        emissivity = self.chianti_ion.Emiss
-        return emissivity
-
-    ######################################################################################
-    # get line emissivity
-    ######################################################################################
-    def get_line_emissivity_for_list(self, line_list):
-
-        all_lines = self.get_allLines()
-        if self.verbose:
-            print(" retrieving line index for the given line(s)")
-
-        # Check if every line in line_list exists in all_lines
-        missing_lines = [line for line in line_list if line not in all_lines]
-        if missing_lines:
-            util.nebula_exit_with_error(f" following lines are not found: {missing_lines}")
-
-        # Retrieve indices of lines in line_list
-        line_indices = [i for i, x in enumerate(all_lines) if x in line_list]
-
-        # get emissivity
-        emissivity = self.get_line_emissivity(allLines=False)['emiss']
-
-        line_emissivity = {}
-        for i, index in enumerate(line_indices):
-            line_str = str(line_list[i])
-            specific_line_emissivity = emissivity[index]
-            line_emissivity[line_str] = specific_line_emissivity
-
-        return line_emissivity
 
     ######################################################################################
     # get attributes of all elements in chianti element list
@@ -244,8 +184,6 @@ class chianti:
             del self.species_attributes_container[akey]['filename']
             del self.species_attributes_container[akey]['experimental']
 
-        if self.verbose:
-            print()
 
         # Finalize the species attributes dictionary
         # At this point, `self.species_attributes` contains all the relevant
@@ -294,6 +232,75 @@ class chianti:
             # Remove unnecessary data from the dictionary
             del self.species_attributes_container[akey]['filename']
             del self.species_attributes_container[akey]['experimental']
+
+    ######################################################################################
+    # get all lines of the ion
+    ######################################################################################
+    def get_allLines(self):
+        """
+                   Retrieve all spectral lines associated with a specified ion
+                   :return: wave-length array
+                   """
+        if self.verbose:
+            print(' retrieving all spectral lines of ', self.chianti_ion.Spectroscopic)
+        wvl = np.asarray(self.chianti_ion.Wgfa['wvl'], np.float64)
+        wvl = np.abs(wvl)
+        return wvl
+
+    ######################################################################################
+    # Get line emissivity, this is an internal method
+    ######################################################################################
+    def get_line_emissivity(self, allLines=True):
+        """
+               Retrieve the emissivity values for all spectral lines associated
+               with a specified ion.
+
+               :return: Dict Emiss. Emiss has several quantities, namely, ion,
+               # wvl(angstrom), emissivity (ergs s^-1 str^-1), pretty1, pretty2.
+               """
+        if 'line' not in self.species_attributes_container[self.chianti_ion_name]['keys']:
+            util.nebula_warning(f'no line emission associate with {self.chianti_ion.Spectroscopic}')
+            return None
+
+        else:
+            if self.verbose:
+                print(' retrieving emissivity values for all spectral lines '
+                      'of', self.chianti_ion.Spectroscopic)
+            self.chianti_ion.emiss(allLines=allLines)
+            emissivity = self.chianti_ion.Emiss
+            return emissivity
+
+
+
+    ######################################################################################
+    # get line emissivity for a list of lines, this is an internal method
+    ######################################################################################
+    def get_line_emissivity_for_list(self, line_list):
+
+        all_lines = self.get_allLines()
+        if self.verbose:
+            print(" retrieving line index for the given line(s)")
+
+        # Check if every line in line_list exists in all_lines
+        missing_lines = [line for line in line_list if line not in all_lines]
+        if missing_lines:
+            util.nebula_exit_with_error(f" following line(s) are not found: {missing_lines}")
+
+        # Retrieve indices of lines in line_list
+        line_indices = [i for i, x in enumerate(all_lines) if x in line_list]
+
+        # get emissivity
+        emissivity = self.get_line_emissivity(allLines=False)['emiss']
+
+        line_emissivity = {}
+        for i, index in enumerate(line_indices):
+            line_str = str(line_list[i])
+            specific_line_emissivity = emissivity[index]
+            line_emissivity[line_str] = specific_line_emissivity
+
+        return line_emissivity
+
+
 
 
     ######################################################################################
