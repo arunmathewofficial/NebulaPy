@@ -287,14 +287,14 @@ class chianti:
             util.nebula_exit_with_error(f" following line(s) are not found: {missing_lines}")
 
         # Retrieve indices of lines in line_list
-        line_indices = [i for i, x in enumerate(all_lines) if x in line_list]
+        line_indices = [np.where(all_lines == line)[0][0] for line in line_list if line in all_lines]
 
         # get emissivity
         emissivity = self.get_line_emissivity(allLines=False)['emiss']
 
         line_emissivity = {}
         for i, index in enumerate(line_indices):
-            line_str = str(line_list[i])
+            line_str = self.chianti_ion.Spectroscopic + " " + str(line_list[i])
             specific_line_emissivity = emissivity[index]
             line_emissivity[line_str] = specific_line_emissivity
 

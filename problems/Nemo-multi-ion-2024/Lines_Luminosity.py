@@ -101,7 +101,7 @@ for step, silo_instant in enumerate(batched_silos):
     ne = pion.get_ne(silo_instant)
 
     # Calculate the line luminosity for the specific emission line
-    O2P_line_emission.lineluminosity_spherical(
+    O2P_line_emission.line_luminosity_spherical(
         lines=O2P_lines,
         temperature=temperature,
         ne=ne,
@@ -110,7 +110,7 @@ for step, silo_instant in enumerate(batched_silos):
     )
 
     # Calculate the line luminosity for the specific emission line
-    O3P_line_emission.lineluminosity_spherical(
+    O3P_line_emission.line_luminosity_spherical(
         lines=O3P_lines,
         temperature=temperature,
         ne=ne,
@@ -119,7 +119,7 @@ for step, silo_instant in enumerate(batched_silos):
     )
 
     # Calculate the line luminosity for the specific emission line
-    O5P_line_emission.lineluminosity_spherical(
+    O5P_line_emission.line_luminosity_spherical(
         lines=O5P_lines,
         temperature=temperature,
         ne=ne,
