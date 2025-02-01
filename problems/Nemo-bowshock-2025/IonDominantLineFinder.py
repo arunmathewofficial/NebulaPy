@@ -81,11 +81,11 @@ with open(outfile, "w") as file:
     file.write("Task: Determining the dominant spectral lines for the following ions\n")
     file.write("   ".join(map(str, range(len(ion_list)))) + "\n")
     file.write("   ".join(ion_list) + "\n\n")
-    file.write(f"PION Simulation: NEMO Bowshock - FileBase: {filebase}\n")
+    file.write(f"PION Simulation: NEMO Bowshock - FileBase: {filebase}\n\n")
     file.write("Dataset Description:\n")
     file.write("This dataset provides a list of the brightest spectral lines and their\n")
     file.write("corresponding luminosities. Each row represents a spectral line, with:\n\n")
-    file.write("- Column 1: Spectral line wavelength (given in Ångströms, Å)\n")
+    file.write("- Column 1: Spectral line wavelength (given in Angstrom, Å)\n")
     file.write("- Column 2: Line luminosity (measured in erg s⁻¹)\n\n")
 
 # Loop over each time instant in the batched silo files
@@ -93,6 +93,7 @@ runtime = 0.0
 for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()
 
+    print(f" ---------------------------")
     sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
@@ -115,7 +116,7 @@ for step, silo_instant in enumerate(batched_silos):
 
         if 'lines' not in dominant_lines:
             with open(outfile, "a") as file:
-                file.write(f" no free-bound emission associated with {dominant_lines['spectroscopic']}\n\n")
+                file.write(f" No free-bound emission associated with {dominant_lines['spectroscopic']}\n\n")
                 print(" skipping ...")
         else:
             spectral_lines = [dominant_lines['spectroscopic'] + " " + str(line) for line in dominant_lines['lines']]
