@@ -133,52 +133,81 @@ class line_emission():
     # get dominant list of lines for a simulation snapshot in cylindrical coordinate system
     ######################################################################################
     def get_species_dominant_lines(self, temperature, ne, species_density, cell_volume, grid_mask, Nlines):
+        """
+        Computes the most luminous emission lines for a given species in a 1D or 2D dataset.
 
-        '''
-        This is a general method for 1d and 2d dataset
+        This method calculates the line luminosity for a given ionized species across multiple grid levels.
+        It retrieves the brightest emission lines by computing the line emissivity for each cell and summing
+        the contributions across the grid.
+
         Parameters
         ----------
-        temperature
-        ne
-        cell_volume
-        Nlines
+        temperature : list (1D or 2D array-like)
+            Temperature values of the grid cells.
+        ne : list (1D or 2D array-like)
+            Electron density values corresponding to each grid cell.
+        species_density : list (1D or 2D array-like)
+            Density of the given ionized species in each grid cell.
+        cell_volume : list (1D or 2D array-like)
+            Volume of each grid cell.
+        grid_mask : list (1D or 2D array-like)
+            Mask specifying active grid cells.
+        Nlines : int
+            The number of most luminous emission lines to retrieve.
 
         Returns
         -------
+        dict
+            A dictionary containing:
+            - 'spectroscopic' : str, the spectroscopic name of the species.
+            - 'lines' : list, the N most luminous emission line wavelengths.
+            - 'luminosity' : list, the luminosity values of the brightest lines.
 
-        '''
+        Notes
+        -----
+        - A small electron density tolerance (`electron_tolerance = 1.E-08`) is set to avoid division by zero.
+        - The method loops over each grid level and computes line luminosities.
+        - The most luminous lines are selected using `np.argsort()`.
+        """
 
         # Define a tolerance for electron density (to avoid division by zero)
         electron_tolerance = 1.E-08
-        # Get number of grid levels in the temperature data
+
+        # Get the number of grid levels in the temperature dataset
         NGlevel = len(temperature)
 
+        # Handle cylindrical coordinates (assumes 2D data)
+        rows = len(temperature[0])  # Number of rows in the temperature array
 
-        # for cylindrical coordinate ######################################################
-        # Number of inner arrays in 2D temperature data
-        rows = len(temperature[0])
-        # get all lines of the species
+        # Retrieve the list of possible emission lines for the species
         dummy_temperature_array = [1000]
         dummy_ne_array = [1.0]
         species = chianti(pion_ion=self.ion, temperature=dummy_temperature_array, ne=dummy_ne_array, verbose=False)
         spectroscopic_name = species.chianti_ion.Spectroscopic
+
+        # Check if the species has emission lines
         if 'line' not in species.species_attributes_container[species.chianti_ion_name]['keys']:
-            util.nebula_warning(f"{spectroscopic_name} has no line emission associate")
+            util.nebula_warning(f"{spectroscopic_name} has no line emission associated")
             return {'spectroscopic': spectroscopic_name}
         else:
             all_lines = species.get_line_emissivity(allLines=False)['wvl']
         del species
 
+        # Initialize an array to store total line luminosities
         species_all_line_luminosity = np.zeros_like(all_lines)
-        # Looping over grid levels
+
+        # Loop over each grid level
         for level in range(NGlevel):
             print(f" computing luminosity for all {spectroscopic_name} lines at grid level {level}", end='\r')
+
+            # Ensure electron density values are nonzero
             ne[level] = np.array(ne[level])
             ne[level][ne[level] == 0] = electron_tolerance
 
-            # Initialize species_line_luminosity outside the row loop
+            # Initialize luminosity storage for this level
             species_all_lines_luminosity_level = np.zeros_like(all_lines)
 
+            # Loop over each row (assumes a 2D dataset)
             for row in range(rows):
                 temperature_row = temperature[level][row]
                 ne_row = ne[level][row]
@@ -186,55 +215,40 @@ class line_emission():
                 cell_volume_row = cell_volume[level][row]
                 grid_mask_row = grid_mask[level][row]
 
+                # Compute emissivity for the species at the given conditions
                 species = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
                 all_lines_emissivity_info_row = species.get_line_emissivity(allLines=False)
                 del species
 
                 all_lines_emissivity_row = all_lines_emissivity_info_row['emiss']
 
+                # Compute total luminosity for each emission line
                 for index in range(len(all_lines)):
-                    species_all_lines_luminosity_level[index] += 4.0 * const.pi \
-                                                                 * np.sum(all_lines_emissivity_row[index]
-                                                                          * species_density_row
-                                                                          * cell_volume_row
-                                                                          * grid_mask_row)
+                    species_all_lines_luminosity_level[index] += (
+                            4.0 * const.pi * np.sum(all_lines_emissivity_row[index]
+                                                    * species_density_row
+                                                    * cell_volume_row
+                                                    * grid_mask_row)
+                    )
                 del all_lines_emissivity_info_row
 
+            # Accumulate luminosity across all grid levels
             species_all_line_luminosity += species_all_lines_luminosity_level
 
-        # start coding here
         print(f" completed the luminosity computation for all {spectroscopic_name} lines", end='\n')
-        # find 10 brighest lines from the list
+
+        # Retrieve the N most luminous lines
         print(f" retrieving the {Nlines} most luminous {spectroscopic_name} lines", end='\n')
 
-        indices = np.argsort(species_all_line_luminosity)[-Nlines:]
+        indices = np.argsort(species_all_line_luminosity)[-Nlines:]  # Get indices of the brightest lines
         brightest_lines_luminosity = species_all_line_luminosity[indices]
         brightest_lines = all_lines[indices]
 
-        return {'spectroscopic': spectroscopic_name,'lines': brightest_lines,
-                'luminosity': brightest_lines_luminosity}
-
-
-
-
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return {
+            'spectroscopic': spectroscopic_name,
+            'lines': brightest_lines,
+            'luminosity': brightest_lines_luminosity
+        }
 
     ######################################################################################
     # line luminosity for a given list of lines in cylindrical coordinate system

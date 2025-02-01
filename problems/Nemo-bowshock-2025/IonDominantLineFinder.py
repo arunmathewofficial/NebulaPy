@@ -57,7 +57,7 @@ pion.load_chemistry()
 pion.load_geometry(scale='cm')
 
 print(f" ---------------------------")
-print("Task: Identifying dominant spectral lines for the given ions")
+print(" task: identifying dominant spectral lines for the given ions")
 
 # List of ions to analyze
 ion_list = ['H1+', 'He1+', 'C2+', 'N1+', 'N2+', 'O1+', 'O2+', 'Ne1+', 'Ne2+', 'S1+', 'S2+', 'S3+']
@@ -81,7 +81,7 @@ with open(outfile, "w") as file:
     file.write("Task: Determining the dominant spectral lines for the following ions\n")
     file.write("   ".join(map(str, range(len(ion_list)))) + "\n")
     file.write("   ".join(ion_list) + "\n\n")
-    file.write(f"Simulation: NEMO Bowshock with fileBase: {filebase}\n")
+    file.write(f"PION Simulation: NEMO Bowshock - FileBase: {filebase}\n")
     file.write("Dataset Description:\n")
     file.write("This dataset provides a list of the brightest spectral lines and their\n")
     file.write("corresponding luminosities. Each row represents a spectral line, with:\n\n")
@@ -94,7 +94,7 @@ for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()
 
     sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
-    print(f"Step: {step} | Simulation Time: {sim_time:.6e}")
+    print(f" step: {step} | simulation time: {sim_time:.6e}")
 
     with open(outfile, "a") as file:
         file.write(f"Step: {step} | Simulation Time: {sim_time:.6e}\n\n")
@@ -105,7 +105,7 @@ for step, silo_instant in enumerate(batched_silos):
 
     # Analyze each ion
     for ion in ion_list:
-        print(f"Computing dominant lines for ion: {ion}")
+        print(f" computing dominant lines for ion: {ion}")
         species_line_emission = nebula.line_emission(ion=ion, verbose=True)
         n_species = pion.get_ion_number_density(ion, silo_instant)
 
@@ -115,8 +115,8 @@ for step, silo_instant in enumerate(batched_silos):
 
         if 'lines' not in dominant_lines:
             with open(outfile, "a") as file:
-                file.write(f"No free-bound emission associated with {dominant_lines['spectroscopic']}\n\n")
-                print("Skipping ...")
+                file.write(f" no free-bound emission associated with {dominant_lines['spectroscopic']}\n\n")
+                print(" skipping ...")
         else:
             spectral_lines = [dominant_lines['spectroscopic'] + " " + str(line) for line in dominant_lines['lines']]
             dataframe_lines = pd.DataFrame({'Spectral Line': spectral_lines})
