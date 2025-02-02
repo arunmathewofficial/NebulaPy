@@ -254,55 +254,85 @@ class line_emission():
     # line luminosity for a given list of lines in cylindrical coordinate system
     ######################################################################################
     def line_luminosity_cylindrical(self, lines, temperature, ne, species_density, cell_volume, grid_mask):
+        """
+        Compute the total line luminosity for a given ion in a cylindrical coordinate system.
 
-        # Define a tolerance for electron density (to avoid division by zero)
+        Parameters:
+        - lines: List of emission lines for which luminosity is calculated.
+        - temperature: 3D array (NGlevel x rows x columns) containing temperature values at different grid levels.
+        - ne: 3D array (NGlevel x rows x columns) containing electron density values at different grid levels.
+        - species_density: 3D array containing the density of the species (ion) at different grid points.
+        - cell_volume: 3D array containing the volume of each cell in the grid.
+        - grid_mask: 3D array (boolean or numeric) acting as a mask to include/exclude specific grid cells.
+
+        Returns:
+        - Dictionary mapping emission lines to their computed luminosity values.
+
+        The function follows these steps:
+        1. Ensures that electron densities are nonzero to avoid division errors.
+        2. Iterates over grid levels and rows to compute line emissivity using Chianti.
+        3. Computes and accumulates total line luminosity across the cylindrical grid.
+        """
+
+        # Define a small tolerance value to prevent division errors when electron density is zero
         electron_tolerance = 1.E-08
 
-        # Get the number of grid levels in the temperature dataset
+        # Get the number of grid levels (assumed to be the first dimension of the temperature array)
         NGlevel = len(temperature)
 
-        # Handle cylindrical coordinates (assumes 2D data)
-        rows = len(temperature[0])  # Number of rows in the temperature array
+        # Determine the number of rows in each temperature level (assumes 2D grid structure)
+        rows = len(temperature[0])
 
-        # Initialize an array to store total line luminosities
+        # Initialize an array to store the total luminosity of all requested lines
         lines_luminosity = np.zeros_like(lines)
 
-        # Loop over each grid level
+        # Loop through each level in the grid
         for level in range(NGlevel):
-            # Ensure electron density values are nonzero
+            # Convert electron density to an array (if not already) and ensure no zero values
             ne[level] = np.array(ne[level])
             ne[level][ne[level] == 0] = electron_tolerance
 
-            # Initialize luminosity storage for this level
+            # Initialize an array to store line luminosity for this level
             lines_luminosity_level = np.zeros_like(lines)
 
-            # Loop over each row (assumes a 2D dataset)
+            # Iterate over each row in the cylindrical grid
             for row in range(rows):
                 if self.verbose:
                     print(f" computing luminosity for {self.ion} lines at level {level}, row {row}", end='\r')
 
-                temperature_row = temperature[level][row]
-                ne_row = ne[level][row]
-                species_density_row = species_density[level][row]
-                cell_volume_row = cell_volume[level][row]
-                grid_mask_row = grid_mask[level][row]
+                # Extract data for the current row at the given level
+                temperature_row = temperature[level][row]  # Temperature values for the row
+                ne_row = ne[level][row]  # Electron density for the row
+                species_density_row = species_density[level][row]  # Species density for the row
+                cell_volume_row = cell_volume[level][row]  # Cell volume for the row
+                grid_mask_row = grid_mask[level][row]  # Grid mask for the row
 
-                # Compute emissivity for the species at the given conditions
+                # Compute the line emissivity for the species using Chianti
                 species = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
-                lines_emissivity_row = species.get_line_emissivity_for_list(lines)
-                line_keys = lines_emissivity_row.keys()
-                del species
+                lines_emissivity_row = species.get_line_emissivity_for_list(
+                    lines)  # Retrieve emissivities for specified lines
+                line_keys = lines_emissivity_row.keys()  # Get the emission line identifiers
+                del species  # Free memory
 
-                # Compute total luminosity for each emission line
+                # Compute the total luminosity for each emission line in this row
                 for index, line in enumerate(line_keys):
-                    lines_luminosity_level[index] += (4.0 * const.pi * np.sum(lines_emissivity_row[line] * species_density_row * cell_volume_row * grid_mask_row))
-                del lines_emissivity_row
+                    lines_luminosity_level[index] += (
+                            4.0 * const.pi * np.sum(
+                        lines_emissivity_row[line] * species_density_row * cell_volume_row * grid_mask_row
+                    )
+                    )
+                del lines_emissivity_row  # Free memory after usage
 
-            # Accumulate luminosity across all grid levels
+            # Sum up the computed luminosities across all levels
             lines_luminosity += lines_luminosity_level
-        print(f" completed the luminosity computation of {self.ion} ion"
-              f"                               ", end='\n')
+
+        # Final output message
+        print(f" completed the luminosity computation of {self.ion} ion                                    "
+              f"                                           ", end='\n')
+
+        # Return a dictionary mapping line identifiers to their computed luminosities
         return dict(zip(line_keys, lines_luminosity))
+
 
 
 

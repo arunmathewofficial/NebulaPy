@@ -81,7 +81,7 @@ with open(outfile, "w") as file:
     file.write("Task: Determining the dominant spectral lines for the following ions\n")
     file.write("   ".join(map(str, range(len(ion_list)))) + "\n")
     file.write("   ".join(ion_list) + "\n\n")
-    file.write(f"PION Simulation: NEMO Bowshock - FileBase: {filebase}\n\n")
+    file.write(f"PION Simulation Reference: NEMO Bowshock 2025 {filebase}\n\n")
     file.write("Dataset Description:\n")
     file.write("This dataset provides a list of the brightest spectral lines and their\n")
     file.write("corresponding luminosities. Each row represents a spectral line, with:\n\n")
@@ -133,6 +133,6 @@ for step, silo_instant in enumerate(batched_silos):
     silo_instant_finish_time = time.time()
     dt = silo_instant_finish_time - silo_instant_start_time
     runtime += dt
-    print(f"Runtime: {runtime:.4e} s | Step Runtime: {dt:.4e} s")
+    print(f" runtime: {runtime:.4e} s | step runtime: {dt:.4e} s")
     with open(outfile, "a") as file:
         file.write(f"Runtime: {runtime:.4e} s | Step Runtime: {dt:.4e} s\n\n")
