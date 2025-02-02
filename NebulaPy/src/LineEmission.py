@@ -327,7 +327,7 @@ class line_emission():
             lines_luminosity += lines_luminosity_level
 
         # Final output message
-        print(f" completed the luminosity computation of {self.ion} ion                                    "
+        print(f" completed the luminosity computation of {self.ion} ion"
               f"                                           ", end='\n')
 
         # Return a dictionary mapping line identifiers to their computed luminosities
