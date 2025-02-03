@@ -25,18 +25,18 @@ import NebulaPy.src as nebula
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
 # Input-Output file  configuration for MIMIR
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
-filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/time-lines-luminosity'  # Change as needed
+silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/silo'
+filebase = 'Ostar_mhd-nemo-dep_d2n0192l3'  # Base name of the silo files
 
 # Batch the silo files for analysis within the specified time range
 batched_silos = util.batch_silos(
     silo_dir,
     filebase,
-    start_time=150,
+    start_time=None,
     finish_time=None,
     time_unit='kyr',
-    out_frequency=None
+    out_frequency=2
 )
 
 # Initialize the PION class to handle simulation data
