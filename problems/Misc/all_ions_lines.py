@@ -2,12 +2,12 @@ import NebulaPy.src as nebula
 import pandas
 import os
 
-temperature = [2e+6]
-ne = [1e+9]
+dummy_temperature = [2e+6]
+dummy_ne = [1e+9]
 
-output_path = '/home/tony/Desktop/Equi_NonEqui/'
+output_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/BowShock/all OII lines'
 
-nebula_chianti = nebula.chianti(pion_ion='He1+', temperature=temperature, ne=ne, verbose=True)
+nebula_chianti = nebula.chianti(pion_ion='O1+', temperature=dummy_temperature, ne=dummy_ne, verbose=True)
 
 spectroscopic_name = nebula_chianti.chianti_ion.Spectroscopic
 
