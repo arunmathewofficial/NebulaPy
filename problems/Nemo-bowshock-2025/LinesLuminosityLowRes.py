@@ -30,9 +30,9 @@ silo_dir = '//mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 # Input-Output file  configuration for Razer Blade
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
-filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
+#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
+#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 # Batch the silo files for analysis within the specified time range
 batched_silos = util.batch_silos(

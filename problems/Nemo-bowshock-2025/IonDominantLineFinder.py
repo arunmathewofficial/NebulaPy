@@ -34,10 +34,15 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by ze
 # Restrict OpenMP threads for better performance control
 os.environ["OMP_NUM_THREADS"] = "4"
 
-# Output directory and filebase configuration for MIMIR and Razer Blade
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
+# Input-Output file  configuration for MIMIR
+output_dir = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/BowShock/dominant-lines'  # Change as needed
+silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo' # Change as needed
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+
+# Output directory and filebase configuration for MIMIR and Razer Blade
+#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
+#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
+#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 # Batch the silo files for analysis within the specified time range
 batched_silos = util.batch_silos(
