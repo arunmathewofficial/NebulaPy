@@ -206,6 +206,8 @@ class line_emission():
         dummy_ne_array = [1.0]
         species = chianti(pion_ion=self.ion, temperature=dummy_temperature_array, ne=dummy_ne_array, verbose=False)
         spectroscopic_name = species.chianti_ion.Spectroscopic
+        completion_msg = f'finished computing the luminosity for all {spectroscopic_name} lines'
+
 
         # Check if the species has emission lines
         if 'line' not in species.species_attributes_container[species.chianti_ion_name]['keys']:
@@ -220,7 +222,7 @@ class line_emission():
 
         # Loop over each grid level
         for level in range(NGlevel):
-            print(f" computing luminosity for all {spectroscopic_name} lines at grid level {level}", end='\r')
+            #print(f" computing luminosity for all {spectroscopic_name} lines at grid level {level}", end='\r')
 
             # Ensure electron density values are nonzero
             ne[level] = np.array(ne[level])
@@ -236,6 +238,10 @@ class line_emission():
                 species_density_row = species_density[level][row]
                 cell_volume_row = cell_volume[level][row]
                 grid_mask_row = grid_mask[level][row]
+
+                prefix_msg = f'computing the luminosity of {spectroscopic_name} lines at grid-level {level}'
+                suffix_msg = 'complete'
+                completion_msg_condition = (level == NGlevel - 1 and row == rows - 1)
 
                 # Compute emissivity for the species at the given conditions
                 species = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
@@ -254,13 +260,16 @@ class line_emission():
                     )
                 del all_lines_emissivity_info_row
 
+                util.progress_bar(row, rows, suffix=suffix_msg, prefix=prefix_msg,
+                                  condition=completion_msg_condition, completion_msg=completion_msg)
+
             # Accumulate luminosity across all grid levels
             species_all_line_luminosity += species_all_lines_luminosity_level
 
-        print(f" completed the luminosity computation for all {spectroscopic_name} lines", end='\n')
+        #print(f" completed the luminosity computation for all {spectroscopic_name} lines", end='\n')
 
         # Retrieve the N most luminous lines
-        print(f" retrieving the {Nlines} most luminous {spectroscopic_name} lines", end='\n')
+        print(f" retrieving the top {Nlines} most luminous {spectroscopic_name} lines", end='\n')
 
         indices = np.argsort(species_all_line_luminosity)[-Nlines:]  # Get indices of the brightest lines
         brightest_lines_luminosity = species_all_line_luminosity[indices]
@@ -308,6 +317,9 @@ class line_emission():
         # Initialize an array to store the total luminosity of all requested lines
         lines_luminosity = np.zeros_like(lines)
 
+        # completion message
+        completion_msg = f'finished computing the luminosity for {self.ion} lines'
+
         # Loop through each level in the grid
         for level in range(NGlevel):
             # Convert electron density to an array (if not already) and ensure no zero values
@@ -319,15 +331,16 @@ class line_emission():
 
             # Iterate over each row in the cylindrical grid
             for row in range(rows):
-                if self.verbose:
-                    print(f" computing luminosity for {self.ion} lines at level {level}, row {row}", end='\r')
-
                 # Extract data for the current row at the given level
                 temperature_row = temperature[level][row]  # Temperature values for the row
                 ne_row = ne[level][row]  # Electron density for the row
                 species_density_row = species_density[level][row]  # Species density for the row
                 cell_volume_row = cell_volume[level][row]  # Cell volume for the row
                 grid_mask_row = grid_mask[level][row]  # Grid mask for the row
+
+                prefix_msg = f'computing the luminosity of {self.ion} lines at grid-level {level}'
+                suffix_msg = 'complete'
+                completion_msg_condition = (level == NGlevel - 1 and row == rows - 1)
 
                 # Compute the line emissivity for the species using Chianti
                 species = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
@@ -345,12 +358,11 @@ class line_emission():
                     )
                 del lines_emissivity_row  # Free memory after usage
 
+                util.progress_bar(row, rows, suffix=suffix_msg, prefix=prefix_msg,
+                                  condition=completion_msg_condition, completion_msg=completion_msg)
+
             # Sum up the computed luminosities across all levels
             lines_luminosity += lines_luminosity_level
-
-        # Final output message
-        print(f" completed the luminosity computation of {self.ion} ion"
-              f"                                           ", end='\n')
 
         # Return a dictionary mapping line identifiers to their computed luminosities
         return dict(zip(line_keys, lines_luminosity))

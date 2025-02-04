@@ -5,7 +5,7 @@ import os
 dummy_temperature = [2e+6]
 dummy_ne = [1e+9]
 
-output_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/BowShock/all OII lines'
+output_path = '/home/tony/Desktop/multi-ion-bowshock/sims/out'
 
 nebula_chianti = nebula.chianti(pion_ion='O1+', temperature=dummy_temperature, ne=dummy_ne, verbose=True)
 

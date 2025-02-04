@@ -345,7 +345,7 @@ class pion():
                 # If verbose is enabled, print the chemistry code
                 if self.verbose:
                     print(f" ---------------------------")
-                    print(f" loading chemistry module: NEMO v1.0")
+                    print(f" loading chemistry module: NEMO")
 
                 # Loop through each process
                 for index, process in enumerate(processes):
@@ -730,7 +730,7 @@ class pion():
         ion_tracer = None
         if ion not in self.chemistry_container:
             if ion in const.top_level_ions and element in self.chemistry_container['mass_fractions']:
-                util.nebula_warning(f"ion {ion} is a top-level ion but not a recognized species in NEMO v1.0 chemistry")
+                util.nebula_warning(f"ion '{ion}' is a top-level ion, not a recognized species in NEMO")
                 return None
             else:
                 util.nebula_exit_with_error(f"ion {ion} is not in silo file")

@@ -33,16 +33,21 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by ze
 
 # Restrict OpenMP threads for better performance control
 os.environ["OMP_NUM_THREADS"] = "4"
+# Math Kernel Library
+os.environ["MKL_NUM_THREADS"] = "4"
+
+os.environ["OPENBLAS_NUM_THREADS"] = "4"
+
 
 # Input-Output file  configuration for MIMIR
-output_dir = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/BowShock/dominant-lines'  # Change as needed
-silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo' # Change as needed
-filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+#output_dir = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/BowShock/dominant-lines'  # Change as needed
+#silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo' # Change as needed
+#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 # Output directory and filebase configuration for MIMIR and Razer Blade
-#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
-#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
+filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 # Batch the silo files for analysis within the specified time range
 batched_silos = util.batch_silos(
@@ -111,7 +116,6 @@ for step, silo_instant in enumerate(batched_silos):
 
     # Analyze each ion
     for ion in ion_list:
-        print(f" computing dominant lines for ion: {ion}")
         species_line_emission = nebula.line_emission(ion=ion, verbose=True)
         n_species = pion.get_ion_number_density(ion, silo_instant)
 

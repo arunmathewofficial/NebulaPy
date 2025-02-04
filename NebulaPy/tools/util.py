@@ -10,6 +10,7 @@ import os
 import glob
 import re
 
+
 ######################################################################################
 # Nebulapy exit with error
 ######################################################################################
@@ -216,3 +217,54 @@ def get_element_symbol(ion):
     str: The element symbol extracted from the ion identifier (e.g., 'He' from 'He1+', 'O' from 'O2+').
     """
     return ''.join(filter(str.isalpha, ion))
+
+
+
+######################################################################################
+# general progress bar
+######################################################################################
+def progress_bar(step, Nstep, prefix='', suffix='', condition=False, completion_msg=''):
+    """
+    Displays a progress bar in the terminal.
+
+    Args:
+    - step (int): Current step (0-indexed). Represents the current progress point.
+    - Nstep (int): Total number of steps. Defines the total length of the process.
+    - prefix (str): Optional prefix text for the progress bar. Allows user to add custom text at the start.
+    - suffix (str): Optional suffix text for the progress bar. Allows user to add custom text at the end.
+    - condition (bool): A flag to indicate whether the completion message should be shown once the progress reaches 100%. If `True`, the `completion_msg` is displayed at the end.
+    - completion_msg (str): Message to display upon completion. This message appears when the progress reaches 100%.
+    """
+
+    step += 1  # Increment step by 1 since it starts from 0, for clearer progress display.
+    length = 20  # Length of the progress bar (20 characters long)
+    percent = ("{0:.1f}").format(100 * (step / float(Nstep)))  # Percentage progress
+    filled_length = int(length * step // Nstep)  # Number of filled segments in the progress bar
+    bar = '█' * filled_length + '-' * (length - filled_length)  # Progress bar representation with filled and unfilled segments
+
+    # Format the progress bar string for terminal output
+    progress_line = f' {prefix} |{bar}| {percent:>5}% {suffix} '
+
+    if step == 1:
+        # Print initial progress line without overwrite
+        sys.stdout.write(progress_line)
+        sys.stdout.flush()
+
+    # Handle completion
+    elif step == Nstep and condition:
+        # When the process reaches the final step and the condition is True,
+        # clear the progress bar and display a completion message
+        sys.stdout.write('\r' + ' ' * len(progress_line) + ' ' * 5 + '\r')  # Clear the current progress line
+        sys.stdout.write(f' {completion_msg}\n')  # Print the completion message
+        sys.stdout.flush()
+
+    else:
+        # Regular progress update by overwriting the previous line
+        sys.stdout.write('\r' + progress_line + '\r')
+        sys.stdout.flush()
+
+
+
+
+
+
