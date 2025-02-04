@@ -30,9 +30,9 @@ silo_dir = '//mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 # Input-Output file  configuration for Razer Blade
-#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
-#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
+filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 # Batch the silo files for analysis within the specified time range
 batched_silos = util.batch_silos(
@@ -120,6 +120,21 @@ S1P_line_emission = nebula.line_emission(S1P_pion_ion, verbose=True)  # Initiali
 S2P_line_emission = nebula.line_emission(S2P_pion_ion, verbose=True)  # Initialize the emission line calculation
 S3P_line_emission = nebula.line_emission(S3P_pion_ion, verbose=True)  # Initialize the emission line calculation
 
+print(f" ---------------------------")
+# line check
+print(f" line checking:")
+He1P_line_emission.line_batch_check(He1P_lines)
+C2P_line_emission.line_batch_check(C2P_lines)
+N1P_line_emission.line_batch_check(N1P_lines)
+N2P_line_emission.line_batch_check(N2P_lines)
+O1P_line_emission.line_batch_check(O1P_lines)
+O2P_line_emission.line_batch_check(O2P_lines)
+Ne1P_line_emission.line_batch_check(Ne1P_lines)
+Ne2P_line_emission.line_batch_check(Ne2P_lines)
+S1P_line_emission.line_batch_check(S1P_lines)
+S2P_line_emission.line_batch_check(S2P_lines)
+S3P_line_emission.line_batch_check(S3P_lines)
+
 
 # Prepare output file for results
 filename = filebase + '_lines_luminosity_LowRes.txt'
@@ -168,6 +183,7 @@ for step, silo_instant in enumerate(batched_silos):
     S2P_num_density = pion.get_ion_number_density(S2P_pion_ion, silo_instant)  # Retrieve species number density
     S3P_num_density = pion.get_ion_number_density(S3P_pion_ion, silo_instant)  # Retrieve species number density
 
+    '''
     # 1. Calculate the line luminosity for the specific emission line
     He1P_lines_luminosity = He1P_line_emission.line_luminosity_cylindrical(
         lines=He1P_lines,
@@ -203,7 +219,7 @@ for step, silo_instant in enumerate(batched_silos):
         species_density=N2P_num_density,
         cell_volume=cell_volume,
         grid_mask=grid_mask)
-
+    '''
     # 5. Calculate the line luminosity for the specific emission line
     O1P_lines_luminosity = O1P_line_emission.line_luminosity_cylindrical(
         lines=O1P_lines,

@@ -22,6 +22,26 @@ class line_emission():
         self.line_emission_container = {}
         self.line_emission_container['ion'] = self.ion
 
+    ######################################################################################
+    # check the line list exist in all lines of the species
+    ######################################################################################
+    def line_batch_check(self, lines):
+
+        # Retrieve the list of possible emission lines for the species
+        dummy_temperature_array = [1000]
+        dummy_ne_array = [1.0]
+        ion = chianti(pion_ion=self.ion, temperature=dummy_temperature_array, ne=dummy_ne_array, verbose=False)
+        spectroscopic_name = ion.chianti_ion.Spectroscopic
+        all_lines = ion.get_line_emissivity(allLines=True)['wvl']
+        del ion
+
+        missing_line = [line for line in lines if line not in all_lines]
+        if missing_line:
+            util.nebula_exit_with_error(f"requested line {spectroscopic_name} {missing_line} is not found in the CHIANTI database")
+        else:
+            print(f" all requested {spectroscopic_name:>6} lines exist in the CHIANTI database")
+
+
 
     ######################################################################################
     # line luminosity in 1D spherical setting
