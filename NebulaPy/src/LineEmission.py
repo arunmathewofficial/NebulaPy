@@ -37,7 +37,9 @@ class line_emission():
 
         missing_line = [line for line in lines if line not in all_lines]
         if missing_line:
-            util.nebula_exit_with_error(f"requested line {spectroscopic_name} {missing_line} is not found in the CHIANTI database")
+            missing_line_str = ", ".join(map(str, missing_line))
+            util.nebula_exit_with_error(f"requested line(s) {spectroscopic_name} {missing_line_str} not "
+                                        f"found in the CHIANTI database")
         else:
             print(f" all requested {spectroscopic_name:>6} lines exist in the CHIANTI database")
 
