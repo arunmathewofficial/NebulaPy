@@ -26,10 +26,27 @@ import NebulaPy.src as nebula
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
-# Input-Output file  configuration for MIMIR
+# Input-output file configuration for a low-resolution simulation on MIMIR
+output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/time-lines-luminosity'  # Change as needed
+silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo'
+filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+filename = filebase + '_lines_luminosity_LowRes.txt'
+outfile = os.path.join(output_dir, filename)
+
+# Input-output file configuration for a medium-resolution simulation on MIMIR
 output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/time-lines-luminosity'  # Change as needed
 silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/silo'
 filebase = 'Ostar_mhd-nemo-dep_d2n0192l3'  # Base name of the silo files
+filename = filebase + '_lines_luminosity_MedRes.txt'
+outfile = os.path.join(output_dir, filename)
+
+# Input-output file configuration for a low-resolution simulation on Razer Blade machine.
+#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
+#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
+#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+# Prepare output file for results
+#filename = filebase + '_lines_luminosity_LowRes.txt'
+#outfile = os.path.join(output_dir, filename)
 
 # Batch the silo files for analysis within the specified time range
 batched_silos = util.batch_silos(
@@ -51,61 +68,52 @@ print(f" ---------------------------")
 print(" task: calculating temporal evolution of luminosity for given lines")
 
 # Set up the ion and line emission parameters
+# Define the ions and their respective emission lines
 He1P_pion_ion = 'He1+'
 He1P_lines = [303.78, 303.786, 256.317, 256.318, 243.026, 243.027]  # Emission line(s) of interest
 print(rf" {He1P_pion_ion:<4} lines: {', '.join(map(str, He1P_lines))}  Angstrom")
 
-# Set up the ion and line emission parameters
 C2P_pion_ion = 'C2+'
 C2P_lines = [1906.683, 1908.734, 977.02]  # Emission line(s) of interest
 print(rf" {C2P_pion_ion:<4} lines: {', '.join(map(str, C2P_lines))}  Angstrom")
 
-# Set up the ion and line emission parameters
 N1P_pion_ion = 'N1+'
-N1P_lines = [6585.273, 6549.861, 1218026.8, 2053388.09]  # Emission line(s) of interest
+N1P_lines = [6585.273, 6549.861, 1218026.8, 2053388.09]
 print(rf" {N1P_pion_ion:<4} lines: {', '.join(map(str, N1P_lines))}  Angstrom")
 
-# Set up the ion and line emission parameters
 N2P_pion_ion = 'N2+'
-N2P_lines = [573394.5, 989.799, 1752.16, 1749.674, 1753.995, 1748.646]  # Emission line(s) of interest
+N2P_lines = [573394.5, 989.799, 1752.16, 1749.674, 1753.995, 1748.646]
 print(rf" {N2P_pion_ion:<4} lines: {', '.join(map(str, N2P_lines))}  Angstrom")
 
-# Set up the ion and line emission parameters
-O1P_pion_ion = 'O1+'  # The ion of interest (Oxygen IV)
-O1P_lines = [3729.844, 3727.092, 7331.722, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]  # Emission line of interest
+O1P_pion_ion = 'O1+'  # The ion of interest (Oxygen II)
+O1P_lines = [3729.844, 3727.092, 7331.722, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
 print(rf" {O1P_pion_ion:<4} lines: {', '.join(map(str, O1P_lines))} Angstrom")
 
-# Set up the ion and line emission parameters
-O2P_pion_ion = 'O2+'  # The ion of interest (Oxygen IV)
-O2P_lines = [5008.24, 883564.0, 518145.0, 4960.295, 1666.15, 4364.436, 832.929, 833.715, 1660.809]  # Emission line(s) of interest
+O2P_pion_ion = 'O2+'  # The ion of interest (Oxygen III)
+O2P_lines = [5008.24, 883564.0, 518145.0, 4960.295, 1666.15, 4364.436, 832.929, 833.715, 1660.809]
 print(rf" {O2P_pion_ion:<4} lines: {', '.join(map(str, O2P_lines))} Angstrom")
 
-# Set up the ion and line emission parameters
-Ne1P_pion_ion = 'Ne1+'  # The ion of interest (Oxygen IV)
-Ne1P_lines = [128139.42]  # Emission line(s) of interest
+Ne1P_pion_ion = 'Ne1+'
+Ne1P_lines = [128139.42]
 print(rf" {Ne1P_pion_ion:<4} lines: {', '.join(map(str, Ne1P_lines))} Angstrom")
 
-# Set up the ion and line emission parameters
-Ne2P_pion_ion = 'Ne2+'  # The ion of interest (Oxygen IV)
-Ne2P_lines = [155545.19, 3869.849, 3968.585, 360230.55, 489.495, 491.041]  # Emission line(s) of interest
+Ne2P_pion_ion = 'Ne2+'
+Ne2P_lines = [155545.19, 3869.849, 3968.585, 360230.55, 489.495, 491.041]
 print(rf" {Ne2P_pion_ion:<4} lines: {', '.join(map(str, Ne2P_lines))} Angstrom")
 
-# Set up the ion and line emission parameters
-S1P_pion_ion = 'S1+'  # The ion of interest (Oxygen IV)
-S1P_lines = [6718.295, 6732.674, 4069.749, 10323.317, 4077.5]  # Emission line(s) of interest
+S1P_pion_ion = 'S1+'
+S1P_lines = [6718.295, 6732.674, 4069.749, 10323.317, 4077.5]
 print(rf" {S1P_pion_ion:<4} lines: {', '.join(map(str, S1P_lines))} Angstrom")
 
-# Set up the ion and line emission parameters
-S2P_pion_ion = 'S2+'  # The ion of interest (Oxygen IV)
-S2P_lines = [335008.38, 9532.252, 187055.74, 9070.048, 6313.649, 3722.454]  # Emission line(s) of interest
+S2P_pion_ion = 'S2+'
+S2P_lines = [335008.38, 9532.252, 187055.74, 9070.048, 6313.649, 3722.454]
 print(rf" {S2P_pion_ion:<4} lines: {', '.join(map(str, S2P_lines))} Angstrom")
 
-# Set up the ion and line emission parameters
-S3P_pion_ion = 'S3+'  # The ion of interest (Oxygen IV)
-S3P_lines = [105104.95]  # Emission line(s) of interest
+S3P_pion_ion = 'S3+'
+S3P_lines = [105104.95]
 print(rf" {S3P_pion_ion:<4} lines: {', '.join(map(str, S3P_lines))} Angstrom")
 
-# Initialize the emission line calculation
+# Initialize the emission line calculations for each ion
 He1P_line_emission = nebula.line_emission(He1P_pion_ion, verbose=True)
 C2P_line_emission = nebula.line_emission(C2P_pion_ion, verbose=True)
 N1P_line_emission = nebula.line_emission(N1P_pion_ion, verbose=True)
@@ -118,7 +126,7 @@ S1P_line_emission = nebula.line_emission(S1P_pion_ion, verbose=True)
 S2P_line_emission = nebula.line_emission(S2P_pion_ion, verbose=True)
 S3P_line_emission = nebula.line_emission(S3P_pion_ion, verbose=True)
 
-# line check
+# Check the requested lines in the database for each ion
 print(f" ---------------------------")
 print(f" checking requested lines in database:")
 He1P_line_emission.line_batch_check(He1P_lines)
@@ -132,10 +140,6 @@ Ne2P_line_emission.line_batch_check(Ne2P_lines)
 S1P_line_emission.line_batch_check(S1P_lines)
 S2P_line_emission.line_batch_check(S2P_lines)
 S3P_line_emission.line_batch_check(S3P_lines)
-
-# Prepare output file for results
-filename = filebase + '_lines_luminosity_MedRes.txt'
-outfile = os.path.join(output_dir, filename)
 
 # Get geometry information
 geometry = pion.geometry_container
@@ -179,6 +183,7 @@ for step, silo_instant in enumerate(batched_silos):
     S1P_num_density = pion.get_ion_number_density(S1P_pion_ion, silo_instant)  # Retrieve species number density
     S2P_num_density = pion.get_ion_number_density(S2P_pion_ion, silo_instant)  # Retrieve species number density
     S3P_num_density = pion.get_ion_number_density(S3P_pion_ion, silo_instant)  # Retrieve species number density
+
 
     # 1. Calculate the line luminosity for the specific emission line
     He1P_lines_luminosity = He1P_line_emission.line_luminosity_cylindrical(
