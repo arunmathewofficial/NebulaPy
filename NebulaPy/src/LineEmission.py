@@ -358,8 +358,8 @@ class line_emission():
                     )
                 del lines_emissivity_row  # Free memory after usage
 
-                util.progress_bar(row, rows, suffix=suffix_msg, prefix=prefix_msg,
-                                  condition=completion_msg_condition, completion_msg=completion_msg)
+                #util.progress_bar(row, rows, suffix=suffix_msg, prefix=prefix_msg,
+                #                  condition=completion_msg_condition, completion_msg=completion_msg)
 
             # Sum up the computed luminosities across all levels
             lines_luminosity += lines_luminosity_level
