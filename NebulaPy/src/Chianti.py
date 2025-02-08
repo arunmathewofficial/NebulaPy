@@ -277,7 +277,8 @@ class chianti:
     ######################################################################################
     def get_line_emissivity_for_list(self, line_list):
 
-        all_lines = self.get_allLines()
+        all_lines = np.array(self.get_allLines())
+        all_lines = all_lines[all_lines != 0]
         if self.verbose:
             print(" retrieving line index for the given line(s)")
 
@@ -299,8 +300,6 @@ class chianti:
             line_emissivity[line_str] = specific_line_emissivity
 
         return line_emissivity
-
-
 
 
     ######################################################################################
