@@ -42,64 +42,71 @@ def compute_luminosity(workerQ, doneQ):
         try:
             task = workerQ.get(timeout=timeout)  # Get task from queue
             if task is None:
-                print("[Worker] Received stop signal, exiting.")
+                #print("[Worker] Received stop signal, exiting.")
                 break  # Exit if None is received (stop signal)
 
             ion_name, line_emission, lines, species_density, temperature, ne, cell_volume, grid_mask = task
 
-            print(f"[Worker] Processing {ion_name}")
+            print(f" multiprocessing: computing the luminosity of {ion_name:<4} lines")
 
             luminosity = line_emission.line_luminosity_cylindrical(
                 lines=lines,
-                temperature=temperature,
-                ne=ne,
+                temperature=temperature, ne=ne,
                 species_density=species_density,
                 cell_volume=cell_volume,
-                grid_mask=grid_mask)
+                grid_mask=grid_mask, progress_bar=False)
 
-            print(f"[Worker] {ion_name} luminosity computed")
+            print(f" multiprocessing: finished computing the luminosity for {ion_name:<4} lines")
             doneQ.put({ion_name: luminosity})  # Store result
         except queue.Empty:  # Use correct exception for empty queue
-            print("[Worker] Queue is empty, exiting.")
+            util.nebula_exit_with_error(f"multiprocessing - no task in queue")
             break  # Queue is empty, exit loop
         except Exception as e:
-            print(f"[Worker] Error in worker process: {e}")
+            util.nebula_exit_with_error(f'multiprocessing - working process {e}')
             break
 
-# Function to compute luminosity for a given ion
-def compute_luminosity_1(ion_name, ion_data):
-    print(f"[Worker] Processing {ion_name}")
-    line_emission, lines, num_density = ion_data
-    luminosity = line_emission.line_luminosity_cylindrical(
-        lines=lines,
-        temperature=temperature,
-        ne=ne,
-        species_density=num_density,
-        cell_volume=cell_volume,
-        grid_mask=grid_mask
-    )
-    return ion_name, luminosity
 
 if __name__ == "__main__":
 
-    # Input-Output file  configuration for MIMIR
-    output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/time-lines-luminosity'  # Change as needed
-    silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo'
-    filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+    # Input-output file configuration for a low-resolution simulation on MIMIR
+    # output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/time-lines-luminosity'
+    # silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo'
+    # filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+    # filename = filebase + '_lines_luminosity_LowRes_2.txt'
+    # outfile = os.path.join(output_dir, filename)
+    # start_time = None
+    # finish_time = None
+    # out_frequency = 2
 
-    # Input-Output file  configuration for Razer Blade
+    # Input-output file configuration for a medium-resolution simulation on MIMIR
+    # output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/time-lines-luminosity'
+    # silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/silo'
+    # filebase = 'Ostar_mhd-nemo-dep_d2n0192l3'  # Base name of the silo files
+    # filename = filebase + '_lines_luminosity_MedRes.txt'
+    # outfile = os.path.join(output_dir, filename)
+    # start_time = None
+    # finish_time = None
+    # out_frequency = 2
+
+    # Input-output file configuration for a low-resolution simulation on Razer Blade machine.
     output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
     silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
     filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+    # Prepare output file for results
+    filename = filebase + '_lines_luminosity_LowRes_mp_test.txt'
+    outfile = os.path.join(output_dir, filename)
+    start_time = 165
+    finish_time = None
+    out_frequency = None
 
     # Batch the silo files for analysis within the specified time range
     batched_silos = util.batch_silos(
         silo_dir,
         filebase,
-        start_time=None,
-        finish_time=None,
+        start_time=start_time,
+        finish_time=finish_time,
         time_unit='kyr',
-        out_frequency=2
+        out_frequency=out_frequency
     )
 
     # Initialize the PION class to handle simulation data
@@ -109,7 +116,7 @@ if __name__ == "__main__":
     pion.load_geometry(scale='cm')
 
     print(f" ---------------------------")
-    print(" task: calculating temporal evolution of luminosity for given lines")
+    print(f" task: multiprocessing for computing the temporal evolution of luminosity in spectral line")
 
     # Set up the ion and line emission parameters
     # Define the ions and their respective emission lines
@@ -186,7 +193,6 @@ if __name__ == "__main__":
     S3P_line_emission.line_batch_check(S3P_lines)
 
     # Prepare output file for results
-    filename = filebase + '_lines_luminosity_LowRes.txt'
     outfile = os.path.join(output_dir, filename)
 
     # Get geometry information
@@ -198,7 +204,7 @@ if __name__ == "__main__":
     # Write initial header to the output file
     with open(outfile, "w") as file:
         file.write(f"#File generated by {util.nebula_version()}\n\n")
-        file.write("#Task: Temporal evolution of luminosity for selected spectral lines\n\n")
+        file.write("#Task: Multiprocessing for Computing the Temporal Evolution of Luminosity in Spectral Line\n\n")
         file.write(f"#PION Simulation Reference: NEMO Bowshock 2025 {filebase}\n\n")
         file.write("#Dataset Description:\n")
         file.write("#This dataset provides the luminosity evolution of selected spectral lines over time.\n")
@@ -219,71 +225,56 @@ if __name__ == "__main__":
         # Extract temperature and electron number density
         temperature = pion.get_parameter('Temperature', silo_instant)
         ne = pion.get_ne(silo_instant)
+        # Retrieve species number density
+        He1P_num_density = pion.get_ion_number_density(He1P_pion_ion, silo_instant)
+        C2P_num_density = pion.get_ion_number_density(C2P_pion_ion, silo_instant)
+        N1P_num_density = pion.get_ion_number_density(N1P_pion_ion, silo_instant)
+        N2P_num_density = pion.get_ion_number_density(N2P_pion_ion, silo_instant)
+        O1P_num_density = pion.get_ion_number_density(O1P_pion_ion, silo_instant)
+        O2P_num_density = pion.get_ion_number_density(O2P_pion_ion, silo_instant)
+        Ne1P_num_density = pion.get_ion_number_density(Ne1P_pion_ion, silo_instant)
+        Ne2P_num_density = pion.get_ion_number_density(Ne2P_pion_ion, silo_instant)
+        S1P_num_density = pion.get_ion_number_density(S1P_pion_ion, silo_instant)
+        S2P_num_density = pion.get_ion_number_density(S2P_pion_ion, silo_instant)
+        S3P_num_density = pion.get_ion_number_density(S3P_pion_ion, silo_instant)
 
-        He1P_num_density = pion.get_ion_number_density(He1P_pion_ion, silo_instant)  # Retrieve species number density
-        C2P_num_density = pion.get_ion_number_density(C2P_pion_ion, silo_instant)  # Retrieve species number density
-        N1P_num_density = pion.get_ion_number_density(N1P_pion_ion, silo_instant)  # Retrieve species number density
-        N2P_num_density = pion.get_ion_number_density(N2P_pion_ion, silo_instant)  # Retrieve species number density
-        O1P_num_density = pion.get_ion_number_density(O1P_pion_ion, silo_instant)  # Retrieve species number density
-        O2P_num_density = pion.get_ion_number_density(O2P_pion_ion, silo_instant)  # Retrieve species number density
-        Ne1P_num_density = pion.get_ion_number_density(Ne1P_pion_ion, silo_instant)  # Retrieve species number density
-        Ne2P_num_density = pion.get_ion_number_density(Ne2P_pion_ion, silo_instant)  # Retrieve species number density
-        S1P_num_density = pion.get_ion_number_density(S1P_pion_ion, silo_instant)  # Retrieve species number density
-        S2P_num_density = pion.get_ion_number_density(S2P_pion_ion, silo_instant)  # Retrieve species number density
-        S3P_num_density = pion.get_ion_number_density(S3P_pion_ion, silo_instant)  # Retrieve species number density
+        # ions for processing
+        ions = {
+            "He1+": (He1P_line_emission, He1P_lines, He1P_num_density),
+            #"C2+": (C2P_line_emission, C2P_lines, C2P_num_density),
+            #"N1+": (N1P_line_emission, N1P_lines, N1P_num_density),
+            #"N2+": (N2P_line_emission, N2P_lines, N2P_num_density),
+            #"O1+": (O1P_line_emission, O1P_lines, O1P_num_density),
+            #"O2+": (O2P_line_emission, O2P_lines, O2P_num_density),
+            #"Ne1+": (Ne1P_line_emission, Ne1P_lines, Ne1P_num_density),
+            #"Ne2+": (Ne2P_line_emission, Ne2P_lines, Ne2P_num_density),
+            #"S1+": (S1P_line_emission, S1P_lines, S1P_num_density),
+            #"S2+": (S2P_line_emission, S2P_lines, S2P_num_density),
+            #"S3+": (S3P_line_emission, S3P_lines, S3P_num_density)
+        }
 
-        '''
-        # 1. Calculate the line luminosity for the specific emission line
-        He1P_lines_luminosity = He1P_line_emission.line_luminosity_cylindrical(
-            lines=He1P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=He1P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
+        # get keys of ions
+        keys = ions.keys()
+        species_lines_luminosity = {}
 
-        # 2. Calculate the line luminosity for the specific emission line
-        C2P_lines_luminosity = C2P_line_emission.line_luminosity_cylindrical(
-            lines=C2P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=C2P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-        '''
-        
         # Parameters for multiprocessing
         timeout = 0.1
-        ncores = 11
+        Ncores = len(ions)
         cpu_count = mp.cpu_count()
-        proc = min(ncores, cpu_count)
+        proc = min(Ncores, cpu_count)
+        print(f" multiprocessing: utilizing {proc} cores (one core per ion)")
 
         with mp.Manager() as manager:
             luminosity_workerQ = manager.Queue()
             luminosity_doneQ = manager.Queue()
 
-            # Given ions for processing
-            ions = {
-                "He1P": (He1P_line_emission, He1P_lines, He1P_num_density),
-                "C2P": (C2P_line_emission, C2P_lines, C2P_num_density),
-                "N1P": (N1P_line_emission, N1P_lines, N1P_num_density),
-                "N2P": (N2P_line_emission, N2P_lines, N2P_num_density),
-                "O1P": (O1P_line_emission, O1P_lines, O1P_num_density),
-                "O2P": (O2P_line_emission, O2P_lines, O2P_num_density),
-                "Ne1P": (Ne1P_line_emission, Ne1P_lines, Ne1P_num_density),
-                "Ne2P": (Ne2P_line_emission, Ne2P_lines, Ne2P_num_density),
-                "S1P": (S1P_line_emission, S1P_lines, S1P_num_density),
-                "S2P": (S2P_line_emission, S2P_lines, S2P_num_density),
-                "S3P": (S3P_line_emission, S3P_lines, S3P_num_density)
-            }
-
-            print("[Main] Adding tasks to queue...")
+            print(" multiprocessing: adding tasks to queue")
             # Populate worker queue
             for ion_name, (line_emission, lines, species_density) in ions.items():
                 luminosity_workerQ.put(
                     (ion_name, line_emission, lines, species_density, temperature, ne, cell_volume, grid_mask))
 
-            print("[Main] Starting worker processes...")
+            print(" multiprocessing: starting worker processes")
             # Start worker processes
             luminosity_processes = []
             for _ in range(proc):
@@ -303,151 +294,36 @@ if __name__ == "__main__":
                 p.join()
 
             # Collect results
-            results = {}
             while not luminosity_doneQ.empty():
-                results.update(luminosity_doneQ.get())
+                species_lines_luminosity.update(luminosity_doneQ.get())
 
-            print("[Main] Final results:", results)  # Output luminosity for each species
+        # sort the dictionary according to the species dictionary
+        sorted_species_lines_luminosity = {key: species_lines_luminosity[key] for key in keys}
+        # combine all sub dictionary into a single dictionary
+        species_lines_luminosity_dict = {key: value for subdict
+                                         in sorted_species_lines_luminosity.values() for key, value in subdict.items()}
 
-
-        '''
-        # Dictionary of ions and their parameters
-        ions = {
-            "He1P": (He1P_line_emission, He1P_lines, He1P_num_density),
-            "C2P": (C2P_line_emission, C2P_lines, C2P_num_density),
-            # Add more ions here
-        }
-
-
-        num_cores = min(mp.cpu_count(), len(ions))  # Use available cores efficiently
-        with mp.Pool(processes=num_cores) as pool:
-            results = pool.starmap(compute_luminosity, ions.items())
-
-        # Convert results to a dictionary
-        luminosities = dict(results)
-
-        print(luminosities)  # Final output
-
-        
-        # 3. Calculate the line luminosity for the specific emission line
-        N1P_lines_luminosity = N1P_line_emission.line_luminosity_cylindrical(
-            lines=N1P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=N1P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-
-        # 4. Calculate the line luminosity for the specific emission line
-        N2P_lines_luminosity = N2P_line_emission.line_luminosity_cylindrical(
-            lines=N2P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=N2P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-
-        # 5. Calculate the line luminosity for the specific emission line
-        O1P_lines_luminosity = O1P_line_emission.line_luminosity_cylindrical(
-            lines=O1P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=O1P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-
-        # 6. Calculate the line luminosity for the specific emission line
-        O2P_lines_luminosity = O2P_line_emission.line_luminosity_cylindrical(
-            lines=O2P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=O2P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-
-        # 7. Calculate the line luminosity for the specific emission line
-        Ne1P_lines_luminosity = Ne1P_line_emission.line_luminosity_cylindrical(
-            lines=Ne1P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=Ne1P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-
-        # 8. Calculate the line luminosity for the specific emission line
-        Ne2P_lines_luminosity = Ne2P_line_emission.line_luminosity_cylindrical(
-            lines=Ne2P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=Ne2P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-
-        # 9. Calculate the line luminosity for the specific emission line
-        S1P_lines_luminosity = S1P_line_emission.line_luminosity_cylindrical(
-            lines=S1P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=S1P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-
-        # 10. Calculate the line luminosity for the specific emission line
-        S2P_lines_luminosity = S2P_line_emission.line_luminosity_cylindrical(
-            lines=S2P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=S2P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-
-        # 11. Calculate the line luminosity for the specific emission line
-        S3P_lines_luminosity = S3P_line_emission.line_luminosity_cylindrical(
-            lines=S3P_lines,
-            temperature=temperature,
-            ne=ne,
-            species_density=S3P_num_density,
-            cell_volume=cell_volume,
-            grid_mask=grid_mask)
-        
-
-        # Combine all dictionaries
-        # Dictionaries = He1P_lines_luminosity
-        # Dictionaries.update(C2P_lines_luminosity)
-        
-        Dictionaries.update(N1P_lines_luminosity)
-        Dictionaries.update(N2P_lines_luminosity)
-        Dictionaries.update(O1P_lines_luminosity)
-        Dictionaries.update(O2P_lines_luminosity)
-        Dictionaries.update(Ne1P_lines_luminosity)
-        Dictionaries.update(Ne2P_lines_luminosity)
-        Dictionaries.update(S1P_lines_luminosity)
-        Dictionaries.update(S2P_lines_luminosity)
-        Dictionaries.update(S3P_lines_luminosity)
-        
-        
+        print(f" saving data to file: {filename}")
         if write_heading:
             with open(outfile, "a") as file:
                 # Write the time (or any other desired variable)
                 file.write(f"Time ")
                 # Write the keys from Dictionaries
-                file.write(" ".join(f"{key}" for key in Dictionaries.keys()))
+                file.write(" ".join(f"{key}" for key in species_lines_luminosity_dict.keys()))
 
                 file.write("\n")
             write_heading = False
 
         with open(outfile, "a") as file:
             file.write(f"{sim_time.value:.6e} ")
-            file.write(" ".join(f"{v:.6e}" for v in Dictionaries.values()))
+            file.write(" ".join(f"{value:.6e}" for value in species_lines_luminosity_dict.values()))
             file.write("\n")
 
-        del Dictionaries
-        '''
+        del species_lines_luminosity_dict
 
         # Update runtime
         silo_instant_finish_time = time.time()
         dt = silo_instant_finish_time - silo_instant_start_time
         runtime += dt
         print(f" runtime: {runtime:.4e} s | step runtime: {dt:.4e} s")
-
 

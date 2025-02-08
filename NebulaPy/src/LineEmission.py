@@ -284,7 +284,7 @@ class line_emission():
     ######################################################################################
     # line luminosity for a given list of lines in cylindrical coordinate system
     ######################################################################################
-    def line_luminosity_cylindrical(self, lines, temperature, ne, species_density, cell_volume, grid_mask):
+    def line_luminosity_cylindrical(self, lines, temperature, ne, species_density, cell_volume, grid_mask, progress_bar=True):
         """
         Compute the total line luminosity for a given ion in a cylindrical coordinate system.
 
@@ -318,7 +318,8 @@ class line_emission():
         lines_luminosity = np.zeros_like(lines)
 
         # completion message
-        completion_msg = f'finished computing the luminosity for {self.ion} lines'
+        if progress_bar:
+            completion_msg = f'finished computing the luminosity for {self.ion} lines'
 
         # Loop through each level in the grid
         for level in range(NGlevel):
@@ -338,9 +339,10 @@ class line_emission():
                 cell_volume_row = cell_volume[level][row]  # Cell volume for the row
                 grid_mask_row = grid_mask[level][row]  # Grid mask for the row
 
-                prefix_msg = f'computing the luminosity of {self.ion} lines at grid-level {level}'
-                suffix_msg = 'complete'
-                completion_msg_condition = (level == NGlevel - 1 and row == rows - 1)
+                if progress_bar:
+                    prefix_msg = f'computing the luminosity of {self.ion} lines at grid-level {level}'
+                    suffix_msg = 'complete'
+                    completion_msg_condition = (level == NGlevel - 1 and row == rows - 1)
 
                 # Compute the line emissivity for the species using Chianti
                 species = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
@@ -358,8 +360,10 @@ class line_emission():
                     )
                 del lines_emissivity_row  # Free memory after usage
 
-                #util.progress_bar(row, rows, suffix=suffix_msg, prefix=prefix_msg,
-                #                  condition=completion_msg_condition, completion_msg=completion_msg)
+                if progress_bar:
+                    util.progress_bar(row, rows, suffix=suffix_msg, prefix=prefix_msg,
+                                      condition=completion_msg_condition, completion_msg=completion_msg)
+
 
             # Sum up the computed luminosities across all levels
             lines_luminosity += lines_luminosity_level

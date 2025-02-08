@@ -27,35 +27,44 @@ import NebulaPy.src as nebula
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
 # Input-output file configuration for a low-resolution simulation on MIMIR
-output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/time-lines-luminosity'  # Change as needed
-silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo'
-filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-filename = filebase + '_lines_luminosity_LowRes.txt'
-outfile = os.path.join(output_dir, filename)
+#output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/time-lines-luminosity'  # Change as needed
+#silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo'
+#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+#filename = filebase + '_lines_luminosity_LowRes_2.txt'
+#outfile = os.path.join(output_dir, filename)
+#start_time = None
+#finish_time = None
+#out_frequency = 2
 
 # Input-output file configuration for a medium-resolution simulation on MIMIR
-output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/time-lines-luminosity'  # Change as needed
-silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/silo'
-filebase = 'Ostar_mhd-nemo-dep_d2n0192l3'  # Base name of the silo files
-filename = filebase + '_lines_luminosity_MedRes.txt'
-outfile = os.path.join(output_dir, filename)
+#output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/time-lines-luminosity'  # Change as needed
+#silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/silo'
+#filebase = 'Ostar_mhd-nemo-dep_d2n0192l3'  # Base name of the silo files
+#filename = filebase + '_lines_luminosity_MedRes.txt'
+#outfile = os.path.join(output_dir, filename)
+#start_time = None
+#finish_time = None
+#out_frequency = 2
 
 # Input-output file configuration for a low-resolution simulation on Razer Blade machine.
-#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
-#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
+filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 # Prepare output file for results
-#filename = filebase + '_lines_luminosity_LowRes.txt'
-#outfile = os.path.join(output_dir, filename)
+filename = filebase + '_lines_luminosity_LowRes_normal_test.txt'
+outfile = os.path.join(output_dir, filename)
+start_time = 165
+finish_time = None
+out_frequency = None
 
 # Batch the silo files for analysis within the specified time range
 batched_silos = util.batch_silos(
     silo_dir,
     filebase,
-    start_time=None,
-    finish_time=None,
+    start_time=start_time,
+    finish_time=finish_time,
     time_unit='kyr',
-    out_frequency=2
+    out_frequency=out_frequency
 )
 
 # Initialize the PION class to handle simulation data
@@ -297,6 +306,8 @@ for step, silo_instant in enumerate(batched_silos):
     Dictionaries.update(S2P_lines_luminosity)
     Dictionaries.update(S3P_lines_luminosity)
 
+    print(f" saving data to file: {filename}")
+
     if write_heading:
         with open(outfile, "a") as file:
             # Write the time (or any other desired variable)
@@ -309,7 +320,7 @@ for step, silo_instant in enumerate(batched_silos):
 
     with open(outfile, "a") as file:
         file.write(f"{sim_time.value:.6e} ")
-        file.write(" ".join(f"{v:.6e}" for v in Dictionaries.values()))
+        file.write(" ".join(f"{value:.6e}" for value in Dictionaries.values()))
         file.write("\n")
 
     del Dictionaries
