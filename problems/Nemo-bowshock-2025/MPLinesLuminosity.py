@@ -241,16 +241,16 @@ if __name__ == "__main__":
         # ions for processing
         ions = {
             "He1+": (He1P_line_emission, He1P_lines, He1P_num_density),
-            #"C2+": (C2P_line_emission, C2P_lines, C2P_num_density),
-            #"N1+": (N1P_line_emission, N1P_lines, N1P_num_density),
-            #"N2+": (N2P_line_emission, N2P_lines, N2P_num_density),
-            #"O1+": (O1P_line_emission, O1P_lines, O1P_num_density),
-            #"O2+": (O2P_line_emission, O2P_lines, O2P_num_density),
-            #"Ne1+": (Ne1P_line_emission, Ne1P_lines, Ne1P_num_density),
-            #"Ne2+": (Ne2P_line_emission, Ne2P_lines, Ne2P_num_density),
-            #"S1+": (S1P_line_emission, S1P_lines, S1P_num_density),
-            #"S2+": (S2P_line_emission, S2P_lines, S2P_num_density),
-            #"S3+": (S3P_line_emission, S3P_lines, S3P_num_density)
+            "C2+": (C2P_line_emission, C2P_lines, C2P_num_density),
+            "N1+": (N1P_line_emission, N1P_lines, N1P_num_density),
+            "N2+": (N2P_line_emission, N2P_lines, N2P_num_density),
+            "O1+": (O1P_line_emission, O1P_lines, O1P_num_density),
+            "O2+": (O2P_line_emission, O2P_lines, O2P_num_density),
+            "Ne1+": (Ne1P_line_emission, Ne1P_lines, Ne1P_num_density),
+            "Ne2+": (Ne2P_line_emission, Ne2P_lines, Ne2P_num_density),
+            "S1+": (S1P_line_emission, S1P_lines, S1P_num_density),
+            "S2+": (S2P_line_emission, S2P_lines, S2P_num_density),
+            "S3+": (S3P_line_emission, S3P_lines, S3P_num_density)
         }
 
         # get keys of ions
