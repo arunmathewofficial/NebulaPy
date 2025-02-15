@@ -231,7 +231,7 @@ if __name__ == "__main__":
 
         print(f" ---------------------------")
         sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
-        print(f" step: {step}/{N_time_instant} | simulation time: {sim_time:.6e}")
+        print(f" step: {step}/{N_time_instant-1} | simulation time: {sim_time:.6e}")
 
         # Extract temperature and electron number density
         temperature = pion.get_parameter('Temperature', silo_instant)
