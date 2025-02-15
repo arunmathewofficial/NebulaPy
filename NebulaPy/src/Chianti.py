@@ -276,31 +276,62 @@ class chianti:
     # get line emissivity for a list of lines, this is an internal method
     ######################################################################################
     def get_line_emissivity_for_list(self, line_list):
+        """
+        Retrieves the emissivity values for a given list of spectral lines.
 
-        all_lines = np.array(self.get_allLines())
-        all_lines = all_lines[all_lines != 0]
+        Parameters:
+        ----------
+        line_list : list
+            A list of spectral line identifiers for which emissivity values need to be retrieved.
+
+        Returns:
+        -------
+        line_emissivity : dict
+            A dictionary where keys are formatted line identifiers (e.g., "Fe XIV 530.3")
+            and values are the corresponding emissivity values.
+        """
+
+        # Retrieve the full list of available spectral lines from the current object.
+        all_lines = np.array(self.get_allLines())  # Get all available lines as a NumPy array.
+        all_lines = all_lines[all_lines != 0]  # Remove any zero entries (which may indicate missing or invalid lines).
+
+        # Print a message if verbose mode is enabled.
         if self.verbose:
             print(" retrieving line index for the given line(s)")
 
-        # Check if every line in line_list exists in all_lines
+        # Check if every requested line exists in the available list of lines.
         missing_lines = [line for line in line_list if line not in all_lines]
+
+        # If any requested lines are missing, terminate execution with an error message.
         if missing_lines:
             util.nebula_exit_with_error(f" following line(s) are not found: {missing_lines}")
 
-        # Retrieve indices of lines in line_list
+        # Retrieve the indices of the requested lines within the all_lines array.
+        # np.where(all_lines == line) returns an array of indices where the condition is met.
+        # We take the first occurrence with [0][0] since it's assumed that each line appears only once.
         line_indices = [np.where(all_lines == line)[0][0] for line in line_list if line in all_lines]
 
-        # get emissivity
+        # Retrieve the full emissivity array from the method get_line_emissivity.
+        # The `allLines=False` argument ensures that emissivity is returned only for relevant lines.
         emissivity = self.get_line_emissivity(allLines=False)['emiss']
 
+        # Initialize a dictionary to store emissivity values for the requested lines.
         line_emissivity = {}
+
+        # Iterate through the requested lines and their corresponding indices.
         for i, index in enumerate(line_indices):
+            # Construct a human-readable identifier for the line.
+            # The spectroscopic notation (e.g., "Fe XIV") is combined with the wavelength (or another identifier).
             line_str = self.chianti_ion.Spectroscopic + " " + str(line_list[i])
+
+            # Retrieve the emissivity value corresponding to the current line.
             specific_line_emissivity = emissivity[index]
+
+            # Store the retrieved emissivity value in the dictionary.
             line_emissivity[line_str] = specific_line_emissivity
 
+        # Return the dictionary containing emissivity values for the requested lines.
         return line_emissivity
-
 
     ######################################################################################
     # get line spectrum
