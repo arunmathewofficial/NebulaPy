@@ -68,37 +68,45 @@ def compute_luminosity(workerQ, doneQ):
 
 if __name__ == "__main__":
 
-    # Input-output file configuration for a low-resolution simulation on MIMIR
-    # output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/time-lines-luminosity'
-    # silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo'
-    # filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-    # filename = filebase + '_lines_luminosity_LowRes_2.txt'
-    # outfile = os.path.join(output_dir, filename)
-    # start_time = None
-    # finish_time = None
-    # out_frequency = 2
+    # Input-output file configuration for the low-resolution simulation on MIMIR
+    #output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/time-lines-luminosity'
+    #silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo'
+    #filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+    #filename = filebase + '_lines_luminosity_LowRes_3.txt'
+    #start_time = None
+    #finish_time = 53
+    #out_frequency = 2
 
-    # Input-output file configuration for a medium-resolution simulation on MIMIR
-    # output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/time-lines-luminosity'
-    # silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/silo'
-    # filebase = 'Ostar_mhd-nemo-dep_d2n0192l3'  # Base name of the silo files
-    # filename = filebase + '_lines_luminosity_MedRes.txt'
-    # outfile = os.path.join(output_dir, filename)
-    # start_time = None
-    # finish_time = None
-    # out_frequency = 2
+    # Input-output file configuration for the medium-resolution simulation on MIMIR
+    #output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/time-lines-luminosity'
+    #silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/silo'
+    #filebase = 'Ostar_mhd-nemo-dep_d2n0192l3'  # Base name of the silo files
+    #filename = filebase + '_lines_luminosity_MedRes_3.txt'
+    #start_time = 0
+    #finish_time = 47
+    #out_frequency = 2
 
-    # Input-output file configuration for a low-resolution simulation on Razer Blade machine.
-    output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-    silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
-    filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-    # Prepare output file for results
-    filename = filebase + '_lines_luminosity_LowRes_mp_test.txt'
-    outfile = os.path.join(output_dir, filename)
-    start_time = 165
+    # Input-output file configuration for the high-resolution simulation on MIMIR
+    output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/time-lines-luminosity'
+    silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res'
+    filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+    filename = filebase + '_lines_luminosity_HighRes.txt'
+    start_time = 1.0
     finish_time = None
-    out_frequency = None
-
+    out_frequency = 2
+    
+    # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
+    #output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
+    #silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
+    #filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+    # Prepare output file for results
+    #filename = filebase + '_lines_luminosity_LowRes_mp_test.txt'
+    #start_time = 165
+    #finish_time = None
+    #out_frequency = None
+    
+    outfile = os.path.join(output_dir, filename)
+         
     # Batch the silo files for analysis within the specified time range
     batched_silos = util.batch_silos(
         silo_dir,
@@ -108,6 +116,9 @@ if __name__ == "__main__":
         time_unit='kyr',
         out_frequency=out_frequency
     )
+
+    # Total number of time instant
+    N_time_instant = len(batched_silos)
 
     # Initialize the PION class to handle simulation data
     pion = nebula.pion(batched_silos, verbose=True)
@@ -137,7 +148,7 @@ if __name__ == "__main__":
     print(rf" {N2P_pion_ion:<4} lines: {', '.join(map(str, N2P_lines))}  Angstrom")
 
     O1P_pion_ion = 'O1+'  # The ion of interest (Oxygen II)
-    O1P_lines = [3729.844, 3727.092, 7331.722, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
+    O1P_lines = [3729.844, 3727.092, 7331.723, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
     print(rf" {O1P_pion_ion:<4} lines: {', '.join(map(str, O1P_lines))} Angstrom")
 
     O2P_pion_ion = 'O2+'  # The ion of interest (Oxygen III)
@@ -220,7 +231,7 @@ if __name__ == "__main__":
 
         print(f" ---------------------------")
         sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
-        print(f" step: {step} | simulation time: {sim_time:.6e}")
+        print(f" step: {step}/{N_time_instant} | simulation time: {sim_time:.6e}")
 
         # Extract temperature and electron number density
         temperature = pion.get_parameter('Temperature', silo_instant)
@@ -241,16 +252,16 @@ if __name__ == "__main__":
         # ions for processing
         ions = {
             "He1+": (He1P_line_emission, He1P_lines, He1P_num_density),
-            #"C2+": (C2P_line_emission, C2P_lines, C2P_num_density),
-            #"N1+": (N1P_line_emission, N1P_lines, N1P_num_density),
-            #"N2+": (N2P_line_emission, N2P_lines, N2P_num_density),
-            #"O1+": (O1P_line_emission, O1P_lines, O1P_num_density),
-            #"O2+": (O2P_line_emission, O2P_lines, O2P_num_density),
-            #"Ne1+": (Ne1P_line_emission, Ne1P_lines, Ne1P_num_density),
-            #"Ne2+": (Ne2P_line_emission, Ne2P_lines, Ne2P_num_density),
-            #"S1+": (S1P_line_emission, S1P_lines, S1P_num_density),
-            #"S2+": (S2P_line_emission, S2P_lines, S2P_num_density),
-            #"S3+": (S3P_line_emission, S3P_lines, S3P_num_density)
+            "C2+": (C2P_line_emission, C2P_lines, C2P_num_density),
+            "N1+": (N1P_line_emission, N1P_lines, N1P_num_density),
+            "N2+": (N2P_line_emission, N2P_lines, N2P_num_density),
+            "O1+": (O1P_line_emission, O1P_lines, O1P_num_density),
+            "O2+": (O2P_line_emission, O2P_lines, O2P_num_density),
+            "Ne1+": (Ne1P_line_emission, Ne1P_lines, Ne1P_num_density),
+            "Ne2+": (Ne2P_line_emission, Ne2P_lines, Ne2P_num_density),
+            "S1+": (S1P_line_emission, S1P_lines, S1P_num_density),
+            "S2+": (S2P_line_emission, S2P_lines, S2P_num_density),
+            "S3+": (S3P_line_emission, S3P_lines, S3P_num_density)
         }
 
         # get keys of ions
