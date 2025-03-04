@@ -40,8 +40,8 @@ class DownloadDatabase:
 
         self.sed_database_dir = sed_database_dir
         self.verbose = verbose
-        #self.download_atlas_database()
-        #self.download_postdam_database()
+        self.download_atlas_database()
+        self.download_postdam_database()
         self.download_cmfgen_database()
 
         cool_database_dir = os.path.join(database_dir, 'Cooling')  # separate NebulaPy-DB and SED

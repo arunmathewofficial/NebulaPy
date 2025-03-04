@@ -59,13 +59,14 @@ Installation and Setup (Linux: Debian/Ubuntu)
    pip install .
    ```
 
-6. Download stellar atmosphere SEDs:
-   - Run the following from the NebulaPy root directory:
-     ```
-     dowload-database 
+6. To download the database: 
+   - Run the following command from the NebulaPy root directory:
+     ```bash
+     download-database [destination_path]
      ```
    - This requires ~270 MB of additional space.
 
+    
 Usage
 -----
 For usage details, visit the NebulaPy Wiki:
