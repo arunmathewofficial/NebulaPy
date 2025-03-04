@@ -29,7 +29,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'install-database=NebulaPy.src.Database:download_database',
+            'download-database=NebulaPy.src.Database:DownloadDatabase.run',
         ],
     },
 )

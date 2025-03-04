@@ -1,9 +1,9 @@
 numpy
 scipy
+requests
 matplotlib
 ipyparallel
 ChiantiPy
 pypion
-requests
 pandas
 h5py

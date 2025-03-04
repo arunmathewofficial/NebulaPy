@@ -1,5 +1,6 @@
 from urllib.parse import urljoin
 import requests
+import argparse
 import os
 import re
 import tarfile
@@ -13,12 +14,18 @@ import NebulaPy.version as version
 warnings.filterwarnings("ignore")
 
 
-class download_database:
+class DownloadDatabase:
 
-    def __init__(self, verbose=False):
-        root_directory = os.getcwd()  # get the current working directory
+    def __init__(self, destination=None, verbose=False):
 
-        sed_database_dir = os.path.join(root_directory, 'NebulaPy-DB', 'SED')  # separate NebulaPy-DB and SED
+        if destination is None:
+            destination = os.getcwd()  # set the current working directory as default location
+
+        # Create a subdirectory inside the destination
+        database_dir = os.path.join(destination, 'NebulaPy-DB')
+        os.makedirs(database_dir, exist_ok=True)
+
+        sed_database_dir = os.path.join(database_dir, 'SED')  # separate NebulaPy-DB and SED
         try:
             if not os.path.exists(sed_database_dir):
                 os.makedirs(sed_database_dir)  # make both NebulaPy-DB and SED directories
@@ -26,18 +33,18 @@ class download_database:
                     print(" made database directory and SED subdirectory")
             else:
                 if verbose:
-                    print(" database directory already exists.")
+                    print(" database directory already exists")
         except Exception as e:
             print(f" error: {e}")
 
 
         self.sed_database_dir = sed_database_dir
         self.verbose = verbose
-        self.download_atlas_database()
-        self.download_postdam_database()
+        #self.download_atlas_database()
+        #self.download_postdam_database()
         self.download_cmfgen_database()
 
-        cool_database_dir = os.path.join(root_directory, 'NebulaPy-DB', 'Cooling')  # separate NebulaPy-DB and SED
+        cool_database_dir = os.path.join(database_dir, 'Cooling')  # separate NebulaPy-DB and SED
         try:
             if not os.path.exists(cool_database_dir):
                 os.makedirs(cool_database_dir)  # make both NebulaPy-DB and SED directories
@@ -296,8 +303,28 @@ class download_database:
 
         print(f' Files have been extracted to {self.cool_database_dir}')
 
-#if __name__ == "__main__":
-#    download_database(verbose=True)
+
+    @staticmethod
+    def download_database(destination=None):
+        """This method allows the download process to be called directly from the command line."""
+        # Create the class instance to run the download process
+        downloader = DownloadDatabase(destination, verbose=True)
+
+    @staticmethod
+    def run():
+        """Main method to handle command line arguments and run the download process."""
+        parser = argparse.ArgumentParser(description="Download NebulaPy database")
+        parser.add_argument(
+            'destination',
+            nargs='?',
+            default=None,
+            help="The destination path where the database will be downloaded"
+        )
+        args = parser.parse_args()
+        # Pass the destination and verbose flag to the download_database method
+        DownloadDatabase.download_database(destination=args.destination)
+
+
 
 
 
