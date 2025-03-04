@@ -13,11 +13,10 @@ plot_dir = '/home/tony/Desktop/NebulaPy/problems'
 pion_format = '/home/tony/Desktop/NebulaPy/problems'
 
 bb_sed = nebula.sed(
-    database='/home/tony/Desktop/NebulaPy/NebulaPy-DB',
     energy_bins=EnergyBins,
     verbose=True,
     plot=plot_dir,
     pion=pion_format
 )
+
 bb_sed.Blackbody()
-#print(bb_sed.container)
