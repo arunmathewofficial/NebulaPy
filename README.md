@@ -66,6 +66,15 @@ Installation and Setup (Linux: Debian/Ubuntu)
      ```
    - This requires ~270 MB of additional space.
 
+7. Add environmental variable for NebulaPy Database
+   - Add the following environmental variable to your `.bashrc`:
+     ```
+     export NEBULAPYDB=$HOME/MY_NEBULAPY_DATABASE_DIRECTORY
+     ```
+     Then, reload your `.bashrc`:
+     ```
+     source ~/.bashrc
+     ```
     
 Usage
 -----

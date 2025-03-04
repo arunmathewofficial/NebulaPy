@@ -28,31 +28,30 @@ EnergyBins = [[7.902470e+00, 1.126030e+01],
               [6.9e1,7.2e1],
               [7.2e1,7.4e1],
               [7.4e1, 7.700000e+01]]
+
 print(len(EnergyBins))
 
 plot_dir = '/mnt/local/jm/code/arun/NebulaPy/problems/atlas_n28'
 pion_format = '/mnt/local/jm/code/arun/NebulaPy/problems/atlas_n28'
 
 atlas_sed = nebula.sed(
-    database='/mnt/local/jm/code/arun/NebulaPy/NebulaPy-DB',
     energy_bins=EnergyBins,
     verbose=True,
     plot=None,
     pion=pion_format
 )
 
-#atlas_sed = nebula.sed(EnergyBins, verbose=True)
 atlas_sed.CastelliKuruczAtlas(metallicity=0.0, gravity=4.5)
 atlas_sed.CastelliKuruczAtlas(metallicity=0.0, gravity=4.0)
 atlas_sed.CastelliKuruczAtlas(metallicity=0.0, gravity=3.5)
 
 bb_sed = nebula.sed(
-    database='/mnt/local/jm/code/arun/NebulaPy/NebulaPy-DB',
     energy_bins=EnergyBins,
     verbose=True,
     plot=None,
     pion=pion_format
 )
+
 bb_sed.Blackbody()
 
 

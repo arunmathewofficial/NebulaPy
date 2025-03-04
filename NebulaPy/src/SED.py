@@ -22,18 +22,20 @@ import NebulaPy.version as version
 #  has to be all with underscore rather than bar
 
 
+
 class sed:
 
-    def __init__(self, database, energy_bins, plot=None, pion=None, verbose=False):
+    def __init__(self, energy_bins, plot=None, pion=None, verbose=False):
+        database = os.environ.get("NEBULAPYDB")
         self.EnergyBins = energy_bins
         self.Plot = plot
         self.Pion = pion
         self.Verbose = verbose
         self.container = {'energy_bins': self.EnergyBins,
                           'plot': self.Plot, 'pion': self.Pion}
-        self.AtlasDatabase = database + '/SED/Atlas/'
-        self.PoWRDatabase = database + '/SED/PoWR/'
-        self.CMFGENDatabase = database + '/SED/CMFGEN/'
+        self.AtlasDatabase = os.path.join(database, "SED", "Atlas")
+        self.PoWRDatabase = os.path.join(database, "SED", "PoWR")
+        self.CMFGENDatabase = os.path.join(database, "SED", "CMFGEN")
         self.setup_lambda_bin()
 
     ##############################################################################
@@ -139,7 +141,7 @@ class sed:
         grid_name = metallicity.lower().replace(".", "") + '-' + composition.lower()
         self.grid_name = grid_name
         # Construct path to the grid directory
-        grid_dir = self.PoWRDatabase + grid_name + '-sed'
+        grid_dir = os.path.join(self.PoWRDatabase, grid_name + '-sed')
         # get model parameter file
         modelparameters_file = os.path.join(grid_dir, 'modelparameters.txt')
 
@@ -604,7 +606,7 @@ class sed:
 
 
         if self.Plot is not None:
-            self.plotter(self.Plot, binned_flux_set)
+            self.plotter(self.Plot, binned_flux_set, 5.0, 80.0)
 
 
         # Gathering SED model info

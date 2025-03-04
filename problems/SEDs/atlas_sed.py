@@ -13,7 +13,6 @@ plot_dir = '/home/tony/Desktop/NebulaPy/problems'
 pion_format = '/home/tony/Desktop/NebulaPy/problems'
 
 atlas_sed = nebula.sed(
-    database='/home/tony/Desktop/NebulaPy/NebulaPy-DB',
     energy_bins=EnergyBins,
     verbose=True,
     plot=plot_dir,
@@ -23,4 +22,3 @@ atlas_sed = nebula.sed(
 #atlas_sed = nebula.sed(EnergyBins, verbose=True)
 
 atlas_sed.CastelliKuruczAtlas(metallicity=0.0, gravity=4.5)
-print(atlas_sed.container)

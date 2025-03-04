@@ -192,10 +192,10 @@ class DownloadDatabase:
                         self.download_progress(file_index, Nfiles[model_index],
                                                prefix=prefix_comment, error=err)
                         if err is not None:
-                            print(f"\033[91m error: PyMicroPION version"
+                            print(f"\033[91m error: NebulaPy version"
                                   f" {version.__version__} database "
                                   f"download incomplete, restart download. \033[0m \n"
-                                  f" Use 'install-database'")
+                                  f" use 'download-database'")
                             sys.exit(1)
 
 

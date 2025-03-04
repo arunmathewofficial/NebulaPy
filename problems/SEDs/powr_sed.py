@@ -13,11 +13,11 @@ plot_dir = '/home/tony/Desktop/NebulaPy/problems'
 pion_format = '/home/tony/Desktop/NebulaPy/problems'
 
 powr_sed = nebula.sed(
-    database='/home/tony/Desktop/NebulaPy/NebulaPy-DB',
     energy_bins=EnergyBins,
     verbose=True,
     plot=plot_dir,
     pion=pion_format
 )
+
 powr_sed.PotsdamWolfRayet('SMC', 'WNL-H20', -5.0)
 print(powr_sed.container)
