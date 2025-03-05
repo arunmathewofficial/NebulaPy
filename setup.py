@@ -7,7 +7,8 @@ setup(
     name='NebulaPy',
     description='',
     long_description=long_description,
-    version='0.0.1',
+    long_description_content_type="text/markdown",
+    version='1.0.0-beta',
     author='Arun Mathew',
     author_email='arun@cp.dias.ie',
     url='',
@@ -19,9 +20,10 @@ setup(
     },
 
     classifiers=[
-        'Development Status :: Planning',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Intended Audience :: End Users/Desktop',
+        "License :: OSI Approved :: MIT License",
         'Operating System :: POSIX :: Linux',
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering :: Astronomy',
