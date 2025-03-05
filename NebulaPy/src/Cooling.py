@@ -23,8 +23,10 @@ class cooling():
         self.verbose = verbose
         self.ion = pion_ion
 
+        # get database
+        database = os.environ.get("NEBULAPYDB")
         # Check if the database exists, exit if missing
-        if not os.path.exists(database):
+        if database is None:
             util.nebula_exit_with_error("required database missing, install database to proceed")
 
         # Get the corresponding CHIANTI ion symbol for the given pion_ion
@@ -35,7 +37,7 @@ class cooling():
             print(f" initializing cooling class")
         # Construct the filename for the ion cooling table based on the ion symbol
         ion_cooling_filename = chinati_ion + '.txt'
-        cooling_database = database + '/Cooling/Chianti/'
+        cooling_database = os.path.join(database, "Cooling", "Chianti")
 
         # Full path to the cooling table
         self.ion_cooling_file = os.path.join(cooling_database, ion_cooling_filename)

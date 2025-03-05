@@ -24,7 +24,6 @@ output_dir = '/home/arun/Desktop/plots/BowShock/simple'  # Output image director
 # Set up paths and filenames
 silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'  # Directory containing silo files
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-database_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/NebulaPy/NebulaPy-DB'
 
 #Razer Blade 
 #output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'  # Output image directory
@@ -32,7 +31,6 @@ database_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/NebulaPy/Neb
 #silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'  # Directory containing silo files
 #filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
 #database_path = '/home/tony/Desktop/NebulaPy/NebulaPy-DB'
-
 
 ion = 'H'
 
@@ -63,11 +61,7 @@ mesh_edges_max = pion.geometry_container['edges_max']
 # This uses the first time instant's silo file to initialize
 pion.load_chemistry()
 
-cooling = nebula.cooling(
-    database=database_path,
-    pion_ion=ion,
-    verbose=True
-)
+cooling = nebula.cooling(pion_ion=ion, verbose=True)
 
 ion_name = ion.replace('+', 'p')
 ion_output_dir = os.path.join(output_dir, ion_name)

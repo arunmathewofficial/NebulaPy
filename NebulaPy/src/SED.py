@@ -9,6 +9,7 @@ from scipy import integrate
 import matplotlib.pyplot as plt
 import NebulaPy.tools.constants as const
 import NebulaPy.version as version
+from NebulaPy.tools import util as util
 
 # TODO: Include tolerance for mdot value in potsdam model
 # TODO: Mdot value for SMC-OB-Vd3 and other SMC check
@@ -26,7 +27,13 @@ import NebulaPy.version as version
 class sed:
 
     def __init__(self, energy_bins, plot=None, pion=None, verbose=False):
+
+        # get database
         database = os.environ.get("NEBULAPYDB")
+        # Check if the database exists, exit if missing
+        if database is None:
+            util.nebula_exit_with_error("required database missing, install database to proceed")
+
         self.EnergyBins = energy_bins
         self.Plot = plot
         self.Pion = pion

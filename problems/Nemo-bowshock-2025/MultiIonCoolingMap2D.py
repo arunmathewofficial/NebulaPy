@@ -25,14 +25,12 @@ output_dir = '/mnt/massive-stars/data/arun_simulations/simple-bowshock-coolmap' 
 # Set up paths and filenames
 silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'  # Directory containing silo files
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-database_path = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/NebulaPy/NebulaPy-DB'
 
 #Razer Blade
 output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'  # Output image directory
 # Set up paths and filenames
 silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'  # Directory containing silo files
 filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
-database_path = '/home/tony/Desktop/NebulaPy/NebulaPy-DB'
 
 ion_list = [
     'H', 'H1+',
@@ -84,7 +82,7 @@ metadata = {"minimum_mesh_edges": mesh_edges_min,
 pion.load_chemistry()
 for ion in ion_list:
 
-    cooling = nebula.cooling(database=database_path, pion_ion=ion, verbose=True )
+    cooling = nebula.cooling(pion_ion=ion, verbose=True)
     ion_name = ion.replace('+', 'p')
     ion_output_dir = os.path.join(output_dir, ion_name)
     os.makedirs(ion_output_dir, exist_ok=True)
