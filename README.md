@@ -1,105 +1,108 @@
+# NebulaPy
 
-NebulaPy
-========
+[![PyPI version](https://badge.fury.io/py/NebulaPy.svg)](https://pypi.org/project/NebulaPy/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Python version](https://img.shields.io/badge/python-3.7%2B-blue.svg)](https://www.python.org/downloads/)
 
-NebulaPy is a Python library designed to generate line luminosities from PION simulation data. It also facilitates energy binning of stellar atmosphere models, including ATLAS, Potsdam, and CMFGEN, across a wide range of metal abundances. These functionalities are tailored for radiative sources used in PION simulations.
+NebulaPy is a Python library for post-processing [PION](https://www.pion.ie/) simulations.
 
-Key Features
-------------
-- Spectral Energy Distribution (SED) Binning:
-  - Supports binned SEDs from models like ATLAS, Potsdam, CMFGEN, and blackbody sources.
-- Line Luminosity Calculations:
-  - Computes line luminosities for spherically symmetric geometries.
-- 2D Cooling Function Maps:
-  - Generates 2D maps of cooling functions for astrophysical simulations.
-- 2D Line Emissivity Maps:
-  - Creates 2D emissivity maps for various line transitions.
+## Features
 
-Installation and Setup (Linux: Debian/Ubuntu)
----------------------------------------------
-1. Clone the repository:
-   ```
-   git clone https://github.com/arunmathewofficial/NebulaPy.git
-   cd NebulaPy
-   ```
+- **Spectral Energy Distribution (SED) Binning**: Energy binning of stellar atmosphere models, including ATLAS, Potsdam, and 
+CMFGEN, and Blackbody across a wide range of metal abundances.
+- **Line Luminosity Calculations**:
+  - Computes line luminosities for spherical geometry (1D nested and uniform grid).
+  - Computes line luminosities for cylindrical geometry (2D nested and uniform grid).
+  - Computes line luminosities for cylindrical geometry via MultiProcessing.
+- **Cooling Function Maps for 2D simulations**
+- **Identifies the dominant spectral lines** for ions in 1D and 2D simulation snapshots by
+calculating the line luminosity for all lines based on grid-level data. It then outputs
+the dominant lines for a specified list of ions.
+- **Emissivity Map Generator for 2D simulation snapshot**:
+  - Generates emissivity maps for single ion multi-line emissions from a 2D simulation snapshot.
+  - Generates emissivity maps for multiple ions, multi-line emissions from a 2D simulation snapshot.
+  
 
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
+## Installation
 
-3. Download and set up the CHIANTI database:
-   - Download the CHIANTI database (~1 GB) from:
-     https://download.chiantidatabase.org/CHIANTI_10.1_database.tar.gz
-   - Extract it to a directory (~5 GB disk space required):
-     ```
-     tar -xzf CHIANTI_10.1_database.tar.gz -C ~/MY_CHIANTI_DIRECTORY
-     ```
-   - Add the following environmental variable to your `.bashrc`:
-     ```
-     export XUVTOP=$HOME/MY_CHIANTI_DIRECTORY
-     ```
-     Then, reload your `.bashrc`:
-     ```
-     source ~/.bashrc
-     ```
+```bash
+pip install nebulapy
 
-4. Install the Python-SILO interface:
-   - Run the provided script:
-     ```
-     bash install_silo.sh
-     ```
-   - Fix the SILO library path in your local distribution:
-     - Open the file:
-       `${HOME}/.local/venv/lib/python3.11/site-packages/pypion/SiloHeader_data.py`
-     - Modify line 18 to append `/lib` to the path.
+# Install dependencies
+pip install -r requirements.txt
 
-5. Install NebulaPy:
-   ```
-   pip install .
-   ```
+# Download and set up the CHIANTI database (require ~1 GB disk space)
+wget https://download.chiantidatabase.org/CHIANTI_10.1_database.tar.gz
 
-6. To download the database: 
-   - Run the following command from the NebulaPy root directory:
-     ```bash
-     download-database [destination_path]
-     ```
-   - This requires ~270 MB of additional space.
+# Extract it to a directory (~5 GB disk space required)
+tar -xzf CHIANTI_10.1_database.tar.gz -C ~/MY_CHIANTI_DIRECTORY
 
-7. Add environmental variable for NebulaPy Database
-   - Add the following environmental variable to your `.bashrc`:
-     ```
-     export NEBULAPYDB=$HOME/MY_NEBULAPY_DATABASE_DIRECTORY
-     ```
-     Then, reload your `.bashrc`:
-     ```
-     source ~/.bashrc
-     ```
-    
-Usage
------
-For usage details, visit the NebulaPy Wiki:
-https://github.com/arunmathewofficial/NebulaPy/wiki
+# Add the following environmental variable to your .bashrc
+echo "export XUVTOP=\$HOME/MY_CHIANTI_DIRECTORY" >> ~/.bashrc
 
-Sample Scripts
---------------
-Sample scripts demonstrating NebulaPy functionalities can be found in the `NebulaPy/problems` directory.
+# Reload your .bashrc
+source ~/.bashrc
 
-Support
--------
-For bug reports and feature requests, visit the Issues section of the repository:
-https://github.com/arunmathewofficial/NebulaPy/issues
+# Install the Python-SILO interface:
+bash install_silo.sh
 
-Badges
-------
-License: MIT (https://opensource.org/licenses/MIT)  
-PyPI: https://pypi.org/project/NebulaPy/
+# Fix the SILO library path in your local distribution:
+# Open the file:
+#   ${HOME}/.local/venv/lib/python3.11/site-packages/pypion/SiloHeader_data.py
+# Modify line 18 to append /lib to the path
 
-Author
-------
+# To download the NebulaPy database:
+# Execute the following command from the NebulaPy root directory.
+# If a destination path is not specified, the download will default to the
+# root directory. This requires approximately 270 MB of additional space.
+download-database [destination_path]
+
+# This requires ~270 MB of additional space
+
+# Add environmental variable for NebulaPy Database
+echo "export NEBULAPYDB=\$HOME/MY_NEBULAPY_DATABASE_DIRECTORY" >> ~/.bashrc
+
+# Reload your .bashrc
+source ~/.bashrc
+```
+
+## Requirements
+
+- numpy
+- scipy
+- requests
+- matplotlib
+- ipyparallel
+- ChiantiPy
+- pypion
+- pandas
+- h5py
+- astropy
+
+## Usage
+
+For detailed usage instructions, examples, and features, please 
+visit [NebulaPy Wiki](https://github.com/arunmathewofficial/NebulaPy/wiki). 
+Sample scripts demonstrating NebulaPy functionalities can be found
+in the `NebulaPy/problems` directory.
+
+
+## Documentation
+
+Check the full documentation at [NebulaPy GitHub](https://github.com/arunmathewofficial/NebulaPy).
+
+## Support
+
+For bug reports and feature requests, visit the
+[issues section](https://github.com/arunmathewofficial/NebulaPy/issues) of the repository:
+
+## Changelog
+- **Version 1.0.0-beta** – March 5, 2025: Beta release
+
+
+## Author
 Arun Mathew  
 Astronomy & Astrophysics  
 Computational and High Energy Astrophysics  
 Dublin Institute for Advanced Studies (DIAS), Ireland  
 
-Date: 2024
