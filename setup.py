@@ -55,3 +55,5 @@ setup(
         ],
     },
 )
+
+#todo: include requirements.txt and install_silo.sh file
