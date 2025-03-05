@@ -7,3 +7,4 @@ ChiantiPy
 pypion
 pandas
 h5py
+astropy

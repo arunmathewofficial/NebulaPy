@@ -26,25 +26,24 @@ the dominant lines for a specified list of ions.
 ## Installation
 
 ```bash
-pip install nebulapy
-
-# Install dependencies
-pip install -r requirements.txt
+# This will also install dependencies
+pip install NebulaPy
 
 # Download and set up the CHIANTI database (require ~1 GB disk space)
 wget https://download.chiantidatabase.org/CHIANTI_10.1_database.tar.gz
 
 # Extract it to a directory (~5 GB disk space required)
-tar -xzf CHIANTI_10.1_database.tar.gz -C ~/MY_CHIANTI_DIRECTORY
+tar -xzf CHIANTI_10.1_database.tar.gz -C CHIANTI-DATABASE-DIRECTORY
 
 # Add the following environmental variable to your .bashrc
-echo "export XUVTOP=\$HOME/MY_CHIANTI_DIRECTORY" >> ~/.bashrc
+echo "export XUVTOP=CHIANTI-DATABASE-DIRECTORY" >> ~/.bashrc
 
 # Reload your .bashrc
 source ~/.bashrc
 
 # Install the Python-SILO interface:
-bash install_silo.sh
+# Execute the following command from the NebulaPy root directory.
+install-silo
 
 # Fix the SILO library path in your local distribution:
 # Open the file:
@@ -57,10 +56,8 @@ bash install_silo.sh
 # root directory. This requires approximately 270 MB of additional space.
 download-database [destination_path]
 
-# This requires ~270 MB of additional space
-
 # Add environmental variable for NebulaPy Database
-echo "export NEBULAPYDB=\$HOME/MY_NEBULAPY_DATABASE_DIRECTORY" >> ~/.bashrc
+echo "export NEBULAPYDB=NEBULAPY-DATABASE-DIRECTORY" >> ~/.bashrc
 
 # Reload your .bashrc
 source ~/.bashrc
@@ -98,6 +95,8 @@ For bug reports and feature requests, visit the
 
 ## Changelog
 - **Version 1.0.0-beta** – March 5, 2025: Beta release
+- **Version 1.0.1-beta** – March 5, 2025: minor bug fixes
+- **Version 1.0.2-beta** – March 5, 2025: include silo installation script
 
 
 ## Author
