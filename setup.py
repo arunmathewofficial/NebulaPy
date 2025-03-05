@@ -8,7 +8,7 @@ setup(
     description='',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version='1.0.0-beta',
+    version='1.0.1-beta',
     author='Arun Mathew',
     author_email='arun@cp.dias.ie',
     url='',
