@@ -26,8 +26,8 @@ the dominant lines for a specified list of ions.
 ## Installation
 
 ```bash
-# This will also install dependencies
 pip install NebulaPy
+# This will also install dependencies
 
 # Download and set up the CHIANTI database (require ~1 GB disk space)
 wget https://download.chiantidatabase.org/CHIANTI_10.1_database.tar.gz
