@@ -63,19 +63,6 @@ echo "export NEBULAPYDB=NEBULAPY-DATABASE-DIRECTORY" >> ~/.bashrc
 source ~/.bashrc
 ```
 
-## Requirements
-
-- numpy
-- scipy
-- requests
-- matplotlib
-- ipyparallel
-- ChiantiPy
-- pypion
-- pandas
-- h5py
-- astropy
-
 ## Usage
 
 For detailed usage instructions, examples, and features, please 
@@ -95,8 +82,8 @@ For bug reports and feature requests, visit the
 
 ## Changelog
 - **Version 1.0.0-beta** – March 5, 2025: Beta release
-- **Version 1.0.1-beta** – March 5, 2025: minor bug fixes
-- **Version 1.0.2-beta** – March 5, 2025: include silo installation script
+- **Version 1.0.1-beta** – March 6, 2025: minor bug fixes
+- **Version 1.0.2-beta** – March 6, 2025: include silo installation script
 
 
 ## Author

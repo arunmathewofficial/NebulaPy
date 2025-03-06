@@ -35,7 +35,8 @@ setup(
     install_requires=read_requirements(),
     include_package_data=True,
     package_data={
-        'NebulaPy': ['data/PoWR.tar.xz', 'data/CMFGEN.tar.xz', 'data/Chianti.tar.xz', 'scripts/install_silo.sh'],
+        'NebulaPy': ['data/PoWR.tar.xz', 'data/CMFGEN.tar.xz',
+                     'data/Chianti.tar.xz', 'scripts/install_silo.sh'],
     },
 
     classifiers=[
@@ -56,4 +57,3 @@ setup(
     },
 )
 
-#todo: include requirements.txt and install_silo.sh file
