@@ -20,24 +20,32 @@ import h5py
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
-# MIMIR
+# MIMIR (Set up paths and filenames)
 output_dir = '/mnt/massive-stars/data/arun_simulations/simple-bowshock-coolmap'  # Output image directory
-# Set up paths and filenames
 silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'  # Directory containing silo files
 filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+start_time = 180
+finish_time = None
+out_frequency = None
 
-#Razer Blade
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'  # Output image directory
-# Set up paths and filenames
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'  # Directory containing silo files
-filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
+#Razer Blade (Set up paths and filenames)
+#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/coolmap'  # Output image directory
+#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/silo'  # Directory containing silo files
+#filebase = 'Ostar_mhd-nemo_d2n0128l3'  # Base name of the silo files
+#start_time = 30
+#finish_time = None
+#out_frequency = None
 
 ion_list = [
     'H', 'H1+',
     'He', 'He1+', 'He2+',
     'C', 'C1+', 'C2+', 'C3+', 'C4+', 'C5+', 'C6+',
-    'N', 'N1+', 'N2+', 'N3+', 'N4+', 'N5+', 'N6+', 'N7+',
-    'O', 'O1+', 'O2+', 'O3+', 'O4+', 'O5+', 'O6+', 'O7+', 'O8+',
+    'N',
+    'N1+',
+    'N2+', 'N3+', 'N4+', 'N5+', 'N6+', 'N7+',
+    'O',
+    'O1+',
+    'O2+', 'O3+', 'O4+', 'O5+', 'O6+', 'O7+', 'O8+',
     'Ne1+', 'Ne2+', 'Ne3+', 'Ne4+', 'Ne5+', 'Ne6+', 'Ne7+', 'Ne8+', 'Ne9+', 'Ne10+',
     'Si1+', 'Si2+', 'Si3+', 'Si4+', 'Si5+', 'Si6+', 'Si7+', 'Si8+', 'Si9+', 'Si10+',
     'Si11+', 'Si12+', 'Si13+', 'Si14+',
@@ -49,15 +57,13 @@ ion_list = [
 ]
 
 # Batch the silo files according to the time instant
-start_time = 0.0
-finish_time = 85.0
 batched_silos = util.batch_silos(
     silo_dir,
     filebase,
-    start_time=None,
-    finish_time=None,
-    time_unit=None,
-    out_frequency=None
+    start_time=start_time,
+    finish_time=finish_time,
+    time_unit='kyr',
+    out_frequency=out_frequency
 )
 
 # Initialize the Pion class from NebulaPy, which handles the simulation data
@@ -66,8 +72,8 @@ pion = nebula.pion(batched_silos, verbose=True)
 # Calculates and stores geometric grid parameters.
 # For example, in a spherical geometry, it extracts radius and shell volumes
 # from the first silo file in the batch and saves them into a geometry container.
-pion.load_geometry(batched_silos[0], scale='pc')
-N_grid_level = pion.geometry_container['Nlevels']
+pion.load_geometry(scale='pc')
+N_grid_level = pion.geometry_container['Nlevel']
 mesh_edges_min = pion.geometry_container['edges_min']
 mesh_edges_max = pion.geometry_container['edges_max']
 
@@ -94,6 +100,7 @@ for ion in ion_list:
 
     data_title = f"Bow-Shock cooling function map for ion the {ion}"
 
+    Nstep = len(batched_silos)
     runtime = 0.0
     # Loop over each time instant in the batched silo files
     for step, silo_instant in enumerate(batched_silos):
@@ -105,7 +112,7 @@ for ion in ion_list:
         print(f" ---------------------------")
         # Print the current simulation time instant
         sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
-        print(f" step: {step} | simulation time: {sim_time:.6e}")
+        print(f" step: {step}/{Nstep} | simulation time: {sim_time:.6e}")
 
         # h5 metadata
         metadata['step'] = step
@@ -121,7 +128,6 @@ for ion in ion_list:
         ne = pion.get_ne(silo_instant)
         # Retrieve the ion number density
         n_ion = pion.get_ion_number_density(ion, silo_instant)
-
 
         print(" computing cooling rate map for each grid level(s)")
         # Initialize arrays for cooling rate map

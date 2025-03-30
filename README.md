@@ -19,7 +19,7 @@ CMFGEN, and Blackbody across a wide range of metal abundances.
 calculating the line luminosity for all lines based on grid-level data. It then outputs
 the dominant lines for a specified list of ions.
 - **Emissivity Map Generator for 2D simulation snapshot**:
-  - Generates emissivity maps for single ion multi-line emissions from a 2D simulation snapshot.
+  - Generates emrissivity maps for single ion multi-line emissions from a 2D simulation snapshot.
   - Generates emissivity maps for multiple ions, multi-line emissions from a 2D simulation snapshot.
   
 

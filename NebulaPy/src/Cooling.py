@@ -8,7 +8,7 @@ class cooling():
     ######################################################################################
     # initializing the class cooling
     ######################################################################################
-    def __init__(self, database, pion_ion, verbose=True):
+    def __init__(self, pion_ion, verbose=True):
         """
         Initializes the cooling class for a specific pion ion
 
