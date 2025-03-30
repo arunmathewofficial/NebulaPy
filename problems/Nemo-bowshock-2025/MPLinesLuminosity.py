@@ -90,8 +90,8 @@ if __name__ == "__main__":
     output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/time-lines-luminosity'
     silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res'
     filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
-    filename = filebase + '_lines_luminosity_HighRes.txt'
-    start_time = 1.0
+    filename = filebase + '_lines_luminosity_HighRes_2.txt'
+    start_time = 1.54e+02
     finish_time = None
     out_frequency = 2
     
