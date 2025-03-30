@@ -731,7 +731,7 @@ class pion():
         ion_tracer = None
         if ion not in self.chemistry_container:
             if ion in const.top_level_ions and element in self.chemistry_container['mass_fractions']:
-                util.nebula_warning(f"ion '{ion}' is a top-level ion, not a recognized species in NEMO")
+                util.nebula_info(f"ion '{ion}' is a top-level ion, not a recognized species in NEMO")
                 return None
             else:
                 util.nebula_exit_with_error(f"ion {ion} is not in silo file")
