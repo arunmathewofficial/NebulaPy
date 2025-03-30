@@ -47,7 +47,7 @@ def nebula_info(infoMessage):
     """
     BLUE = "\033[94m"
     RESET = "\033[0m"
-    print(f'{BLUE} warning: {warnMessage}{RESET}')
+    print(f'{BLUE} info: {infoMessage}{RESET}')
 
 ######################################################################################
 # Nebula version
