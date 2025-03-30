@@ -30,7 +30,7 @@ class pion():
         header_data.db.SetDir('/header')
         # Retrieve what coordinate system is used
         coord_sys = header_data.db.GetVar("coord_sys")
-
+        header_data.close()
         # spherical coordinate
         if coord_sys == 3:
             # Read the data from the current silo file
@@ -87,6 +87,7 @@ class pion():
         header_data.db.SetDir('/header')
         # Retrieve what coordinate system is used
         coord_sys = header_data.db.GetVar("coord_sys")
+        header_data.close()
         # Dimension scale
         self.dim_scale = scale
 
