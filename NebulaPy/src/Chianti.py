@@ -248,6 +248,27 @@ class chianti:
         return wvl
 
     ######################################################################################
+    # get all lines and transitions of the ion
+    ######################################################################################
+    def get_allLinesTransitions(self):
+        """
+        Retrieve all spectral lines associated with a specified ion
+        :return: wave-length array
+        """
+        if self.verbose:
+            print(' retrieving spectral lines and transitions of ', self.chianti_ion.Spectroscopic)
+
+        Ref = self.chianti_ion.Elvlc['ref']
+        A_value = np.asarray(self.chianti_ion.Wgfa['avalue'], np.float64)
+        Pretty1 = self.chianti_ion.Wgfa['pretty1']
+        Pretty2 = self.chianti_ion.Wgfa['pretty2']
+        wvl = np.asarray(self.chianti_ion.Wgfa['wvl'], np.float64)
+
+        wvl = np.abs(wvl)
+        A_value = np.abs(A_value)
+        return {'Reference': Ref, 'wvl': wvl, 'Avalue': A_value, 'From': Pretty1, 'To': Pretty2}
+
+    ######################################################################################
     # Get line emissivity, this is an internal method
     ######################################################################################
     def get_line_emissivity(self, allLines=True):
