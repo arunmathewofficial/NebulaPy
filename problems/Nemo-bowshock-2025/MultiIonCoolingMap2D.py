@@ -21,10 +21,10 @@ import h5py
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
 # MIMIR (Set up paths and filenames)
-output_dir = '/mnt/massive-stars/data/arun_simulations/simple-bowshock-coolmap'  # Output image directory
-silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'  # Directory containing silo files
-filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-start_time = 180
+output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/cooling-map'  # Output image directory
+silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'  # Directory containing silo files
+filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+start_time = 190
 finish_time = None
 out_frequency = None
 
@@ -37,9 +37,10 @@ out_frequency = None
 #out_frequency = None
 
 ion_list = [
-    'H', 'H1+',
-    'He', 'He1+', 'He2+',
-    'C', 'C1+', 'C2+', 'C3+', 'C4+', 'C5+', 'C6+',
+    #'H', 'H1+',
+    #'He', 'He1+', 'He2+',
+    #'C', 'C1+', 'C2+', 'C3+', 'C4+', 'C5+',
+    'C6+',
     'N',
     'N1+',
     'N2+', 'N3+', 'N4+', 'N5+', 'N6+', 'N7+',

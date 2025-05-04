@@ -30,12 +30,24 @@ def nebula_exit_with_error(errorMessage):
 ######################################################################################
 def nebula_warning(warnMessage):
     """
-    Custom exit function display error before exiting.
-    :param message: Optional exit message.
+    Custom warning function.
+    :param message: Optional warn message.
     """
     YELLOW = "\033[93m"
     RESET = "\033[0m"
     print(f'{YELLOW} warning: {warnMessage}{RESET}')
+
+######################################################################################
+# Nebula Info
+######################################################################################
+def nebula_info(infoMessage):
+    """
+    Custom info display function.
+    :param message: Optional info message.
+    """
+    BLUE = "\033[94m"
+    RESET = "\033[0m"
+    print(f'{BLUE} info: {infoMessage}{RESET}')
 
 ######################################################################################
 # Nebula version
