@@ -7,19 +7,21 @@ dummy_ne = [1e+9]
 
 output_path = '/home/tony/Desktop/multi-ion-bowshock/NebulaPy/lines-transitions'
 
-nebula_chianti = nebula.chianti(pion_ion='O1+', temperature=dummy_temperature, ne=dummy_ne, verbose=True)
+nebula_chianti = nebula.chianti(pion_ion='S1+', temperature=dummy_temperature, ne=dummy_ne, verbose=True)
 spectroscopic_name = nebula_chianti.chianti_ion.Spectroscopic
 allLineData = nebula_chianti.get_allLinesTransitions()
 
 
 
 # Save the Series to a text file
-filename = os.path.join(output_path, spectroscopic_name + '_lines_transitions.txt')
-print(f"Saving {spectroscopic_name} lines to file: {filename}")
+filename = os.path.join(spectroscopic_name + '_lines_transitions.txt')
+outfile = os.path.join(output_path, filename)
+
+print(f" Saving {spectroscopic_name} line transition info to file: {filename}")
 
 Reference = "#" + " ".join(allLineData['Reference'])
 # Write to file
-with open(filename, 'w') as f:
+with open(outfile, 'w') as f:
     # Write header
     f.write(Reference)
     f.write('\n\n')
