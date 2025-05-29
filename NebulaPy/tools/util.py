@@ -89,6 +89,12 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
         'sec': 1
     }
 
+    inverse_conversion_factors = {
+        'kyr': 1 / 3.154e+10,
+        'yr': 1 / 3.154e+7,
+        'sec': 1
+    }
+
     # Convert start_time and finish_time to seconds based on time_unit
     factor = conversion_factors.get(time_unit, 1)  # Default to 1 if time_unit is None or unrecognized
     start_time_sec = start_time * factor if start_time is not None else None
@@ -207,9 +213,53 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                     # Append the found file to the corresponding time instant group
                     batched_silos[i].append(level_instant_file)
 
+        # common to both uniform and nested grid
+        if start_time is None:
+            data = ReadData(batched_silos[0])
+            if coord_sys == 3:
+                basic = data.get_1Darray('Density')
+            elif coord_sys == 2:
+                basic = data.get_2Darray('Density')
+            elif coord_sys == 1:
+                basic = data.get_3Darray('Density')
+            sim_time = (basic['sim_time'] * unit.s).value
+            data.close()
+            start_time = sim_time * inverse_conversion_factors.get(time_unit, 1)
+
+        if finish_time is None:
+            data = ReadData(batched_silos[-1])
+            if coord_sys == 3:
+                basic = data.get_1Darray('Density')
+            elif coord_sys == 2:
+                basic = data.get_2Darray('Density')
+            elif coord_sys == 1:
+                basic = data.get_3Darray('Density')
+            sim_time = (basic['sim_time'] * unit.s).value
+            data.close()
+            finish_time = sim_time * inverse_conversion_factors.get(time_unit, 1)
+
+        if finish_time is not None:
+            data = ReadData(batched_silos[-1])
+            if coord_sys == 3:
+                basic = data.get_1Darray('Density')
+            elif coord_sys == 2:
+                basic = data.get_2Darray('Density')
+            elif coord_sys == 1:
+                basic = data.get_3Darray('Density')
+            sim_walltime_sec = (basic['sim_time'] * unit.s).value
+            data.close()
+            finish_time_sec = finish_time * conversion_factors.get(time_unit, 1)
+            if finish_time_sec > sim_walltime_sec:
+                sim_walltime = sim_walltime_sec * inverse_conversion_factors.get(time_unit, 1)
+                nebula_exit_with_error(
+                    f"specified finish time {float(finish_time):.3f} {time_unit} exceeds the simulation"
+                    f" walltime {float(sim_walltime):.3f} {time_unit}"
+                )
+
+
         Ninstances = len(batched_silos)
-        print(f" {Ninstances} time instances between {start_time} {time_unit} and {finish_time} {time_unit}")
-        print(" batching completed")
+        print(f" {Ninstances} time instances between {start_time:.5} {time_unit} and {finish_time:.5} {time_unit}")
+        print(" silo batching completed")
         if not batched_silos:
             nebula_exit_with_error('no silo files found in the specified time range, check your selection criteria')
         return batched_silos

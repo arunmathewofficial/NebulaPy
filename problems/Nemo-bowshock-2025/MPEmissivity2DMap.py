@@ -89,8 +89,8 @@ if __name__ == "__main__":
     output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emissiviity_map'
     silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/silo'
     filebase = 'Ostar_mhd-nemo_d2n0128l3'  # Base name of the silo files
-    start_time = 20
-    finish_time = 50
+    start_time = None
+    finish_time = None
     out_frequency = None
     time_unit = 'kyr'
 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
         filebase,
         start_time=start_time,
         finish_time=finish_time,
-        time_unit= time_unit,
+        time_unit=time_unit,
         out_frequency=out_frequency
     )
 
