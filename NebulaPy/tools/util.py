@@ -258,7 +258,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
 
 
         Ninstances = len(batched_silos)
-        print(f" {Ninstances} time instances between {start_time:.5} {time_unit} and {finish_time:.5} {time_unit}")
+        print(f" {Ninstances} time instances between {start_time:.3f} {time_unit} and {finish_time:.3f} {time_unit}")
         print(" silo batching completed")
         if not batched_silos:
             nebula_exit_with_error('no silo files found in the specified time range, check your selection criteria')

@@ -88,12 +88,12 @@ if __name__ == "__main__":
 
     # Input-output file configuration for the high-resolution simulation on MIMIR
     output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/time-lines-luminosity'
-    silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res'
+    silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
     filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
-    filename = filebase + '_lines_luminosity_HighRes_2.txt'
-    start_time = 1.54e+02
+    filename = filebase + '_lines_luminosity_HighRes_1.txt'
+    start_time = 197
     finish_time = None
-    out_frequency = 2
+    out_frequency = None
     
     # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
     #output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
