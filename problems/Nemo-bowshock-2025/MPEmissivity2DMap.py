@@ -91,7 +91,7 @@ if __name__ == "__main__":
     filebase = 'Ostar_mhd-nemo_d2n0128l3'  # Base name of the silo files
     start_time = None
     finish_time = None
-    out_frequency = None
+    out_frequency = 5
     time_unit = 'kyr'
 
     # Batch the silo files for analysis within the specified time range
@@ -260,15 +260,15 @@ if __name__ == "__main__":
         # ions for processing
         ions = {
             "He1+": (He1P_line_emission, He1P_lines),
-            "C2+": (C2P_line_emission, C2P_lines),
+            #"C2+": (C2P_line_emission, C2P_lines),
             "N1+": (N1P_line_emission, N1P_lines),
-            "N2+": (N2P_line_emission, N2P_lines),
+            #"N2+": (N2P_line_emission, N2P_lines),
             "O1+": (O1P_line_emission, O1P_lines),
-            "O2+": (O2P_line_emission, O2P_lines),
-            "Ne1+": (Ne1P_line_emission, Ne1P_lines),
+            #"O2+": (O2P_line_emission, O2P_lines),
+            #"Ne1+": (Ne1P_line_emission, Ne1P_lines),
             "Ne2+": (Ne2P_line_emission, Ne2P_lines),
-            "S1+": (S1P_line_emission, S1P_lines),
-            "S2+": (S2P_line_emission, S2P_lines),
+            #"S1+": (S1P_line_emission, S1P_lines),
+            #"S2+": (S2P_line_emission, S2P_lines),
             "S3+": (S3P_line_emission, S3P_lines)
         }
 
@@ -324,12 +324,15 @@ if __name__ == "__main__":
             ion_name = ion.replace('+', 'p')
             ion_output_dir = os.path.join(output_dir, ion_name)
 
+            # get ion number density
+            n_ion = pion.get_ion_number_density(ion, silo_instant)
+
             # saving data to h5 file ########################################################
             h5_filename = f"{filebase}_emiss_{ion_name}_{str(step).zfill(4)}.h5"
             h5_file = os.path.join(ion_output_dir, h5_filename)
             data_title = f"Bow-Shock emissivity map for {ion}"
 
-            print(f" saving {ion} line emissivity maps data into {h5_filename}")
+            print(f" saving {ion} line emissivity maps and ion density into {h5_filename}")
             with h5py.File(h5_file, "w") as file:
                 # Add heading and title
                 file.attrs['head'] = heading
@@ -347,6 +350,11 @@ if __name__ == "__main__":
                 emissivity_map_group = file.create_group("emissivity_map")
                 for key, value in ion_emissivity_map_dict[ion].items():
                     emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
+
+                # Save emissivity function map
+                ion_number_density_group = file.create_group("ion_number_density")
+                ion_number_density_group.create_dataset(str(ion), data=np.array(n_ion, dtype=np.float32))
+            del n_ion
             # end of saving data to h5 file #################################################
 
             '''
