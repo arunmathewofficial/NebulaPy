@@ -47,15 +47,15 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by ze
 #out_frequency = 2
 
 # Input-output file configuration for a low-resolution simulation on Razer Blade machine.
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
-filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/time-lines-luminosity'  # Change as needed
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
+filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+start_time = None
+finish_time = None
+out_frequency = None
 # Prepare output file for results
 filename = filebase + '_lines_luminosity_LowRes_normal_test.txt'
 outfile = os.path.join(output_dir, filename)
-start_time = 165
-finish_time = None
-out_frequency = None
 
 # Batch the silo files for analysis within the specified time range
 batched_silos = util.batch_silos(

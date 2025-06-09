@@ -87,23 +87,23 @@ if __name__ == "__main__":
     #out_frequency = 2
 
     # Input-output file configuration for the high-resolution simulation on MIMIR
-    output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/time-lines-luminosity'
-    silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
-    filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
-    filename = filebase + '_lines_luminosity_HighRes_1.txt'
-    start_time = 197
-    finish_time = None
-    out_frequency = None
-    
-    # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
-    #output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-    #silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
-    #filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-    # Prepare output file for results
-    #filename = filebase + '_lines_luminosity_LowRes_mp_test.txt'
-    #start_time = 165
+    #output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/time-lines-luminosity'
+    #silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
+    #filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+    #filename = filebase + '_lines_luminosity_HighRes_1.txt'
+    #start_time = 197
     #finish_time = None
     #out_frequency = None
+    
+    # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
+    output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/time-lines-luminosity'
+    silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
+    filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+    filename = filebase + '_lines_luminosity_HighRes.txt'
+    start_time = None
+    finish_time = None
+    out_frequency = None
+    time_unit = 'kyr'
     
     outfile = os.path.join(output_dir, filename)
          
@@ -113,7 +113,7 @@ if __name__ == "__main__":
         filebase,
         start_time=start_time,
         finish_time=finish_time,
-        time_unit='kyr',
+        time_unit=time_unit,
         out_frequency=out_frequency
     )
 
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     print(rf" {N2P_pion_ion:<4} lines: {', '.join(map(str, N2P_lines))}  Angstrom")
 
     O1P_pion_ion = 'O1+'  # The ion of interest (Oxygen II)
-    O1P_lines = [3729.844, 3727.092, 7331.723, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
+    O1P_lines = [3729.844, 3727.092, 7331.722, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
     print(rf" {O1P_pion_ion:<4} lines: {', '.join(map(str, O1P_lines))} Angstrom")
 
     O2P_pion_ion = 'O2+'  # The ion of interest (Oxygen III)
