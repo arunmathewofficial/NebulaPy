@@ -238,6 +238,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
             data.close()
             finish_time = sim_time * inverse_conversion_factors.get(time_unit, 1)
 
+
         if finish_time is not None:
             data = ReadData(batched_silos[-1])
             if coord_sys == 3:
@@ -248,14 +249,13 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                 basic = data.get_3Darray('Density')
             sim_walltime_sec = (basic['sim_time'] * unit.s).value
             data.close()
-            finish_time_sec = finish_time * conversion_factors.get(time_unit, 1)
+            #finish_time_sec = finish_time * conversion_factors.get(time_unit, 1)
             if finish_time_sec > sim_walltime_sec:
                 sim_walltime = sim_walltime_sec * inverse_conversion_factors.get(time_unit, 1)
-                nebula_exit_with_error(
+                nebula_warning(
                     f"specified finish time {float(finish_time):.3f} {time_unit} exceeds the simulation"
                     f" walltime {float(sim_walltime):.3f} {time_unit}"
                 )
-
 
         Ninstances = len(batched_silos)
         print(f" {Ninstances} time instances between {start_time:.3f} {time_unit} and {finish_time:.3f} {time_unit}")

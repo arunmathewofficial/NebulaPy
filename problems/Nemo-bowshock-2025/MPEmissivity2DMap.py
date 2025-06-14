@@ -79,21 +79,21 @@ def compute_emissivity(workerQ, doneQ):
 if __name__ == "__main__":
 
     # Input-output file configuration for the high-resolution simulation on MIMIR
-    # output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/emissivity'
-    # silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
-    # filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-    # start_time = None
-    # finish_time = None
-    # out_frequency = None
-    # time_unit = 'kyr'
+    #output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/emissivity'
+    #silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
+    #filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+    #start_time = None
+    #finish_time = None
+    #out_frequency = None
+    #time_unit = 'kyr'
 
 
     # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
     output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emissiviity_map'
     silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
     filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
-    start_time = None
-    finish_time = None
+    start_time = 200
+    finish_time = 202
     out_frequency = None
     time_unit = 'kyr'
 
