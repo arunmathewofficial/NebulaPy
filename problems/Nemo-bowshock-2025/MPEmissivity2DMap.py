@@ -84,7 +84,9 @@ if __name__ == "__main__":
     # filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
     # start_time = None
     # finish_time = None
-    # out_frequency = 2
+    # out_frequency = None
+    # time_unit = 'kyr'
+
 
     # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
     output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emissiviity_map'
@@ -267,16 +269,16 @@ if __name__ == "__main__":
         # ions for processing
         ions = {
             "He1+": (He1P_line_emission, He1P_lines),
-            #"C2+": (C2P_line_emission, C2P_lines),
-            #"N1+": (N1P_line_emission, N1P_lines),
-            #"N2+": (N2P_line_emission, N2P_lines),
-            #"O1+": (O1P_line_emission, O1P_lines),
-            #"O2+": (O2P_line_emission, O2P_lines),
-            #"Ne1+": (Ne1P_line_emission, Ne1P_lines),
-            #"Ne2+": (Ne2P_line_emission, Ne2P_lines),
-            #"S1+": (S1P_line_emission, S1P_lines),
-            #"S2+": (S2P_line_emission, S2P_lines),
-            #"S3+": (S3P_line_emission, S3P_lines)
+            "C2+": (C2P_line_emission, C2P_lines),
+            "N1+": (N1P_line_emission, N1P_lines),
+            "N2+": (N2P_line_emission, N2P_lines),
+            "O1+": (O1P_line_emission, O1P_lines),
+            "O2+": (O2P_line_emission, O2P_lines),
+            "Ne1+": (Ne1P_line_emission, Ne1P_lines),
+            "Ne2+": (Ne2P_line_emission, Ne2P_lines),
+            "S1+": (S1P_line_emission, S1P_lines),
+            "S2+": (S2P_line_emission, S2P_lines),
+            "S3+": (S3P_line_emission, S3P_lines)
         }
 
         # get keys of ions
