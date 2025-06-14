@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python version](https://img.shields.io/badge/python-3.7%2B-blue.svg)](https://www.python.org/downloads/)
 
-NebulaPy is a Python library for post-processing [PION](https://www.pion.ie/) simulations.
+NebulaPy is a Python library for post-processing [PION](https://www.pion.ie/) simulation data.
 
 ## Features
 
@@ -82,9 +82,9 @@ For bug reports and feature requests, visit the
 
 ## Changelog
 - **Version 1.0.0-beta** – March 5, 2025: Beta release
-- **Version 1.0.1-beta** – March 6, 2025: minor bug fixes
-- **Version 1.0.2-beta** – March 6, 2025: include silo installation script
-
+- **Version 1.0.1-beta** – March 6, 2025: Minor bug fixes
+- **Version 1.0.2-beta** – March 6, 2025: Include silo installation script
+- **Version 1.0.3-beta** – March 6, 2025: Fixed bugs in spectral line emissivity map script
 
 ## Author
 Arun Mathew  
