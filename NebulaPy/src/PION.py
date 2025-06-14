@@ -127,7 +127,6 @@ class pion():
         self.geometry_container['coordinate_sys'] = const.coordinate_system[coord_sys]
         self.geometry_container['Nlevels'] = Nlevels
         if self.verbose:
-            print(f" N grid levels: {Nlevels}")
             print(f" dimensional scale: {self.dim_scale}")
 
 
@@ -224,7 +223,7 @@ class pion():
         dataio.close()  # Close the data file
 
         if self.verbose:
-            print(f" retrieving the simulation info")
+            print(f" retrieving the simulation domain info")
 
         self.geometry_container['mask'] = mask
         del mask
@@ -839,6 +838,7 @@ class pion():
             ne = [density[level] * ne[level] for level in range(Nlevel)]
 
             # Return the calculated electron number density array for each grid level.
+            print(" returning electron number density array")
             return ne
 
     ######################################################################################

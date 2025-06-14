@@ -2,7 +2,7 @@ from .Chianti import chianti
 import NebulaPy.tools.constants as const
 import numpy as np
 import NebulaPy.tools.util as util
-
+import copy
 
 import multiprocessing
 from multiprocessing import Pool, Manager
@@ -41,7 +41,7 @@ class line_emission():
             util.nebula_exit_with_error(f"requested line(s) {spectroscopic_name} {missing_line_str} not "
                                         f"found in the CHIANTI database")
         else:
-            print(f" all requested {spectroscopic_name:>6} lines exist in the CHIANTI database")
+            print(f" requested {spectroscopic_name:>6} lines exist in the CHIANTI database")
 
 
 
@@ -132,19 +132,17 @@ class line_emission():
         # Determine the number of rows per level (assumes uniform shape across levels)
         rows = len(temperature[0])
 
-        # Prepare a list to hold the emissivity maps for each requested line
-        lines_emissivity_map = []
+        # Prepare an array to hold the emissivity maps for each requested line
+        lines_emissivity_map = {}
 
         # Create a "zero" emissivity map template with the same shape as temperature levels
         zero_emissivity_map = [np.zeros(shape) for shape in [arr.shape for arr in temperature]]
+        zero_emissivity_map = np.array(zero_emissivity_map)
 
-        # Initialize each line's emissivity map with deep copies of the zero template
-        for index in range(len(lines)):
-            lines_emissivity_map.append(zero_emissivity_map)
-
-        # Set a message to show upon completion of the process
-        if progress_bar:
-            completion_msg = f'finished computing emissivity for {self.ion} lines'
+        # make keys for lines emissivity map
+        for line in lines:
+            map_key = f"{util.get_spectroscopic_symbol(self.ion)} {line}"
+            lines_emissivity_map[map_key] = copy.deepcopy(zero_emissivity_map)
 
         # Iterate through each grid level
         for level in range(NGlevel):
@@ -159,26 +157,20 @@ class line_emission():
                 # Extract 1D temperature and electron density arrays for this row
                 temperature_row = temperature[level][row]
                 ne_row = ne[level][row]
-
                 # Create a CHIANTI ion object to calculate emissivities
                 ion = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
-
                 # Get emissivities for the specified lines as a dictionary {line: values}
                 lines_emissivity_row = ion.get_line_emissivity_for_list(line_list=lines)
-
-                # Extract the line identifiers (should be consistent across rows)
-                line_keys = lines_emissivity_row.keys()
                 del ion  # Free the ion object memory
-
-                # Store emissivity data into the appropriate position in the map
-                for index, line in enumerate(line_keys):
-                    lines_emissivity_map[index][level][row] = lines_emissivity_row[line]
-
-                # Clean up row-level emissivity data to free memory
+                # saving to the main lines emissivity map
+                for map_key, row_key in zip(lines_emissivity_map.keys(), lines_emissivity_row.keys()):
+                    lines_emissivity_map[map_key][level][row] = lines_emissivity_row[row_key]
                 del lines_emissivity_row
 
                 # Display progress bar if enabled
                 if progress_bar:
+                    # Set a message to show upon completion of the process
+                    completion_msg = f'finished computing emissivity for {self.ion} lines'
                     prefix_msg = f'computing emissivity of {self.ion} lines at grid-level {level}'
                     suffix_msg = 'complete'
                     # Only show final completion message at the last row and level
@@ -187,7 +179,7 @@ class line_emission():
                                       condition=completion_msg_condition, completion_msg=completion_msg)
 
         # Return a dictionary of emissivity maps, keyed by line identifiers
-        return dict(zip(line_keys, lines_emissivity_map))
+        return lines_emissivity_map
 
     ######################################################################################
     # get dominant list of lines for a simulation snapshot in cylindrical coordinate system

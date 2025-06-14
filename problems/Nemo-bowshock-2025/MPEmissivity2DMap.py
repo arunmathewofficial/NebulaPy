@@ -60,6 +60,7 @@ def compute_emissivity(workerQ, doneQ):
 
             ion_name, line_emission, lines, temperature, ne = task
 
+
             print(f" multiprocessing: computing line emissivity of {ion_name:<4} lines")
 
             emissivity = line_emission.line_emissivity_map_cylindrical(
@@ -135,83 +136,83 @@ if __name__ == "__main__":
     pion.load_chemistry()
 
     print(f" ---------------------------")
-    print(f" task: multiprocessing for emissivity map of spectral lines")
+    print(f" task: spectral line emissivity map computation via multiprocessing")
 
     # Set up the ion and line emission parameters
     # Define the ions and their respective emission lines
     He1P_pion_ion = 'He1+'
     He1P_lines = [303.78, 303.786, 256.317, 256.318, 243.026, 243.027]  # Emission line(s) of interest
-    print(rf" {He1P_pion_ion:<4} lines: {', '.join(map(str, He1P_lines))}  Angstrom")
+    print(rf" {He1P_pion_ion:<4} lines: {', '.join(map(str, He1P_lines))}  Å")
     He1P_pion_ion_name = He1P_pion_ion.replace('+', 'p')
     He1P_ion_output_dir = os.path.join(output_dir, He1P_pion_ion_name)
     os.makedirs(He1P_ion_output_dir, exist_ok=True)
 
     C2P_pion_ion = 'C2+'
     C2P_lines = [1906.683, 1908.734, 977.02]  # Emission line(s) of interest
-    print(rf" {C2P_pion_ion:<4} lines: {', '.join(map(str, C2P_lines))}  Angstrom")
+    print(rf" {C2P_pion_ion:<4} lines: {', '.join(map(str, C2P_lines))}  Å")
     C2P_pion_ion_name = C2P_pion_ion.replace('+', 'p')
     C2P_ion_output_dir = os.path.join(output_dir, C2P_pion_ion_name)
     os.makedirs(C2P_ion_output_dir, exist_ok=True)
 
     N1P_pion_ion = 'N1+'
     N1P_lines = [6585.273, 6549.861, 1218026.8, 2053388.09]
-    print(rf" {N1P_pion_ion:<4} lines: {', '.join(map(str, N1P_lines))}  Angstrom")
+    print(rf" {N1P_pion_ion:<4} lines: {', '.join(map(str, N1P_lines))}  Å")
     N1P_pion_ion_name = N1P_pion_ion.replace('+', 'p')
     N1P_ion_output_dir = os.path.join(output_dir, N1P_pion_ion_name)
     os.makedirs(N1P_ion_output_dir, exist_ok=True)
 
     N2P_pion_ion = 'N2+'
     N2P_lines = [573394.5, 989.799, 1752.16, 1749.674, 1753.995, 1748.646]
-    print(rf" {N2P_pion_ion:<4} lines: {', '.join(map(str, N2P_lines))}  Angstrom")
+    print(rf" {N2P_pion_ion:<4} lines: {', '.join(map(str, N2P_lines))}  Å")
     N2P_pion_ion_name = N2P_pion_ion.replace('+', 'p')
     N2P_ion_output_dir = os.path.join(output_dir, N2P_pion_ion_name)
     os.makedirs(N2P_ion_output_dir, exist_ok=True)
 
     O1P_pion_ion = 'O1+'  # The ion of interest (Oxygen II)
     O1P_lines = [3729.844, 3727.092, 7331.722, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
-    print(rf" {O1P_pion_ion:<4} lines: {', '.join(map(str, O1P_lines))} Angstrom")
+    print(rf" {O1P_pion_ion:<4} lines: {', '.join(map(str, O1P_lines))} Å")
     O1P_pion_ion_name = O1P_pion_ion.replace('+', 'p')
     O1P_ion_output_dir = os.path.join(output_dir, O1P_pion_ion_name)
     os.makedirs(O1P_ion_output_dir, exist_ok=True)
 
     O2P_pion_ion = 'O2+'  # The ion of interest (Oxygen III)
     O2P_lines = [5008.24, 883564.0, 518145.0, 4960.295, 1666.15, 4364.436, 832.929, 833.715, 1660.809]
-    print(rf" {O2P_pion_ion:<4} lines: {', '.join(map(str, O2P_lines))} Angstrom")
+    print(rf" {O2P_pion_ion:<4} lines: {', '.join(map(str, O2P_lines))} Å")
     O2P_pion_ion_name = O2P_pion_ion.replace('+', 'p')
     O2P_ion_output_dir = os.path.join(output_dir, O2P_pion_ion_name)
     os.makedirs(O2P_ion_output_dir, exist_ok=True)
 
     Ne1P_pion_ion = 'Ne1+'
     Ne1P_lines = [128139.42]
-    print(rf" {Ne1P_pion_ion:<4} lines: {', '.join(map(str, Ne1P_lines))} Angstrom")
+    print(rf" {Ne1P_pion_ion:<4} lines: {', '.join(map(str, Ne1P_lines))} Å")
     Ne1P_pion_ion_name = Ne1P_pion_ion.replace('+', 'p')
     Ne1P_ion_output_dir = os.path.join(output_dir, Ne1P_pion_ion_name)
     os.makedirs(Ne1P_ion_output_dir, exist_ok=True)
 
     Ne2P_pion_ion = 'Ne2+'
     Ne2P_lines = [155545.19, 3869.849, 3968.585, 360230.55, 489.495, 491.041]
-    print(rf" {Ne2P_pion_ion:<4} lines: {', '.join(map(str, Ne2P_lines))} Angstrom")
+    print(rf" {Ne2P_pion_ion:<4} lines: {', '.join(map(str, Ne2P_lines))} Å")
     Ne2P_pion_ion_name = Ne2P_pion_ion.replace('+', 'p')
     Ne2P_ion_output_dir = os.path.join(output_dir, Ne2P_pion_ion_name)
     os.makedirs(Ne2P_ion_output_dir, exist_ok=True)
 
     S1P_pion_ion = 'S1+'
     S1P_lines = [6718.295, 6732.674, 4069.749, 10323.317, 4077.5]
-    print(rf" {S1P_pion_ion:<4} lines: {', '.join(map(str, S1P_lines))} Angstrom")
+    print(rf" {S1P_pion_ion:<4} lines: {', '.join(map(str, S1P_lines))} Å")
     S1P_pion_ion_name = S1P_pion_ion.replace('+', 'p')
     S1P_ion_output_dir = os.path.join(output_dir, S1P_pion_ion_name)
     os.makedirs(S1P_ion_output_dir, exist_ok=True)
 
     S2P_pion_ion = 'S2+'
     S2P_lines = [335008.38, 9532.252, 187055.74, 9070.048, 6313.649, 3722.454]
-    print(rf" {S2P_pion_ion:<4} lines: {', '.join(map(str, S2P_lines))} Angstrom")
+    print(rf" {S2P_pion_ion:<4} lines: {', '.join(map(str, S2P_lines))} Å")
     S2P_pion_ion_name = S2P_pion_ion.replace('+', 'p')
     S2P_ion_output_dir = os.path.join(output_dir, S2P_pion_ion_name)
     os.makedirs(S2P_ion_output_dir, exist_ok=True)
 
     S3P_pion_ion = 'S3+'
     S3P_lines = [105104.95]
-    print(rf" {S3P_pion_ion:<4} lines: {', '.join(map(str, S3P_lines))} Angstrom")
+    print(rf" {S3P_pion_ion:<4} lines: {', '.join(map(str, S3P_lines))} Å")
     S3P_pion_ion_name = S3P_pion_ion.replace('+', 'p')
     S3P_ion_output_dir = os.path.join(output_dir, S3P_pion_ion_name)
     os.makedirs(S3P_ion_output_dir, exist_ok=True)
@@ -231,7 +232,7 @@ if __name__ == "__main__":
 
     # Check the requested lines in the database for each ion
     print(f" ---------------------------")
-    print(f" checking requested lines in database:")
+    print(f" looking up requested line in the database:")
     He1P_line_emission.line_batch_check(He1P_lines)
     C2P_line_emission.line_batch_check(C2P_lines)
     N1P_line_emission.line_batch_check(N1P_lines)
@@ -319,10 +320,14 @@ if __name__ == "__main__":
             while not emissivity_doneQ.empty():
                 species_lines_emissivity.update(emissivity_doneQ.get())
 
+
         # plotting emissivity map and saving emissivity data into files
         time.sleep(2)
         ion_emissivity_map_dict = species_lines_emissivity.copy()
         del species_lines_emissivity
+
+
+        print(ion_emissivity_map_dict)
 
         # generating image and saving data ##################################################
         for ion in ion_emissivity_map_dict:
@@ -352,14 +357,16 @@ if __name__ == "__main__":
                     else:
                         meta.attrs[key] = value
 
+                # Save ion number density
+                ion_number_density_group = file.create_group("ion_number_density")
+                ion_number_density_group.create_dataset(str(ion), data=np.array(n_ion, dtype=np.float32))
+
                 # Save emissivity function map
                 emissivity_map_group = file.create_group("emissivity_map")
                 for key, value in ion_emissivity_map_dict[ion].items():
                     emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
 
-                # Save emissivity function map
-                ion_number_density_group = file.create_group("ion_number_density")
-                ion_number_density_group.create_dataset(str(ion), data=np.array(n_ion, dtype=np.float32))
+            # freeing ion number density array
             del n_ion
             # end of saving data to h5 file #################################################
 

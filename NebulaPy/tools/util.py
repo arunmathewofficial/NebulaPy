@@ -280,6 +280,55 @@ def get_element_symbol(ion):
     """
     return ''.join(filter(str.isalpha, ion))
 
+######################################################################################
+# get spectroscopic symbol of a specific ion
+######################################################################################
+def get_spectroscopic_symbol(ion):
+    """
+    Convert an ion string like 'H1+' or 'Fe26+' into its spectroscopic notation.
+
+    Spectroscopic notation uses Roman numerals to indicate the ionisation state:
+    - 'I'  = neutral atom
+    - 'II' = singly ionised (one electron removed)
+    - 'III' = doubly ionised (two electrons removed)
+    - and so on.
+
+    For example:
+    - 'H1+'  -> 'H II'
+    - 'He2+' -> 'He III'
+    - 'Fe26+' -> 'Fe XXVII'
+
+    Parameters:
+    -----------
+    ion : str
+        Ion string in the form 'ElementZ+' where Z is the charge state (e.g., '26+' for Fe26+).
+
+    Returns:
+    --------
+    str
+        Spectroscopic notation: 'Element RomanNumeral'
+
+    Raises:
+    -------
+    ValueError:
+        If the ionisation level exceeds the supported range.
+    """
+    roman_numerals = [
+        'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+        'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX',
+        'XXI', 'XXII', 'XXIII', 'XXIV', 'XXV', 'XXVI', 'XXVII'
+    ]
+
+    ion = ion.strip().replace('+', '')
+    element = ''.join(filter(str.isalpha, ion)).capitalize()
+    number = ''.join(filter(str.isdigit, ion))
+    level = int(number) + 1 if number else 1
+
+    if level < 1 or level > len(roman_numerals):
+        raise ValueError(f"Ionisation level {level} out of supported range (1–{len(roman_numerals)})")
+
+    return f"{element} {roman_numerals[level - 1]}"
+
 
 
 ######################################################################################
