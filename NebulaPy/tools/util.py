@@ -249,7 +249,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                 basic = data.get_3Darray('Density')
             sim_walltime_sec = (basic['sim_time'] * unit.s).value
             data.close()
-            #finish_time_sec = finish_time * conversion_factors.get(time_unit, 1)
+            finish_time_sec = finish_time * conversion_factors.get(time_unit, 1)
             if finish_time_sec > sim_walltime_sec:
                 sim_walltime = sim_walltime_sec * inverse_conversion_factors.get(time_unit, 1)
                 nebula_warning(

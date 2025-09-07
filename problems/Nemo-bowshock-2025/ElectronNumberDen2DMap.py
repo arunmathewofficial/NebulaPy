@@ -13,12 +13,10 @@ Date: 07 Sep 2025
 import os  # File system operations
 import time  # For tracking runtime
 import warnings  # Suppress specific runtime warnings
-import h5py  # For saving data in HDF5 format
 import numpy as np  # Numerical array operations
 import matplotlib.pyplot as plt  # Plotting
 from mpl_toolkits.axes_grid1 import make_axes_locatable  # For attaching colorbars to axes
 from matplotlib.ticker import MultipleLocator, ScalarFormatter  # For controlling tick formatting
-import astropy.units as unit  # Astropy units for physical quantities
 
 # --- Import Project Modules ---
 import NebulaPy.src as nebula  # NebulaPy simulation interface
@@ -30,12 +28,12 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by ze
 
 # --- File and Directory Configuration ---
 output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/ne_map'
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/silo'
-filebase = 'Ostar_mhd-nemo_d2n0128l3'
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
+filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'
 
 # --- Simulation Time Parameters ---
-start_time = 30  # kyr
-finish_time = 31  # kyr
+start_time = None  # kyr
+finish_time = None  # kyr
 out_frequency = None  # Use all available outputs
 
 print(rf" calculating electron number denisty map")
@@ -56,7 +54,7 @@ N_time_instant = len(batched_silos)
 # --- Load Simulation Data ---
 pion = nebula.pion(batched_silos, verbose=True)
 pion.load_chemistry()  # Load ion and reaction network data
-pion.load_geometry(scale='cm')  # Load spatial grid configuration
+pion.load_geometry(scale='pc')  # Load spatial grid configuration
 
 # --- Extract Geometry Info ---
 geometry = pion.geometry_container
@@ -97,7 +95,10 @@ for step, silo_instant in enumerate(batched_silos):
             mesh_edges_min[level][1].value, mesh_edges_max[level][1].value
         ]
         image = ax.imshow(plot_data, interpolation='nearest', cmap='inferno',
-                          extent=extents, origin='lower', vmin=-25, vmax=-21)
+                          extent=extents, origin='lower',
+                          vmin=-3,
+                          vmax=2
+                          )
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -108,15 +109,13 @@ for step, silo_instant in enumerate(batched_silos):
 
     ax.set_xlabel('z (pc)', fontsize=12)
     ax.set_ylabel('R (pc)', fontsize=12)
-    ax.text(0.65, 0.9, r'n_e', transform=ax.transAxes, fontsize=12, color='white')
+    ax.text(0.65, 0.9, r'Electron Density $n_e$', transform=ax.transAxes, fontsize=12, color='white')
     ax.tick_params(axis='both', which='major', labelsize=13)
 
     filename = f"{filebase}_nemap_{sim_time.value:.2f}kyr.png"
     filepath = os.path.join(output_dir, filename)
     plt.savefig(filepath, bbox_inches="tight", dpi=300)
     plt.close(fig)
-
-
 
 
     # --- Track Runtime ---
