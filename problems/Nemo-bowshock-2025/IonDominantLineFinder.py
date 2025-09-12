@@ -54,7 +54,7 @@ out_freq = None
 #filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 # PION simulation Name
-pion-simulation = 'NEMOv1.0 Bowshock'
+pion_simulation_name = 'NEMOv1.0 Bowshock'
 
 # List of ions to analyze
 ion_list = ['H', 'H1+', 'He', 'He1+', 'C', 'C2+', 'N', 'N1+', 'N2+', 'O',
@@ -100,7 +100,7 @@ with open(outfile, "w") as file:
     file.write("# Task: Determining the dominant spectral lines for the following ions\n")
     file.write("   ".join(map(str, range(len(ion_list)))) + "\n")
     file.write("   ".join(ion_list) + "\n\n")
-    file.write(f"# PION Simulation Reference: {pion_simulation} {filebase}\n\n")
+    file.write(f"# PION Simulation Reference: {pion_simulation_name} {filebase}\n\n")
     file.write("# Dataset Description:\n")
     file.write("# This dataset provides a list of the brightest spectral lines and their\n")
     file.write("# corresponding luminosities. Each row represents a spectral line, with:\n\n")
