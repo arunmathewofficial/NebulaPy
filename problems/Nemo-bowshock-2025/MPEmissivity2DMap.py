@@ -79,23 +79,23 @@ def compute_emissivity(workerQ, doneQ):
 if __name__ == "__main__":
 
     # Input-output file configuration for the high-resolution simulation on MIMIR
-    #output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/emissivity'
-    #silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
-    #filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
-    #start_time = None
-    #finish_time = None
-    #out_frequency = None
-    #time_unit = 'kyr'
-
-
-    # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
-    output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emissiviity_map'
-    silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
+    output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/emissivity'
+    silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
     filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
     start_time = 200
     finish_time = 202
     out_frequency = None
     time_unit = 'kyr'
+
+
+    # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
+    #output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emissiviity_map'
+    #silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
+    #filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+    #start_time = 200
+    #finish_time = 202
+    #out_frequency = None
+    #time_unit = 'kyr'
 
     # Batch the silo files for analysis within the specified time range
     batched_silos = util.batch_silos(
@@ -171,7 +171,7 @@ if __name__ == "__main__":
     os.makedirs(N2P_ion_output_dir, exist_ok=True)
 
     O1P_pion_ion = 'O1+'  # The ion of interest (Oxygen II)
-    O1P_lines = [3729.844, 3727.092, 7331.722, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
+    O1P_lines = [3729.844, 3727.092, 7331.723, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
     print(rf" {O1P_pion_ion:<4} lines: {', '.join(map(str, O1P_lines))} Å")
     O1P_pion_ion_name = O1P_pion_ion.replace('+', 'p')
     O1P_ion_output_dir = os.path.join(output_dir, O1P_pion_ion_name)

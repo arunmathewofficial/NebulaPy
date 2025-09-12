@@ -53,7 +53,7 @@ filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 batched_silos = util.batch_silos(
     silo_dir,
     filebase,
-    start_time=150,
+    start_time=190,
     finish_time=None,
     time_unit='kyr',
     out_frequency=5
@@ -70,13 +70,14 @@ print(f" ---------------------------")
 print(" task: identifying dominant spectral lines for the given ions")
 
 # List of ions to analyze
-ion_list = ['H1+', 'He1+', 'C2+', 'N1+', 'N2+', 'O1+', 'O2+', 'Ne1+', 'Ne2+', 'S1+', 'S2+', 'S3+']
+ion_list = ['H', 'H1+', 'He', 'He1+', 'C', 'C2+', 'N', 'N1+', 'N2+', 'O', 'O1+', 'O2+', 'Ne', 'Ne1+', 'Ne2+', 'S', 'S1+', 'S2+', 'S3+', 'Si', 'Fe']
+
+filename = filebase + '_dominantLines_neutral.txt'
 
 # Check if the listed ions are present in the simulation chemistry container
 ion_list = pion.ion_batch_check(ion_list=ion_list, top_ion_check=True, terminate=False)
 
 # Prepare output file for results
-filename = filebase + '_dominantLines.txt'
 outfile = os.path.join(output_dir, filename)
 
 # Get geometry information
