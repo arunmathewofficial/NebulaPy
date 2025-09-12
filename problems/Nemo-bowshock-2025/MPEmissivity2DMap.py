@@ -328,9 +328,6 @@ if __name__ == "__main__":
         ion_emissivity_map_dict = species_lines_emissivity.copy()
         del species_lines_emissivity
 
-
-        print(ion_emissivity_map_dict)
-
         # generating image and saving data ##################################################
         for ion in ion_emissivity_map_dict:
 
