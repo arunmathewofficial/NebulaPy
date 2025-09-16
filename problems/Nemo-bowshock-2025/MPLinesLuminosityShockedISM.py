@@ -13,6 +13,11 @@ Features:
 - Computes the line luminosity for specific emission lines over a time range.
 - Outputs the results to a text file, with each row representing a time step and the luminosities of different lines.
 
+Notes:
+Hi, I worked on the introduction to the NEMO bow-shock paper.  Please read over it and let me know what you think.  Could you add some text to the results section, describing what is shown in the plots of line luminosity and emissivity maps in sections 3.4 and 3.5.  So far they are completely empty.  I think the paper can come together quite quickly.
+The only point we need to worry about, is that we are calculating emission from the full domain and not just from the shocked layer.  For the line luminosities, I really think we need to restrict the calculation to the shocked region.  For this we should exclude any gas that satisfies all of the following: (1) wind tracer value <0.5, (2) density <1.1x the background inflow density from the parameter file, (3) v_x within a few (5?) percent of the inflow value (-35 km/s?), and rerun the script to calculate the line luminosities.
+We should keep the existing results, so that we can compare the luminosity of the shocked region to that of the full simulation domain.  This will tell us which lines are good tracers of the bow shock.
+
 Author: Arun Mathew
 Date: 01 Feb 2025
 """
