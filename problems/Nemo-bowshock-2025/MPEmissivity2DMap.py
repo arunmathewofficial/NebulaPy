@@ -79,11 +79,11 @@ def compute_emissivity(workerQ, doneQ):
 if __name__ == "__main__":
 
     # Input-output file configuration for the high-resolution simulation on MIMIR
-    output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/emissivity'
+    output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/emissivity-map'
     silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
     filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
     start_time = 200
-    finish_time = 202
+    finish_time = 201
     out_frequency = None
     time_unit = 'kyr'
 
@@ -142,12 +142,34 @@ if __name__ == "__main__":
 
     # Set up the ion and line emission parameters
     # Define the ions and their respective emission lines
+
+    H_pion_ion = 'H'
+    H_lines = [1215.668, 1215.674, 4862.72, 4862.637, 4862.733, 6564.538, 6564.564, 6564.523, 6564.665, 6564.722]  # Emission line(s) of interest
+    print(rf" {H_pion_ion:<4} lines: {', '.join(map(str, H_lines))}  Å")
+    H_pion_ion_name = H_pion_ion.replace('+', 'p')
+    H_ion_output_dir = os.path.join(output_dir, H_pion_ion_name)
+    os.makedirs(H_ion_output_dir, exist_ok=True)
+
+    He_pion_ion = 'He'
+    He_lines = [10832.058, 10833.217, 10833.307, 515.617, 522.213, 537.03, 584.334, 625.563]  # Emission line(s) of interest
+    print(rf" {H_pion_ion:<4} lines: {', '.join(map(str, He_lines))}  Å")
+    He_pion_ion_name = He_pion_ion.replace('+', 'p')
+    He_ion_output_dir = os.path.join(output_dir, He_pion_ion_name)
+    os.makedirs(He_ion_output_dir, exist_ok=True)
+
     He1P_pion_ion = 'He1+'
     He1P_lines = [303.78, 303.786, 256.317, 256.318, 243.026, 243.027]  # Emission line(s) of interest
     print(rf" {He1P_pion_ion:<4} lines: {', '.join(map(str, He1P_lines))}  Å")
     He1P_pion_ion_name = He1P_pion_ion.replace('+', 'p')
     He1P_ion_output_dir = os.path.join(output_dir, He1P_pion_ion_name)
     os.makedirs(He1P_ion_output_dir, exist_ok=True)
+
+    C_pion_ion = 'C'
+    C_lines = [6091246.88, 3704115.27, 2965.705, 8729.534, 2968.081, 9826.8, 9852.939]  # Emission line(s) of interest
+    print(rf" {C_pion_ion:<4} lines: {', '.join(map(str, C_lines))}  Å")
+    C_pion_ion_name = C_pion_ion.replace('+', 'p')
+    C_ion_output_dir = os.path.join(output_dir, C_pion_ion_name)
+    os.makedirs(C_ion_output_dir, exist_ok=True)
 
     C2P_pion_ion = 'C2+'
     C2P_lines = [1906.683, 1908.734, 977.02]  # Emission line(s) of interest
@@ -220,7 +242,10 @@ if __name__ == "__main__":
     os.makedirs(S3P_ion_output_dir, exist_ok=True)
 
     # Initialize the emission line calculations for each ion
+    H_line_emission = nebula.line_emission(H_pion_ion, verbose=True)
+    He_line_emission = nebula.line_emission(He_pion_ion, verbose=True)
     He1P_line_emission = nebula.line_emission(He1P_pion_ion, verbose=True)
+    C_line_emission = nebula.line_emission(C_pion_ion, verbose=True)
     C2P_line_emission = nebula.line_emission(C2P_pion_ion, verbose=True)
     N1P_line_emission = nebula.line_emission(N1P_pion_ion, verbose=True)
     N2P_line_emission = nebula.line_emission(N2P_pion_ion, verbose=True)
@@ -235,7 +260,10 @@ if __name__ == "__main__":
     # Check the requested lines in the database for each ion
     print(f" ---------------------------")
     print(f" looking up requested line in the database:")
+    H_line_emission.line_batch_check(H_lines)
+    He_line_emission.line_batch_check(He_lines)
     He1P_line_emission.line_batch_check(He1P_lines)
+    C_line_emission.line_batch_check(C_lines)
     C2P_line_emission.line_batch_check(C2P_lines)
     N1P_line_emission.line_batch_check(N1P_lines)
     N2P_line_emission.line_batch_check(N2P_lines)
@@ -268,7 +296,10 @@ if __name__ == "__main__":
 
         # ions for processing
         ions = {
+            "H": (H_line_emission, H_lines),
+            "He": (He_line_emission, He_lines),
             "He1+": (He1P_line_emission, He1P_lines),
+            "C": (C_line_emission, C_lines),
             "C2+": (C2P_line_emission, C2P_lines),
             "N1+": (N1P_line_emission, N1P_lines),
             "N2+": (N2P_line_emission, N2P_lines),
