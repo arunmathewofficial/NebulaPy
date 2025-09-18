@@ -170,8 +170,8 @@ class line_emission():
                 # Display progress bar if enabled
                 if progress_bar:
                     # Set a message to show upon completion of the process
-                    completion_msg = f'finished computing emissivity for {self.ion} lines'
-                    prefix_msg = f'computing emissivity of {self.ion} lines at grid-level {level}'
+                    completion_msg = f'chianti: finished computing emissivity for {self.ion} lines'
+                    prefix_msg = f'chianti: computing emissivity of {self.ion} lines at grid-level {level}'
                     suffix_msg = 'complete'
                     # Only show final completion message at the last row and level
                     completion_msg_condition = (level == NGlevel - 1 and row == rows - 1)

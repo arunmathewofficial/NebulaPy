@@ -54,7 +54,7 @@ pion_ion = 'H'
 # are blended together and observed as a single strong Hα line.
 lines = [6564.538, 6564.564, 6564.523, 6564.665, 6564.722]  # in Angstroms
 
-print(rf" calculating Hα emissivity map {lines} Å")
+print(rf" calculating Hα emissivity map")
 
 # Batching silo files based on time range
 batched_silos = util.batch_silos(
@@ -121,7 +121,7 @@ for step, silo_instant in enumerate(batched_silos):
     )
 
     # Calculate Recombination Emissivity Maps for all given lines
-    species_density = pion.get_ion_density(pion_ion, silo_instant)
+    species_density = pion.get_ion_number_density(pion_ion, silo_instant)
     recomb_emissivity_map_dict = recombination_line_emission.halpha_reccombination_line_2D(
         temperature=temperature, ne=ne, species_density=species_density)
     # todo: this need to be to be added into the h5 and plot

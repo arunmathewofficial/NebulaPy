@@ -26,5 +26,5 @@ class recombination_line():
     ######################################################################################
     # H-alpha recombination line for 2D silo data
     ######################################################################################
-    def halpha_reccombination_line_2D(self, lines, temperature, ne, species_density):
+    def halpha_reccombination_line_2D(self, temperature, ne, species_density):
         util.nebula_exit_with_error("Not implemented yet!")
