@@ -8,4 +8,4 @@ from .SED import sed
 from .ChiantiMultiProc import *
 from .Cooling import *
 from .PION import pion
-
+from .RecombinationLines import recombination_line
