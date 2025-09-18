@@ -13,6 +13,8 @@ class recombination_line():
         """
         self.ion = ion
         self.verbose = verbose
+        if self.ion is not 'H':
+            util.nebula_exit_with_error("Only implemented for HI recombination lines!")
         self.line_emission_container = {}
         self.line_emission_container['ion'] = self.ion
 
