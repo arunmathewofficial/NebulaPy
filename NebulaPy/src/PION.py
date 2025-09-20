@@ -58,10 +58,57 @@ class pion():
             if self.verbose:
                 util.nebula_exit_with_error(f"{const.coordinate_system[coord_sys]} coordinates not defined, todo list")
 
+    ######################################################################################
+    # show all parameters in silo file
+    ######################################################################################
+    def show_all_parameters(self):
+        # Open the data for the first silo instant
+        header_data = OpenData(self.silo_set[0])
+        header_data.db.SetDir('/header')
+        header_info = header_data.header_info()
 
-    # ==================================================================================#
-    # ******************************** LOAD GEOMETRY ***********************************#
-    # ==================================================================================#
+
+        col_width = 25
+        ncols = 5
+
+        print(f"\n Found {header_info.nvar} variables")
+
+        # Define categories by prefix or known names
+        categories = {
+            " Boundary Conditions": lambda v: v.startswith("BC_"),
+            " Physics Modules": lambda v: v.startswith("EP_"),
+            " Radiative Transfer": lambda v: v.startswith("RT_"),
+            " Tracers": lambda v: v.startswith("Tracer"),
+            " Stellar Winds": lambda v: v.startswith("WIND_"),
+            " Units": lambda v: v.startswith("unit"),
+            " Time Control": lambda v: v.startswith("t_") or v in ("last_dt", "min_timestep"),
+            " Grid / Solver": lambda v: v in ("CFL", "Gamma", "JetSim", "solver"),
+            " Output": lambda v: v in ("outfile", "typeofop", "typeofbc_str", "tracer_str"),
+            " Values": lambda v: v.endswith("val"),
+        }
+
+        # Group variables
+        grouped = {cat: [] for cat in categories}
+        for v in header_info.var_names:
+            for cat, rule in categories.items():
+                if rule(v):
+                    grouped[cat].append(v)
+                    break
+            else:
+                grouped.setdefault(" Unsorted", []).append(v)
+
+        # Print in columns
+        for cat, items in grouped.items():
+            if items:
+                print(f"\n{cat} ({len(items)}):")
+                for i in range(0, len(items), ncols):
+                    row = items[i:i + ncols]
+                    print("".join(f" {v:<{col_width}}" for v in row))
+        header_data.close()
+
+    # ==================================================================================
+    # LOAD GEOMETRY
+    # ==================================================================================
     def load_geometry(self, scale='cm'):
         '''
         This method will load geometry of the simulation from
@@ -128,7 +175,6 @@ class pion():
         self.geometry_container['Nlevels'] = Nlevels
         if self.verbose:
             print(f" dimensional scale: {self.dim_scale}")
-
 
         # read silo file
         data = ReadData(silo_instant)
@@ -412,6 +458,47 @@ class pion():
                 self.chemistry_container['tracer_elements'] = tracer_elements
                 self.element_wise_tracer_list = elementWiseTracers
         header_data.close()
+
+    ######################################################################################
+    # show all tracer string
+    ######################################################################################
+    def show_all_tracers(self):
+        # Open the data for the first silo instant silo
+        header_data = OpenData(self.silo_set[0])
+        # Set the directory to '/header'
+        header_data.db.SetDir('/header')
+        # print(header_data.header_info())
+
+        Ntracers = header_data.db.GetVar('num_tracer')
+        print(f"\n List of all available tracers (total: {Ntracers}):\n")
+        tracers = {}
+        # Loop through each tracer index
+        for i in range(Ntracers):
+            # create a tracer index string with leading zeros
+            tracer_index = f'Tracer{i:03}'
+            # retrieve the tracer value
+            tracer = header_data.db.GetVar(tracer_index)[0]
+
+            tracers[tracer] = f'Tr{i:03}_' + tracer
+
+        header_data.close()
+
+        tracer_items = [f" {k}: {v}" for k, v in tracers.items()]
+        n = len(tracer_items)
+        ncols = 5
+        nrows = (n + ncols - 1) // ncols  # ceiling division
+
+        # find max width for alignment
+        max_len = max(len(item) for item in tracer_items) + 4
+
+        for r in range(nrows):
+            row_items = []
+            for c in range(ncols):
+                idx = r + c * nrows
+                if idx < n:
+                    row_items.append(tracer_items[idx].ljust(max_len))
+            print("".join(row_items))
+
 
 
     ######################################################################################
