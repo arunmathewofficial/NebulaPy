@@ -3,7 +3,7 @@ import NebulaPy.tools.constants as const
 import numpy as np
 import NebulaPy.tools.util as util
 import copy
-
+from .PyNeb import pyneb
 import multiprocessing
 from multiprocessing import Pool, Manager
 
@@ -25,7 +25,7 @@ class line_emission():
     ######################################################################################
     # check the line list exist in all lines of the species
     ######################################################################################
-    def line_batch_check(self, lines):
+    def chianti_line_batch_check(self, lines):
 
         # Retrieve the list of possible emission lines for the species
         dummy_temperature_array = [1000]
@@ -44,11 +44,10 @@ class line_emission():
             print(f" requested {spectroscopic_name:>6} lines exist in the CHIANTI database")
 
 
-
     ######################################################################################
     # line luminosity in 1D spherical setting
     ######################################################################################
-    def line_luminosity_spherical(self, lines, temperature, ne, species_density, shell_volume):
+    def line_luminosity_1D(self, lines, temperature, ne, species_density, shell_volume):
         '''
 
         Parameters
@@ -109,7 +108,7 @@ class line_emission():
     ######################################################################################
     # line emissivity map for a given list of lines in cylindrical coordinate system
     ######################################################################################
-    def line_emissivity_map_cylindrical(self, lines, temperature, ne, progress_bar=True):
+    def line_emissivity_2D_map(self, lines, temperature, ne, progress_bar=True):
         # Computes the emissivity maps of spectral lines for a specified ion in a
         # cylindrical coordinate grid using CHIANTI atomic data.
         #
@@ -312,9 +311,9 @@ class line_emission():
         }
 
     ######################################################################################
-    # line luminosity for a given list of lines in cylindrical coordinate system
+    # line luminosity for a given list of lines in 2D coordinate system
     ######################################################################################
-    def line_luminosity_cylindrical(self, lines, temperature, ne, species_density, cell_volume, grid_mask, progress_bar=True):
+    def line_luminosity_2D(self, lines, temperature, ne, species_density, cell_volume, grid_mask, progress_bar=True):
         """
         Compute the total line luminosity for a given ion in a cylindrical coordinate system.
 
@@ -400,6 +399,71 @@ class line_emission():
 
         # Return a dictionary mapping line identifiers to their computed luminosities
         return dict(zip(line_keys, lines_luminosity))
+
+
+    ######################################################################################
+    # recombination line emissivity map for a given list of lines in 2D coordinate system
+    ######################################################################################
+    def recombination_line_emissivity_2D_map(self, lines, temperature, ne, progress_bar=True):
+
+        # Define a minimum value for electron density to prevent division by zero
+        electron_tolerance = 1.E-08
+
+        # Get the number of grid levels from the temperature data
+        NGlevel = len(temperature)
+
+        # Determine the number of rows per level (assumes uniform shape across levels)
+        rows = len(temperature[0])
+
+        # Prepare an array to hold the emissivity maps for each requested line
+        lines_emissivity_map = {}
+
+        # Create a "zero" emissivity map template with the same shape as temperature levels
+        zero_emissivity_map = [np.zeros(shape) for shape in [arr.shape for arr in temperature]]
+        zero_emissivity_map = np.array(zero_emissivity_map)
+
+        # make keys for lines emissivity map
+        for line in lines:
+            map_key = f"{util.get_spectroscopic_symbol(self.ion)} {line}"
+            lines_emissivity_map[map_key] = copy.deepcopy(zero_emissivity_map)
+
+        # Iterate through each grid level
+        for level in range(NGlevel):
+            # Ensure electron density is a NumPy array
+            ne[level] = np.array(ne[level])
+
+            # Replace zero values in electron density to avoid numerical issues
+            ne[level][ne[level] == 0] = electron_tolerance
+
+            # Process each row in the current level
+            for row in range(rows):
+                # Extract 1D temperature and electron density arrays for this row
+                temperature_row = temperature[level][row]
+                ne_row = ne[level][row]
+
+                # Create a PyNeb atom object to calculate recombination emissivities
+                ion = pyneb(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
+                # Get emissivities for the specified lines as a dictionary {line: values}
+                lines_emissivity_row = ion.get_recomb_line_emissivity_for_list(line_list=lines)
+                del ion  # Free the ion object memory
+                # saving to the main lines emissivity map
+                for map_key, row_key in zip(lines_emissivity_map.keys(), lines_emissivity_row.keys()):
+                    lines_emissivity_map[map_key][level][row] = lines_emissivity_row[row_key]
+                del lines_emissivity_row
+
+                # Display progress bar if enabled
+                if progress_bar:
+                    # Set a message to show upon completion of the process
+                    completion_msg = f'pyneb: finished computing emissivity for {self.ion} lines'
+                    prefix_msg = f'pyneb: computing emissivity of {self.ion} lines at grid-level {level}'
+                    suffix_msg = 'complete'
+                    # Only show final completion message at the last row and level
+                    completion_msg_condition = (level == NGlevel - 1 and row == rows - 1)
+                    util.progress_bar(row, rows, suffix=suffix_msg, prefix=prefix_msg,
+                                      condition=completion_msg_condition, completion_msg=completion_msg)
+
+        # Return a dictionary of emissivity maps, keyed by line identifiers
+        return lines_emissivity_map
 
 
 

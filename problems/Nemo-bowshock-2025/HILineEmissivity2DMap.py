@@ -97,9 +97,8 @@ os.makedirs(ion_output_dir, exist_ok=True)
 
 data_title = f"Bow-Shock Hα emissivity map"
 
-# Initialize Chianti Line Emission Module
-collisional_line_emission = nebula.line_emission(pion_ion, verbose=True)
-recombination_line_emission = nebula.recombination_line(pion_ion, verbose=True)
+# Initialize Line Emission Module
+line_emission = nebula.line_emission(pion_ion, verbose=True)
 
 # Loop Through Silo Time Instants
 runtime = 0.0
@@ -115,15 +114,20 @@ for step, silo_instant in enumerate(batched_silos):
     temperature = pion.get_parameter('Temperature', silo_instant)
     ne = pion.get_ne(silo_instant)
 
-    # Calculate Emissivity Maps for all given lines
-    emissivity_map_dict = collisional_line_emission.line_emissivity_map_cylindrical(
-        lines, temperature, ne, progress_bar=True
-    )
+    # get collisional Emissivity Maps for all given lines
+    coll_emiss_map_dict = line_emission.line_emissivity_2D_map(lines,
+                                                               temperature, ne,
+                                                               progress_bar=True)
+
+    # get collisional Emissivity Maps for all given lines
+    recomb_emiss_map_dict = line_emission.recombination_line_emissivity_2D_map(lines,
+                                                                               temperature, ne,
+                                                                               progress_bar=True)
 
     # Calculate Recombination Emissivity Maps for all given lines
     species_density = pion.get_ion_number_density(pion_ion, silo_instant)
-    recomb_emissivity_map_dict = recombination_line_emission.halpha_reccombination_line_2D(
-        temperature=temperature, ne=ne, species_density=species_density)
+
+
     # todo: this need to be to be added into the h5 and plot
 
     # --- Save Emissivity Maps to HDF5 ---

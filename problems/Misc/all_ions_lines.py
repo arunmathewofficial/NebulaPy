@@ -5,7 +5,7 @@ import os
 dummy_temperature = [2e+6]
 dummy_ne = [1e+9]
 
-output_path = '/home/tony/Desktop/multi-ion-bowshock/NebulaPy/lines-transitions'
+output_path = '/Users/tony/Desktop/Multi-Ion-Bowshock/multi-ion-bowshock/NebulaPy/lines-transitions'
 
 nebula_chianti = nebula.chianti(pion_ion='O1+', temperature=dummy_temperature, ne=dummy_ne, verbose=True)
 
