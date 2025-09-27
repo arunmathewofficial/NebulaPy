@@ -11,10 +11,8 @@ nebula_chianti = nebula.chianti(pion_ion='S3+', temperature=dummy_temperature, n
 spectroscopic_name = nebula_chianti.chianti_ion.Spectroscopic
 allLineData = nebula_chianti.get_allLinesTransitions()
 
-
-
 # Save the Series to a text file
-filename = os.path.join(spectroscopic_name + '_lines_transitions.txt')
+filename = os.path.join(spectroscopic_name.replace(" ", "") + '_lines_transitions.txt')
 outfile = os.path.join(output_path, filename)
 
 print(f" Saving {spectroscopic_name} line transition info to file: {filename}")

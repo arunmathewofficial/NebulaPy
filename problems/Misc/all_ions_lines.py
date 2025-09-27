@@ -15,7 +15,7 @@ lines = nebula_chianti.get_allLines()
 # Convert to a pandas Series for vertical display
 series = pandas.Series(lines)
 # Save the Series to a text file
-filename = os.path.join(output_path, spectroscopic_name + '_lines.txt')
+filename = os.path.join(output_path, spectroscopic_name.replace(" ", "") + '_lines.txt')
 print(f" saving {spectroscopic_name} lines to file ")
 with open(filename, 'w') as f:
     f.write(series.to_string())

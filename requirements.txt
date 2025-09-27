@@ -8,3 +8,4 @@ pypion
 pandas
 h5py
 astropy
+PyNeb

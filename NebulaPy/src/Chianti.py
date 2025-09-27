@@ -22,27 +22,9 @@ os.environ["MKL_NUM_THREADS"] = "1"  # Restrict Intel MKL to 1 thread
 
 
 class chianti:
-    """
-    The class for calculating emission line spectrum.
-
-    Parameters
-    ----------
-    Keyword arguments
-    -----------------
-    Examples
-    --------
-    >>> temperature = 1.e+9
-    >>> ne = 1.e+4
-    >>> ion = nebula.chianti('o_4', temperature, ne)
-    >>> print(ion.emissivity())
-    Notes
-    -----
-    References
-    ----------
-    """
 
     ######################################################################################
-    #
+    # class initialization
     ######################################################################################
     def __init__(self, temperature, ne, chianti_ion=None, pion_ion=None, pion_elements=None, verbose=False):
 
@@ -77,6 +59,18 @@ class chianti:
                 chianti_element_list.append(element_symbol)
             self.chianti_element_list = chianti_element_list
             self.get_elements_attributes()
+
+    ######################################################################################
+    # terminate any class objects
+    ######################################################################################
+    def terminate(self):
+        """
+        Close the Chianti object and release any resources.
+        """
+        if hasattr(self, 'chianti_ion'):
+            del self.chianti_ion
+        if hasattr(self, 'species_attributes_container'):
+            del self.species_attributes_container
 
     ######################################################################################
     # generate species chianti symbol
@@ -205,18 +199,18 @@ class chianti:
         species.ionGate(ionList=ion_list,
             minAbund=None, doLines=True,
             doContinuum=True, doWvlTest=0,
-            doIoneqTest=0, verbose=False
-        )
+            doIoneqTest=0, verbose=False)
 
         self.species_attributes_container = {}
 
         # Loop through the sorted keys in the dictionary of species
         if self.verbose:
-            print(f" retrieving species attributes")
+            print(f" chianti ion: retrieving species attributes")
 
         count = 0
         for akey in sorted(species.Todo.keys()):
             self.species_attributes_container[akey] = chianti_util.convertName(akey)  # Convert the key and store it
+            '''
             # If verbose mode is enabled, print the spectroscopic name
             if self.verbose:
                 # Print a comma-separated list of names with up to 10 items per line
@@ -227,7 +221,7 @@ class chianti:
                     print()  # Move to the next line
                 else:
                     print(", ", end='')  # Continue on the same line
-
+            '''
             self.species_attributes_container[akey]['keys'] = species.Todo[akey]  # Store relevant data
             # Remove unnecessary data from the dictionary
             del self.species_attributes_container[akey]['filename']
@@ -242,7 +236,7 @@ class chianti:
                    :return: wave-length array
                    """
         if self.verbose:
-            print(' retrieving all spectral lines of ', self.chianti_ion.Spectroscopic)
+            print(' chianti: retrieving all spectral lines of ', self.chianti_ion.Spectroscopic)
         wvl = np.asarray(self.chianti_ion.Wgfa['wvl'], np.float64)
         wvl = np.abs(wvl)
         return wvl
@@ -323,9 +317,30 @@ class chianti:
         # Check if every requested line exists in the available list of lines.
         missing_lines = [line for line in line_list if line not in all_lines]
 
+        # If there are missing lines, provide suggestions
+        if missing_lines:
+            suggestion_lines = [" suggestions for missing lines:"]
+            for line in missing_lines:
+                try:
+                    closest = min(all_lines, key=lambda x: abs(float(x) - float(line)))
+                    suggestion_lines.append(
+                        f" {float(line):.3f} Å — do you mean {float(closest):.3f} Å?"
+                    )
+                except Exception:
+                    suggestion_lines.append(f" {float(line):.3f} Å — no close match found")
+
+            suggestion_str = "\n".join(suggestion_lines)
+
+            util.nebula_exit_with_error(
+                f"following {self.chianti_ion.Spectroscopic} line(s) were not found in Chianti\n"
+                f" note: Chianti spectral line data are based on theoretical models\n"
+                f"{suggestion_str}"
+            )
+
+
         # If any requested lines are missing, terminate execution with an error message.
         if missing_lines:
-            util.nebula_exit_with_error(f" following line(s) are not found: {missing_lines}")
+            util.nebula_exit_with_error(f"following {self.chianti_ion.Spectroscopic} line(s) are not found in chianti: {missing_lines}")
 
         # Retrieve the indices of the requested lines within the all_lines array.
         # np.where(all_lines == line) returns an array of indices where the condition is met.
@@ -341,7 +356,6 @@ class chianti:
 
         # Iterate through the requested lines and their corresponding indices.
         for i, index in enumerate(line_indices):
-            # Construct a human-readable identifier for the line.
             # The spectroscopic notation (e.g., "Fe XIV") is combined with the wavelength (or another identifier).
             line_str = self.chianti_ion.Spectroscopic + " " + str(line_list[i])
 
