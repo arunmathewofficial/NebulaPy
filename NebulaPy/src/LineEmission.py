@@ -466,6 +466,95 @@ class line_emission():
         return lines_emissivity_map
 
 
+######################################################################################
+    # line luminosity for a given list of lines in 2D coordinate system
+    ######################################################################################
+    def recombination_line_luminosity_2D(self, lines, temperature, ne, species_density, cell_volume,
+                                         grid_mask, progress_bar=True):
+        """
+        Compute the total line luminosity for a given ion in a cylindrical coordinate system.
+
+        Parameters:
+        - lines: List of emission lines for which luminosity is calculated.
+        - temperature: 3D array (NGlevel x rows x columns) containing temperature values at different grid levels.
+        - ne: 3D array (NGlevel x rows x columns) containing electron density values at different grid levels.
+        - species_density: 3D array containing the density of the species (ion) at different grid points.
+        - cell_volume: 3D array containing the volume of each cell in the grid.
+        - grid_mask: 3D array (boolean or numeric) acting as a mask to include/exclude specific grid cells.
+
+        Returns:
+        - Dictionary mapping emission lines to their computed luminosity values.
+
+        The function follows these steps:
+        1. Ensures that electron densities are nonzero to avoid division errors.
+        2. Iterates over grid levels and rows to compute line emissivity using Chianti.
+        3. Computes and accumulates total line luminosity across the cylindrical grid.
+        """
+
+        # Define a small tolerance value to prevent division errors when electron density is zero
+        electron_tolerance = 1.E-08
+
+        # Get the number of grid levels (assumed to be the first dimension of the temperature array)
+        NGlevel = len(temperature)
+
+        # Determine the number of rows in each temperature level (assumes 2D grid structure)
+        rows = len(temperature[0])
+
+        # Initialize an array to store the total luminosity of all requested lines
+        lines_luminosity = np.zeros_like(lines)
+
+        # completion message
+        if progress_bar:
+            completion_msg = f'finished computing the luminosity for {self.ion} lines'
+
+        # Loop through each level in the grid
+        for level in range(NGlevel):
+            # Convert electron density to an array (if not already) and ensure no zero values
+            ne[level] = np.array(ne[level])
+            ne[level][ne[level] == 0] = electron_tolerance
+
+            # Initialize an array to store line luminosity for this level
+            lines_luminosity_level = np.zeros_like(lines)
+
+            # Iterate over each row in the cylindrical grid
+            for row in range(rows):
+                # Extract data for the current row at the given level
+                temperature_row = temperature[level][row]  # Temperature values for the row
+                ne_row = ne[level][row]  # Electron density for the row
+                species_density_row = species_density[level][row]  # Species density for the row
+                cell_volume_row = cell_volume[level][row]  # Cell volume for the row
+                grid_mask_row = grid_mask[level][row]  # Grid mask for the row
+
+                if progress_bar:
+                    prefix_msg = f'computing the luminosity of {self.ion} lines at grid-level {level}'
+                    suffix_msg = 'complete'
+                    completion_msg_condition = (level == NGlevel - 1 and row == rows - 1)
+
+                # Compute the line emissivity for the species using Pyneb
+                species = pyneb(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
+                lines_emissivity_row = species.get_recomb_line_emissivity_for_list(lines)  # Retrieve emissivities for specified lines
+                line_keys = lines_emissivity_row.keys()  # Get the emission line identifiers
+                del species  # Free memory
+
+                # Compute the total luminosity for each emission line in this row
+                for index, line in enumerate(line_keys):
+                    lines_luminosity_level[index] += (
+                            4.0 * const.pi * np.sum(
+                        lines_emissivity_row[line] * species_density_row * cell_volume_row * grid_mask_row
+                    )
+                    )
+                del lines_emissivity_row  # Free memory after usage
+
+                if progress_bar:
+                    util.progress_bar(row, rows, suffix=suffix_msg, prefix=prefix_msg,
+                                      condition=completion_msg_condition, completion_msg=completion_msg)
+
+
+            # Sum up the computed luminosities across all levels
+            lines_luminosity += lines_luminosity_level
+
+        # Return a dictionary mapping line identifiers to their computed luminosities
+        return dict(zip(line_keys, lines_luminosity))
 
 
 
