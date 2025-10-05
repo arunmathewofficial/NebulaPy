@@ -63,7 +63,7 @@ def compute_emissivity(workerQ, doneQ):
 
             print(f" multiprocessing: computing line emissivity of {ion_name:<4} lines")
 
-            emissivity = line_emission.line_emissivity_map_cylindrical(
+            emissivity = line_emission.line_emissivity_2D_map(
                 lines=lines, temperature=temperature, ne=ne, progress_bar=False)
 
             print(f" multiprocessing: finished computing emissivity for {ion_name:<4} lines")
@@ -87,16 +87,14 @@ if __name__ == "__main__":
     out_frequency = None
     time_unit = 'kyr'
 
-
     # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
-    #output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emissiviity_map'
-    #silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
-    #filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
-    #start_time = 200
-    #finish_time = 202
-    #out_frequency = None
-    #time_unit = 'kyr'
-
+    output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emiss_map_new'
+    silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
+    filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'
+    start_time = None  # kyr
+    finish_time = None  # kyr
+    out_frequency = None  # Use all available outputs
+    time_unit = 'kyr'
     # Batch the silo files for analysis within the specified time range
     batched_silos = util.batch_silos(
         silo_dir,
@@ -193,7 +191,7 @@ if __name__ == "__main__":
     os.makedirs(N2P_ion_output_dir, exist_ok=True)
 
     O1P_pion_ion = 'O1+'  # The ion of interest (Oxygen II)
-    O1P_lines = [3729.844, 3727.092, 7331.723, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
+    O1P_lines = [3729.844, 3727.092, 7331.722, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
     print(rf" {O1P_pion_ion:<4} lines: {', '.join(map(str, O1P_lines))} Å")
     O1P_pion_ion_name = O1P_pion_ion.replace('+', 'p')
     O1P_ion_output_dir = os.path.join(output_dir, O1P_pion_ion_name)
@@ -260,20 +258,20 @@ if __name__ == "__main__":
     # Check the requested lines in the database for each ion
     print(f" ---------------------------")
     print(f" looking up requested line in the database:")
-    H_line_emission.line_batch_check(H_lines)
-    He_line_emission.line_batch_check(He_lines)
-    He1P_line_emission.line_batch_check(He1P_lines)
-    C_line_emission.line_batch_check(C_lines)
-    C2P_line_emission.line_batch_check(C2P_lines)
-    N1P_line_emission.line_batch_check(N1P_lines)
-    N2P_line_emission.line_batch_check(N2P_lines)
-    O1P_line_emission.line_batch_check(O1P_lines)
-    O2P_line_emission.line_batch_check(O2P_lines)
-    Ne1P_line_emission.line_batch_check(Ne1P_lines)
-    Ne2P_line_emission.line_batch_check(Ne2P_lines)
-    S1P_line_emission.line_batch_check(S1P_lines)
-    S2P_line_emission.line_batch_check(S2P_lines)
-    S3P_line_emission.line_batch_check(S3P_lines)
+    H_line_emission.chianti_line_batch_check(H_lines)
+    He_line_emission.chianti_line_batch_check(He_lines)
+    He1P_line_emission.chianti_line_batch_check(He1P_lines)
+    C_line_emission.chianti_line_batch_check(C_lines)
+    C2P_line_emission.chianti_line_batch_check(C2P_lines)
+    N1P_line_emission.chianti_line_batch_check(N1P_lines)
+    N2P_line_emission.chianti_line_batch_check(N2P_lines)
+    O1P_line_emission.chianti_line_batch_check(O1P_lines)
+    O2P_line_emission.chianti_line_batch_check(O2P_lines)
+    Ne1P_line_emission.chianti_line_batch_check(Ne1P_lines)
+    Ne2P_line_emission.chianti_line_batch_check(Ne2P_lines)
+    S1P_line_emission.chianti_line_batch_check(S1P_lines)
+    S2P_line_emission.chianti_line_batch_check(S2P_lines)
+    S3P_line_emission.chianti_line_batch_check(S3P_lines)
 
     # Loop over each time instant in the batched silo files
     runtime = 0.0
