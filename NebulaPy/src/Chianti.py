@@ -332,7 +332,7 @@ class chianti:
             suggestion_str = "\n".join(suggestion_lines)
 
             util.nebula_exit_with_error(
-                f"following {self.chianti_ion.Spectroscopic} line(s) were not found in Chianti\n"
+                f"following {self.chianti_ion.Spectroscopic} line(s) were not found in Chianti: {missing_lines}\n"
                 f" note: Chianti spectral line data are based on theoretical models\n"
                 f"{suggestion_str}"
             )

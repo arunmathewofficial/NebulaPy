@@ -5,9 +5,9 @@ import os
 dummy_temperature = [2e+6]
 dummy_ne = [1e+9]
 
-output_path = '/Users/tony/Desktop/Multi-Ion-Bowshock/multi-ion-bowshock/NebulaPy/lines-transitions'
+output_path = '/home/tony/Desktop/multi-ion-bowshock/NebulaPy/lines-transitions'
 
-nebula_chianti = nebula.chianti(pion_ion='S3+', temperature=dummy_temperature, ne=dummy_ne, verbose=True)
+nebula_chianti = nebula.chianti(pion_ion='H', temperature=dummy_temperature, ne=dummy_ne, verbose=True)
 spectroscopic_name = nebula_chianti.chianti_ion.Spectroscopic
 allLineData = nebula_chianti.get_allLinesTransitions()
 

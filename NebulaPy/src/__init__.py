@@ -7,6 +7,5 @@ from .XraySpectrum import xray
 from .SED import sed
 from .ChiantiMultiProc import *
 from .Cooling import *
-#from .PION import pion
+from .PION import pion
 from .PyNeb import pyneb
-from .RecombinationLines import recombination_line

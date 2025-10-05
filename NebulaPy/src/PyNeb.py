@@ -53,8 +53,10 @@ class pyneb:
                 if self.pyneb_ion_element != 'H':
                     util.nebula_exit_with_error(f"PyNeb is implemented only for H I recombination lines, not {self.Spectroscopic}")
                 else:
-                    util.nebula_warning("pyneb class only implemented for H I recombination lines")
+                    if self.verbose:
+                        util.nebula_warning("pyneb class only implemented for H I recombination lines")
                     # important: only implemented for recombination lines of hydrogen
+                    pn.atomicData.setDataFile('h_i_rec_SH95.hdf5')
                     self.pyneb_recomb_ion = RecAtom(self.pyneb_ion_element, self.pyneb_ion_spectral_level)
                     self.pyneb_ion = Atom(self.pyneb_ion_element, self.pyneb_ion_spectral_level)
                 # end todo
@@ -228,7 +230,7 @@ class pyneb:
 
             # Raise an error with detailed information about missing lines
             util.nebula_exit_with_error(
-                f"following {self.Spectroscopic} line(s) were not found in PyNeb:\n"
+                f"following {self.Spectroscopic} line(s) were not found in PyNeb: {missing_lines}\n"
                 f" note: PyNeb spectral line data are sourced from the NIST database\n"
                 f"{suggestion_str}"
             )
@@ -238,16 +240,25 @@ class pyneb:
 
         # Loop through each requested line to calculate its emissivity
         for line in line_list:
-            # Combine spectroscopic name and line wavelength for the dictionary key
-            line_str = self.Spectroscopic + " " + str(line)
+            line_str = f"{self.Spectroscopic} {line}"
 
-            # Retrieve the emissivity of the specific recombination line from PyNeb
+            # Retrieve emissivity for the specific recombination line
             specific_line_emissivity = self.pyneb_recomb_ion.getEmissivity(
                 tem=self.temperature, den=self.ne, wave=line, product=False
             )
 
-            # Convert emissivity to desired units and store in the dictionary
-            # Multiplying by electron density (ne) and dividing by 4*pi to get emissivity per steradian
+            # excluding emissivity value for temperature out of range for recombination caseB coeffcicient for hydrogen
+            invalid_temperature = ((self.temperature < 5.0E+02) | (self.temperature > 3.0E+04))
+            # Now invalid_parameter_range is True where either temperature or ne is out of range
+            specific_line_emissivity[invalid_temperature] = 1.0e-50
+
+            # Detect NaN values and display an error message
+            if np.isnan(specific_line_emissivity).any():
+                util.nebula_exit_with_error(
+                    f"pyneb: found NaN emissivity for given T and ne in line {line_str}"
+                )
+
+            # Convert to emissivity per steradian
             line_emissivity[line_str] = specific_line_emissivity * self.ne / (4.0 * const.pi)
 
         # Return the dictionary containing emissivities for all requested lines
