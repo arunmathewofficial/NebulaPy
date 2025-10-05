@@ -38,7 +38,7 @@ from pypion.ReadData import ReadData  # Silo data reader
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
 # --- File and Directory Configuration ---
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emissiviity_map'
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emiss_map_new'
 silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
 filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'
 start_time = None # kyr
@@ -59,8 +59,6 @@ PyNeb_HAlphaLines = [6562.816]
 Chianti_HBetaLines = [4862.733, 4862.72]  # in Angstroms
 # PyNeb H-alpha recombination line
 PyNeb_HBetaLines = [4861.332]
-
-#todo: this code has to be consitent with HDF5 file saving scheme I have used previously for all codes
 
 IncludeCollisionalDeExcitation = True
 IncludeRecombination = True
@@ -149,7 +147,7 @@ for step, silo_instant in enumerate(batched_silos):
     # Create a zero emissivity map with the same shape as the temperature grids
     Hbeta_recomb_emissivity_map = np.array([np.zeros(arr.shape) for arr in temperature])
 
-    '''
+
     # Sum collisional emissivities
     if IncludeCollisionalDeExcitation:
 
@@ -187,7 +185,7 @@ for step, silo_instant in enumerate(batched_silos):
         for line in Hbeta_recomb_emiss_map_dict:
             for level in range(N_grid_level):
                 Hbeta_recomb_emissivity_map[level] += Hbeta_recomb_emiss_map_dict[line][level]
-    '''
+
     # Store the total in a dictionary with key "Halpha_coll"
     Halpha_coll_emiss_map_main_dict = {'H I 6564.': Halpha_coll_emissivity_map}
     # Store the total in a dictionary with key "Halpha_recomb"
