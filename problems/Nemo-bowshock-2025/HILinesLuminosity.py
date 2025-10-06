@@ -65,7 +65,7 @@ def compute_luminosity(workerQ, doneQ):
 
             print(f" multiprocessing: computing the luminosity of {ion_name:<4} lines")
 
-            luminosity = line_emission.line_luminosity_cylindrical(
+            luminosity = line_emission.line_luminosity_2D(
                 lines=lines,
                 temperature=temperature, ne=ne,
                 species_density=species_density,
@@ -118,14 +118,16 @@ def generate_shocked_ism_mask(pion, silo_instant):
 
 if __name__ == "__main__":
 
-    # Input-output file configuration for the low-resolution simulation on MIMIR
-    # output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/time-lines-luminosity'
-    # silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/low-res/silo'
-    # filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-    # filename = filebase + '_lines_luminosity_LowRes_3.txt'
-    # start_time = None
-    # finish_time = 53
-    # out_frequency = 2
+    # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
+    output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/time-lines-luminosity'
+    silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
+    filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+    filename = filebase + '_HI_lines_luminosity_HighRes.txt'
+    start_time = None
+    finish_time = None
+    out_frequency = None
+    time_unit = 'kyr'
+
 
     # Input-output file configuration for the medium-resolution simulation on MIMIR
     # output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/med-res/time-lines-luminosity'
@@ -137,24 +139,17 @@ if __name__ == "__main__":
     # out_frequency = 2
 
     # Input-output file configuration for the high-resolution simulation on MIMIR
-    output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/time-lines-luminosity'
-    silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
-    filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
-    filename = filebase + '_lines_luminosity_HighRes_ShockedISM.txt'
-    start_time = None
-    finish_time = 201
-    out_frequency = 2
-    time_unit = 'kyr'
+    #output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/time-lines-luminosity'
+    #silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
+    #filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+    #filename = filebase + '_lines_luminosity_HighRes_ShockedISM.txt'
+    #start_time = None
+    #finish_time = 201
+    #out_frequency = 2
+    #time_unit = 'kyr'
 
-    # Input-output file configuration for the low-resolution simulation on Razer Blade machine.
-    # output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/time-lines-luminosity'
-    # silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
-    # filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
-    # filename = filebase + '_lines_luminosity_HighRes.txt'
-    # start_time = None
-    # finish_time = None
-    # out_frequency = None
-    # time_unit = 'kyr'
+
+
 
     # creating output file
     outfile = os.path.join(output_dir, filename)
@@ -179,82 +174,44 @@ if __name__ == "__main__":
     pion.load_geometry(scale='cm')
 
     print(f" ---------------------------")
-    print(f" task: multiprocessing for computing the temporal evolution of luminosity in spectral line")
+    print(f" task: multiprocessing for computing the temporal evolution of Hα, Hβ luminosities")
     print(" list of spectral lines to be processed:")
 
     # Set up the ion and line emission parameters
     # Define the ions and their respective emission lines
-    He1P_pion_ion = 'He1+'
-    He1P_lines = [303.78, 303.786, 256.317, 256.318, 243.026, 243.027]  # Emission line(s) of interest
-    print(f" {He1P_pion_ion:<4} lines: {', '.join(map(str, He1P_lines))}  \u212B")
+    # Chianti H-alpha lines 6564.538, 6564.564, 6564.523, 6564.665, 6564.722 (Å)
+    # and the repeated entries near 6564 Å correspond to the fine-structure
+    # components of the hydrogen Hα line (Balmer α, 3 → 2 transition).
 
-    C2P_pion_ion = 'C2+'
-    C2P_lines = [1906.683, 1908.734, 977.02]  # Emission line(s) of interest
-    print(f" {C2P_pion_ion:<4} lines: {', '.join(map(str, C2P_lines))}  \u212B")
+    # collisional lines
+    pion_ion = 'H'
+    Chianti_HAlphaLines = [6564.538, 6564.564, 6564.523, 6564.665, 6564.722]  # in Angstroms
+    print(f" Hα collisional de-excited chianti lines: {', '.join(map(str, Chianti_HAlphaLines))}  \u212B")
+    Chianti_HBetaLines = [4862.733, 4862.72]  # in Angstroms
+    print(f" Hβ collisional de-excited chianti lines: {', '.join(map(str, Chianti_HBetaLines))}  \u212B")
 
-    N1P_pion_ion = 'N1+'
-    N1P_lines = [6585.273, 6549.861, 1218026.8, 2053388.09]
-    print(f" {N1P_pion_ion:<4} lines: {', '.join(map(str, N1P_lines))}  \u212B")
+    # recombination lines
+    pyneb_ion = 'H1+'
+    PyNeb_HAlphaLines = [6562.816]
+    print(f" Hα recombination pyneb lines:: {', '.join(map(str, PyNeb_HAlphaLines))}  \u212B")
+    PyNeb_HBetaLines = [4861.332]
+    print(f" Hβ recombination pyneb lines: {', '.join(map(str, PyNeb_HBetaLines))}  \u212B")
 
-    N2P_pion_ion = 'N2+'
-    N2P_lines = [573394.5, 989.799, 1752.16, 1749.674, 1753.995, 1748.646]
-    print(f" {N2P_pion_ion:<4} lines: {', '.join(map(str, N2P_lines))}  \u212B")
-
-    O1P_pion_ion = 'O1+'  # The ion of interest (Oxygen II)
-    O1P_lines = [3729.844, 3727.092, 7331.722, 2470.97, 2471.094, 7321.094, 7322.177, 7332.808]
-    print(f" {O1P_pion_ion:<4} lines: {', '.join(map(str, O1P_lines))} \u212B")
-
-    O2P_pion_ion = 'O2+'  # The ion of interest (Oxygen III)
-    O2P_lines = [5008.24, 883564.0, 518145.0, 4960.295, 1666.15, 4364.436, 832.929, 833.715, 1660.809]
-    print(f" {O2P_pion_ion:<4} lines: {', '.join(map(str, O2P_lines))} \u212B")
-
-    Ne1P_pion_ion = 'Ne1+'
-    Ne1P_lines = [128139.42]
-    print(f" {Ne1P_pion_ion:<4} lines: {', '.join(map(str, Ne1P_lines))} \u212B")
-
-    Ne2P_pion_ion = 'Ne2+'
-    Ne2P_lines = [155545.19, 3869.849, 3968.585, 360230.55, 489.495, 491.041]
-    print(f" {Ne2P_pion_ion:<4} lines: {', '.join(map(str, Ne2P_lines))} \u212B")
-
-    S1P_pion_ion = 'S1+'
-    S1P_lines = [6718.295, 6732.674, 4069.749, 10323.317, 4077.5]
-    print(f" {S1P_pion_ion:<4} lines: {', '.join(map(str, S1P_lines))} \u212B")
-
-    S2P_pion_ion = 'S2+'
-    S2P_lines = [335008.38, 9532.252, 187055.74, 9070.048, 6313.649, 3722.454]
-    print(f" {S2P_pion_ion:<4} lines: {', '.join(map(str, S2P_lines))} \u212B")
-
-    S3P_pion_ion = 'S3+'
-    S3P_lines = [105104.95]
-    print(f" {S3P_pion_ion:<4} lines: {', '.join(map(str, S3P_lines))} \u212B")
 
     # Initialize the emission line calculations for each ion
-    He1P_line_emission = nebula.line_emission(He1P_pion_ion, verbose=True)
-    C2P_line_emission = nebula.line_emission(C2P_pion_ion, verbose=True)
-    N1P_line_emission = nebula.line_emission(N1P_pion_ion, verbose=True)
-    N2P_line_emission = nebula.line_emission(N2P_pion_ion, verbose=True)
-    O1P_line_emission = nebula.line_emission(O1P_pion_ion, verbose=True)
-    O2P_line_emission = nebula.line_emission(O2P_pion_ion, verbose=True)
-    Ne1P_line_emission = nebula.line_emission(Ne1P_pion_ion, verbose=True)
-    Ne2P_line_emission = nebula.line_emission(Ne2P_pion_ion, verbose=True)
-    S1P_line_emission = nebula.line_emission(S1P_pion_ion, verbose=True)
-    S2P_line_emission = nebula.line_emission(S2P_pion_ion, verbose=True)
-    S3P_line_emission = nebula.line_emission(S3P_pion_ion, verbose=True)
+    H_line_emission = nebula.line_emission(pion_ion, verbose=True)
+    H1P_line_emission = nebula.line_emission(pyneb_ion, verbose=True)
 
     # Check the requested lines in the database for each ion
     print(f" ---------------------------")
     print(f" checking requested lines in CHIANTI database:")
-    He1P_line_emission.line_batch_check(He1P_lines)
-    C2P_line_emission.line_batch_check(C2P_lines)
-    N1P_line_emission.line_batch_check(N1P_lines)
-    N2P_line_emission.line_batch_check(N2P_lines)
-    O1P_line_emission.line_batch_check(O1P_lines)
-    O2P_line_emission.line_batch_check(O2P_lines)
-    Ne1P_line_emission.line_batch_check(Ne1P_lines)
-    Ne2P_line_emission.line_batch_check(Ne2P_lines)
-    S1P_line_emission.line_batch_check(S1P_lines)
-    S2P_line_emission.line_batch_check(S2P_lines)
-    S3P_line_emission.line_batch_check(S3P_lines)
+    H_line_emission.chianti_line_batch_check(Chianti_HAlphaLines)
+    H_line_emission.chianti_line_batch_check(Chianti_HBetaLines)
+
+    print(f" ---------------------------")
+    print(f" checking requested lines in PyNeb database:")
+    H1P_line_emission.pyneb_line_batch_check(PyNeb_HAlphaLines)
+    H1P_line_emission.pyneb_line_batch_check(PyNeb_HBetaLines)
 
     # Prepare output file for results
     outfile = os.path.join(output_dir, filename)
@@ -298,31 +255,15 @@ if __name__ == "__main__":
         shocked_ism_mask = generate_shocked_ism_mask(pion, silo_instant)
 
         # Retrieve species number density
-        He1P_num_density = pion.get_ion_number_density(He1P_pion_ion, silo_instant)
-        C2P_num_density = pion.get_ion_number_density(C2P_pion_ion, silo_instant)
-        N1P_num_density = pion.get_ion_number_density(N1P_pion_ion, silo_instant)
-        N2P_num_density = pion.get_ion_number_density(N2P_pion_ion, silo_instant)
-        O1P_num_density = pion.get_ion_number_density(O1P_pion_ion, silo_instant)
-        O2P_num_density = pion.get_ion_number_density(O2P_pion_ion, silo_instant)
-        Ne1P_num_density = pion.get_ion_number_density(Ne1P_pion_ion, silo_instant)
-        Ne2P_num_density = pion.get_ion_number_density(Ne2P_pion_ion, silo_instant)
-        S1P_num_density = pion.get_ion_number_density(S1P_pion_ion, silo_instant)
-        S2P_num_density = pion.get_ion_number_density(S2P_pion_ion, silo_instant)
-        S3P_num_density = pion.get_ion_number_density(S3P_pion_ion, silo_instant)
+        H_num_density = pion.get_ion_number_density(pion_ion, silo_instant)
+        H1P_num_density = pion.get_ion_number_density(pyneb_ion, silo_instant)
 
         # ions for processing
         ions = {
-            "He1+": (He1P_line_emission, He1P_lines, He1P_num_density),
-            "C2+": (C2P_line_emission, C2P_lines, C2P_num_density),
-            "N1+": (N1P_line_emission, N1P_lines, N1P_num_density),
-            "N2+": (N2P_line_emission, N2P_lines, N2P_num_density),
-            "O1+": (O1P_line_emission, O1P_lines, O1P_num_density),
-            "O2+": (O2P_line_emission, O2P_lines, O2P_num_density),
-            "Ne1+": (Ne1P_line_emission, Ne1P_lines, Ne1P_num_density),
-            "Ne2+": (Ne2P_line_emission, Ne2P_lines, Ne2P_num_density),
-            "S1+": (S1P_line_emission, S1P_lines, S1P_num_density),
-            "S2+": (S2P_line_emission, S2P_lines, S2P_num_density),
-            "S3+": (S3P_line_emission, S3P_lines, S3P_num_density)
+            "H": (H_line_emission, Chianti_HAlphaLines, H_num_density),
+            "H1+": (H1P_line_emission, PyNeb_HAlphaLines, H1P_num_density),
+            "H": (H_line_emission, Chianti_HBetaLines, H_num_density),
+            "H1+": (H1P_line_emission, PyNeb_HBetaLines, H1P_num_density),
         }
 
         # get keys of ions
