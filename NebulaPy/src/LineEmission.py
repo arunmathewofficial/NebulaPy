@@ -557,5 +557,10 @@ class line_emission():
         return dict(zip(line_keys, lines_luminosity))
 
 
+    ######################################################################################
+    # check the line list exist in all lines of the species
+    ######################################################################################
+    def pyneb_line_batch_check(self, lines):
 
+        util.nebula_warning('this feature is not implemented for PyNeb')
 
