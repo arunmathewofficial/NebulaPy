@@ -20,17 +20,17 @@ import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
 # MIMIR
-output_dir = '/home/arun/Desktop/plots/BowShock/simple'  # Output image directory
+#output_dir = '/home/arun/Desktop/plots/BowShock/simple'  # Output image directory
 # Set up paths and filenames
-silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'  # Directory containing silo files
-filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+#silo_dir = '/mnt/massive-stars/data/nemo/simple-bowshock'  # Directory containing silo files
+#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
 
 #Razer Blade 
-#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO_images'  # Output image directory
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/coolmap'  # Output image directory
 # Set up paths and filenames
-#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/HHeCNO'  # Directory containing silo files
-#filebase = 'BN_grad_d2l4n128'  # Base name of the silo files
-#database_path = '/home/tony/Desktop/NebulaPy/NebulaPy-DB'
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'  # Directory containing silo files
+filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+database_path = '/home/tony/Desktop/NebulaPy/NebulaPy-DB'
 
 ion = 'H'
 
@@ -52,8 +52,8 @@ pion = nebula.pion(batched_silos, verbose=True)
 # Calculates and stores geometric grid parameters.
 # For example, in a spherical geometry, it extracts radius and shell volumes
 # from the first silo file in the batch and saves them into a geometry container.
-pion.load_geometry(batched_silos[0], scale='pc')
-N_grid_level = pion.geometry_container['Nlevels']
+pion.load_geometry(scale='pc')
+N_grid_level = pion.geometry_container['Nlevel']
 mesh_edges_min = pion.geometry_container['edges_min']
 mesh_edges_max = pion.geometry_container['edges_max']
 

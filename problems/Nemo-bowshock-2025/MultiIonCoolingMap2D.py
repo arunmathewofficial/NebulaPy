@@ -21,25 +21,25 @@ import h5py
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
 # MIMIR (Set up paths and filenames)
-output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/cooling-map'  # Output image directory
-silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'  # Directory containing silo files
-filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
-start_time = 190
-finish_time = None
-out_frequency = None
-
-#Razer Blade (Set up paths and filenames)
-#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/coolmap'  # Output image directory
-#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/silo'  # Directory containing silo files
-#filebase = 'Ostar_mhd-nemo_d2n0128l3'  # Base name of the silo files
-#start_time = 30
+#output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/cooling-map'  # Output image directory
+#silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'  # Directory containing silo files
+#filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+#start_time = 190
 #finish_time = None
 #out_frequency = None
 
+#Razer Blade (Set up paths and filenames)
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/coolmap'  # Output image directory
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'  # Directory containing silo files
+filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+start_time = None
+finish_time = None
+out_frequency = None
+
 ion_list = [
-    #'H', 'H1+',
-    #'He', 'He1+', 'He2+',
-    #'C', 'C1+', 'C2+', 'C3+', 'C4+', 'C5+',
+    'H', 'H1+',
+    'He', 'He1+', 'He2+',
+    'C', 'C1+', 'C2+', 'C3+', 'C4+', 'C5+',
     'C6+',
     'N',
     'N1+',
@@ -117,7 +117,9 @@ for ion in ion_list:
 
         # h5 metadata
         metadata['step'] = step
-        metadata['simulation-time'] = sim_time
+        metadata['simulation-time'] = sim_time.value
+        metadata['time-unit'] = str(sim_time.unit)
+
 
         # Extract necessary physical parameters for the current time instant
         density = pion.get_parameter('Density', silo_instant)  # Retrieve density
