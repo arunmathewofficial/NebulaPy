@@ -6,4 +6,4 @@ NebulaPy-DB/
 dist/
 problems/*.txt
 problems/cmfgen_z086-wo-mdot50/
-problems/powr_mw-ob-i_mdot50
+problems/powr_mw-ob-i_mdot50/
