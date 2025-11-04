@@ -51,19 +51,32 @@ pion_ion = 'H'
 # Chianti H-alpha lines 6564.538, 6564.564, 6564.523, 6564.665, 6564.722 (Å)
 # and the repeated entries near 6564 Å correspond to the fine-structure
 # components of the hydrogen Hα line (Balmer α, 3 → 2 transition).
-Chianti_HAlphaLines = [6564.538, 6564.564, 6564.523, 6564.665, 6564.722]  # in Angstroms
-# PyNeb H-alpha recombination line
-PyNeb_HAlphaLines = [6562.816]
 
-# Chianti H-Bets lines
+# collisional lines
+Chianti_HAlphaLines = [6564.538, 6564.564, 6564.523, 6564.665, 6564.722]  # in Angstroms
+print(f" Hα collisional de-excited chianti lines: {', '.join(map(str, Chianti_HAlphaLines))}  \u212B")
 Chianti_HBetaLines = [4862.733, 4862.72]  # in Angstroms
-# PyNeb H-alpha recombination line
+print(f" Hβ collisional de-excited chianti lines: {', '.join(map(str, Chianti_HBetaLines))}  \u212B")
+Chianti_HLyAlphaLines = [1215.674, 1215.668]  # in Angstroms
+print(f" H Lyman α collisional de-excited chianti lines: {', '.join(map(str, Chianti_HLyAlphaLines))}  \u212B")
+
+# recombination lines
+PyNeb_HAlphaLines = [6562.816]
+print(f" Hα recombination pyneb lines: {', '.join(map(str, PyNeb_HAlphaLines))}  \u212B")
 PyNeb_HBetaLines = [4861.332]
+print(f" Hβ recombination pyneb lines: {', '.join(map(str, PyNeb_HBetaLines))}  \u212B")
+PyNeb_HPaAlphaLines = [18750.960]
+print(f" H Paschen α recombination pyneb lines: {', '.join(map(str, PyNeb_HPaAlphaLines))}  \u212B")
+PyNeb_HBrGammaLines = [21655.283]
+print(f" H Brackett gamma recombination pyneb lines: {', '.join(map(str, PyNeb_HBrGammaLines))}  \u212B")
+PyNeb_HLyAlphaLines = [1215.670]
+print(f" H Lyman α recombination pyneb lines: {', '.join(map(str, PyNeb_HLyAlphaLines))}  \u212B")
+
 
 IncludeCollisionalDeExcitation = True
 IncludeRecombination = True
 
-print(rf" task: calculating Hα, Hβ emissivity map")
+print(rf" task: calculating relevant H lines emissivity map")
 
 # Batching silo files based on time range
 batched_silos = util.batch_silos(
@@ -109,7 +122,7 @@ ion_name = pion_ion.replace('+', 'p')
 ion_output_dir = os.path.join(output_dir, ion_name)
 os.makedirs(ion_output_dir, exist_ok=True)
 
-data_title = f"Bow-Shock Balmer Hα, Hβ  emissivity map"
+data_title = f"Relevant H lines emissivity map"
 
 # Initialize Line Emission Module
 line_emission = nebula.line_emission(pion_ion, verbose=True)
@@ -147,6 +160,11 @@ for step, silo_instant in enumerate(batched_silos):
     # Create a zero emissivity map with the same shape as the temperature grids
     Hbeta_recomb_emissivity_map = np.array([np.zeros(arr.shape) for arr in temperature])
 
+    Lyalpha_coll_emissivity_map = np.array([np.zeros(arr.shape) for arr in temperature])
+    Lyalpha_recomb_emissivity_map = np.array([np.zeros(arr.shape) for arr in temperature])
+
+    Paalpha_recomb_emissivity_map = np.array([np.zeros(arr.shape) for arr in temperature])
+    Brgamma_recomb_emissivity_map = np.array([np.zeros(arr.shape) for arr in temperature])
 
     # Sum collisional emissivities
     if IncludeCollisionalDeExcitation:
@@ -158,6 +176,7 @@ for step, silo_instant in enumerate(batched_silos):
         for line in Halpha_coll_emiss_map_dict:
             for level in range(N_grid_level):
                 Halpha_coll_emissivity_map[level] += Halpha_coll_emiss_map_dict[line][level]
+        del Halpha_coll_emiss_map_dict
 
         # get collisional Emissivity Maps for all Hβ lines
         Hbeta_coll_emiss_map_dict = line_emission.line_emissivity_2D_map(
@@ -166,6 +185,17 @@ for step, silo_instant in enumerate(batched_silos):
         for line in Hbeta_coll_emiss_map_dict:
             for level in range(N_grid_level):
                 Hbeta_coll_emissivity_map[level] += Hbeta_coll_emiss_map_dict[line][level]
+        del Hbeta_coll_emiss_map_dict
+
+        # get collisional Emissivity Maps for all Lyman-α lines
+        Lyalpha_coll_emiss_map_dict = line_emission.line_emissivity_2D_map(
+            Chianti_HLyAlphaLines, temperature, ne, progress_bar=True)
+        # Sum all line emissivity map for all Lyman-α lines
+        for line in Lyalpha_coll_emiss_map_dict:
+            for level in range(N_grid_level):
+                Lyalpha_coll_emissivity_map[level] += Lyalpha_coll_emiss_map_dict[line][level]
+        del Lyalpha_coll_emiss_map_dict
+
 
     # Sum recombination emissivities
     if IncludeRecombination:
@@ -177,6 +207,7 @@ for step, silo_instant in enumerate(batched_silos):
         for line in Halpha_recomb_emiss_map_dict:
             for level in range(N_grid_level):
                 Halpha_recomb_emissivity_map[level] += Halpha_recomb_emiss_map_dict[line][level]
+        del Halpha_recomb_emiss_map_dict
 
         # get recombination Emissivity Maps for all Hβ lines
         Hbeta_recomb_emiss_map_dict = line_emission.recombination_line_emissivity_2D_map(
@@ -185,6 +216,34 @@ for step, silo_instant in enumerate(batched_silos):
         for line in Hbeta_recomb_emiss_map_dict:
             for level in range(N_grid_level):
                 Hbeta_recomb_emissivity_map[level] += Hbeta_recomb_emiss_map_dict[line][level]
+        del Hbeta_recomb_emiss_map_dict
+
+        # get recombination Emissivity Maps for Lyman alpha lines
+        Lyalpha_recomb_emiss_map_dict = line_emission.recombination_line_emissivity_2D_map(
+            PyNeb_HLyAlphaLines, temperature, ne, progress_bar=True)
+        # Sum all line emissivity map for Lyman lines
+        for line in Lyalpha_recomb_emiss_map_dict:
+            for level in range(N_grid_level):
+                Lyalpha_recomb_emissivity_map[level] += Lyalpha_recomb_emiss_map_dict[line][level]
+        del Lyalpha_recomb_emiss_map_dict
+
+        # get recombination Emissivity Maps for all Paschen α lines
+        Paalpha_recomb_emiss_map_dict = line_emission.recombination_line_emissivity_2D_map(
+            PyNeb_HPaAlphaLines, temperature, ne, progress_bar=True)
+        # Sum all line emissivity map for all Paα lines
+        for line in Paalpha_recomb_emiss_map_dict:
+            for level in range(N_grid_level):
+                Paalpha_recomb_emissivity_map[level] += Paalpha_recomb_emiss_map_dict[line][level]
+        del Paalpha_recomb_emiss_map_dict
+
+        # get recombination Emissivity Maps for all Brackett γ lines
+        Brgamma_recomb_emiss_map_dict = line_emission.recombination_line_emissivity_2D_map(
+            PyNeb_HBrGammaLines, temperature, ne, progress_bar=True)
+        # Sum all line emissivity map for all Hβ lines
+        for line in Brgamma_recomb_emiss_map_dict:
+            for level in range(N_grid_level):
+                Brgamma_recomb_emissivity_map[level] += Brgamma_recomb_emiss_map_dict[line][level]
+        del Brgamma_recomb_emiss_map_dict
 
     # Store the total in a dictionary with key "Halpha_coll"
     Halpha_coll_emiss_map_main_dict = {'H I 6564.': Halpha_coll_emissivity_map}
@@ -195,6 +254,12 @@ for step, silo_instant in enumerate(batched_silos):
     Hbeta_coll_emiss_map_main_dict = {'H I 4862.': Hbeta_coll_emissivity_map}
     # Store the total in a dictionary with key "Hbeta_recomb"
     Hbeta_recomb_emiss_map_main_dict = {'H I 4861.332': Hbeta_recomb_emissivity_map}
+
+    Lyalpha_coll_emiss_map_dict = {'H I 1215.': Lyalpha_coll_emissivity_map}
+    Lyalpha_recomb_emiss_map_dict = {'H I 1215.670': Lyalpha_recomb_emissivity_map}
+
+    Paalpha_recomb_emiss_map_dict = {'H I 18750.960': Paalpha_recomb_emissivity_map}
+    Brgamma_recomb_emiss_map_dict = {'H I 21655.283': Brgamma_recomb_emissivity_map}
 
     # get neutral hydrogen number density
     HIden = pion.get_ion_number_density(pion_ion, silo_instant)
@@ -226,14 +291,27 @@ for step, silo_instant in enumerate(batched_silos):
 
         # Save emissivity function map
         emissivity_map_group = file.create_group("emissivity_map")
+
         for key, value in Halpha_coll_emiss_map_main_dict.items():
             emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
         for key, value in Halpha_recomb_emiss_map_main_dict.items():
             emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
+
         for key, value in Hbeta_coll_emiss_map_main_dict.items():
             emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
         for key, value in Hbeta_recomb_emiss_map_main_dict.items():
             emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
+
+        for key, value in Lyalpha_coll_emiss_map_dict.items():
+            emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
+        for key, value in Lyalpha_recomb_emiss_map_dict.items():
+            emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
+
+        for key, value in Paalpha_recomb_emiss_map_dict.items():
+            emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
+        for key, value in Brgamma_recomb_emiss_map_dict.items():
+            emissivity_map_group.create_dataset(str(key), data=np.array(value, dtype=np.float32))
+
 
     '''
     # --- Generate and Save Emissivity Map Plots ---
