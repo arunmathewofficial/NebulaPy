@@ -37,12 +37,20 @@ from pypion.ReadData import ReadData  # Silo data reader
 # --- Suppress warnings for log10 of zero ---
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
-# --- File and Directory Configuration ---
+# --- File and Directory Configuration on Macbook ---
 output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/emiss_map_new'
 silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'
 filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'
 start_time = None # kyr
 finish_time = None  # kyr
+out_frequency = None  # Use all available outputs
+
+# --- File and Directory Configuration on Mimir ---
+output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/emissivity-map'
+silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'
+filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'
+start_time = 200 # kyr
+finish_time = 201  # kyr
 out_frequency = None  # Use all available outputs
 
 # PION Ion Name
