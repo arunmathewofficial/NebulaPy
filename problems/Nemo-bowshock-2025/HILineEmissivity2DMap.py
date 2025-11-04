@@ -56,6 +56,8 @@ out_frequency = None  # Use all available outputs
 # PION Ion Name
 pion_ion = 'H'
 
+print(rf" task: calculating relevant H lines emissivity map")
+
 # Chianti H-alpha lines 6564.538, 6564.564, 6564.523, 6564.665, 6564.722 (Å)
 # and the repeated entries near 6564 Å correspond to the fine-structure
 # components of the hydrogen Hα line (Balmer α, 3 → 2 transition).
@@ -80,11 +82,8 @@ print(f" H Brackett gamma recombination pyneb lines: {', '.join(map(str, PyNeb_H
 PyNeb_HLyAlphaLines = [1215.670]
 print(f" H Lyman α recombination pyneb lines: {', '.join(map(str, PyNeb_HLyAlphaLines))}  \u212B")
 
-
 IncludeCollisionalDeExcitation = True
 IncludeRecombination = True
-
-print(rf" task: calculating relevant H lines emissivity map")
 
 # Batching silo files based on time range
 batched_silos = util.batch_silos(
