@@ -25,6 +25,7 @@ class cooling():
 
         # get database
         database = os.environ.get("NEBULAPYDB")
+        database = '/Users/tony/Desktop/NebulaPy/NebulaPy-DB'
         # Check if the database exists, exit if missing
         if database is None:
             util.nebula_exit_with_error("required database missing, install database to proceed")
