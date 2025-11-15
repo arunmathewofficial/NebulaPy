@@ -25,7 +25,6 @@ class cooling():
 
         # get database
         database = os.environ.get("NEBULAPYDB")
-        database = '/Users/tony/Desktop/NebulaPy/NebulaPy-DB'
         # Check if the database exists, exit if missing
         if database is None:
             util.nebula_exit_with_error("required database missing, install database to proceed")
@@ -34,7 +33,6 @@ class cooling():
         chinati_ion = self.get_chianti_symbol(pion_ion)
 
         if self.verbose:
-            print(f" ---------------------------")
             print(f" initializing cooling class")
         # Construct the filename for the ion cooling table based on the ion symbol
         ion_cooling_filename = chinati_ion + '.txt'
@@ -171,13 +169,14 @@ class cooling():
         cooling_rate_map = np.zeros(temperature.shape)
 
         # Iterate over each element in the temperature array (using the shape of the array)
-        for silo_indices in np.ndindex(temperature.shape):
+        for indices in np.ndindex(temperature.shape):
             # Retrieve the temperature and electron density values at the current index
-            ne_value = ne[silo_indices]
-            temp_value = temperature[silo_indices]
+            ne_value = ne[indices]
+            temp_value = temperature[indices]
 
             # Interpolate the cooling rate for the current temperature and electron density
-            cooling_rate_map[silo_indices] = self.cooling_rate(ne_value, temp_value)
+            cooling_rate_map[indices] = self.cooling_rate(ne_value, temp_value)
 
         # Return the map of cooling rates
+        cooling_rate_map[cooling_rate_map < 1e-50] = 1e-50
         return cooling_rate_map

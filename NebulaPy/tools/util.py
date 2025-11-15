@@ -1,7 +1,7 @@
 import sys
 from NebulaPy import version
-#from pypion.SiloHeader_data import OpenData
-#from pypion.ReadData import ReadData
+from pypion.SiloHeader_data import OpenData
+from pypion.ReadData import ReadData
 import astropy.units as unit
 import os
 import glob
