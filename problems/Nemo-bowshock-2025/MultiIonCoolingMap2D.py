@@ -98,6 +98,7 @@ for ion in ion_list:
     mass_density_ism = 1.0E-24
     mass_H = const.mass['H']
     norm = (mass_H / mass_density_ism) ** 2.0
+    norm = 1.0
 
     data_title = f"Bow-Shock cooling function map for ion the {ion}"
 
