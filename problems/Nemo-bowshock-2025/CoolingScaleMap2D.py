@@ -40,6 +40,20 @@ def generate_velocity_field(pion, silo_instant, wind_speed, stellar_speed):
 
     return velocity_field
 
+def ntot(silo_instant):
+    # todo: move this method to pion class
+    '''
+    Calculate total number density including all ions
+    :param silo_instant:
+    :return:
+    '''
+    n_tot = pion.get_ne()
+    # one has to get the ion list from pion class
+    for ion in ion_list:
+        n_ion = pion.get_ion_number_density(ion, silo_instant)
+        for level in range(N_grid_level):
+            n_tot += n_ion[level]
+    return n_tot
 
 # MIMIR (Set up paths and filenames)
 #output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/cooling-map'  # Output image directory
@@ -136,7 +150,9 @@ for step, silo_instant in enumerate(batched_silos):
 
     # Retrieve the electron number density
     ne = pion.get_ne(silo_instant)
-
+    # Retrieve the total number density from the particular instant from the chemistry container
+    ntot = ntot(silo_instant)
+    
     for index, ion in enumerate(ion_list):
 
         util.nebula_info(f"computing {ion} cooling time-scale map")
@@ -245,8 +261,9 @@ for step, silo_instant in enumerate(batched_silos):
     # total cooling time scale and cooling lenghtscale
     util.nebula_info("generating total cooling time-scale and length-scale maps")
     print(" calculating total cooling time-scale")
+    # get total number density including all ions ntot
     for level in range(N_grid_level):
-        total_cooling_timescale[level] = 3.0 * const.kB * temperature[level] / (2.0 * ne[level] * total_cooling_function[level])
+        total_cooling_timescale[level] = 3.0 * const.kB * ntot[level] * temperature[level] / (2.0 * ne[level] * total_cooling_function[level])
         # Find min and max
 
     # Convert the list of arrays into a single array to find global min/max
