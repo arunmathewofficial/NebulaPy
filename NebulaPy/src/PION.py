@@ -830,7 +830,7 @@ class pion():
     ######################################################################################
     # get electron number density
     ######################################################################################
-    def get_ne(self, silo_instant):
+    def get_ne(self, silo_instant, verbose=True):
         '''
 
         Parameters
@@ -872,11 +872,13 @@ class pion():
             # Get the number of nested grid levels in the geometry container.
             Nlevel = self.geometry_container['Nlevel']
 
-            # Determine the number of grid levels for electron density calculation.
-            if Nlevel == 1:
-                print(" calculating electron number density for a single grid level")
-            elif Nlevel > 1:
-                print(" calculating electron number density for each grid level(s)")
+            if verbose:
+                # Determine the number of grid levels for electron density calculation.
+                if Nlevel == 1:
+                    print(" calculating electron number density for uniform grid")
+                elif Nlevel > 1:
+                    print(" calculating electron number density for each grid level(s)")
+
 
             # Retrieve the density data from the input file at the current simulation instant.
             density = self.get_parameter("Density", silo_instant)
@@ -1026,3 +1028,86 @@ class pion():
                 "Ion number density calculation for 3D cartesian geometry is not yet implemented.")
 
         return ion_num_density
+
+
+    ######################################################################################
+    # get get total number density ion number density
+    ######################################################################################
+    def get_ntot(self, silo_instant, verbose=True):
+
+        # 1 dimensional (spherical)
+        if self.geometry_container['coordinate_sys'] == 'spherical':
+            util.nebula_exit_with_error('not implemented for 1D coordinate')
+
+        # 2 dimensional (cylindrical)
+        if self.geometry_container['coordinate_sys'] == 'cylindrical':
+
+            # Get the number of nested grid levels in the geometry container.
+            Nlevel = self.geometry_container['Nlevel']
+
+            if verbose:
+                print(" calculating total number density for each grid level(s)")
+
+            # Retrieve the density data from the input file at the current simulation instant.
+            density = self.get_parameter("Density", silo_instant)
+
+            # Identify the shape of each density array to ensure compatibility with other parameters.
+            shape_list = [arr.shape for arr in density]
+
+            # Initialize arrays for electron number density (ne) and mass fraction sum,
+            # with zeroes matching the shape of the density data.
+            ne = [np.zeros(shape) for shape in shape_list]
+            massfrac_sum = [np.zeros(shape) for shape in shape_list]
+            neutral_massfrac = [np.zeros(shape) for shape in shape_list]
+            n_total = [np.zeros(shape) for shape in shape_list]
+
+            # Loop through each element in the tracer list to calculate contributions from individual ions.
+            for e, element in enumerate(self.element_wise_tracer_list):
+
+                # If the current element has no associated tracers, skip to the next element.
+                if not element:
+                    continue
+
+                # Get the element name and compute its atomic number (total ions minus one).
+                element_name = self.element_list[e]
+                atomic_number = len(element) - 1
+
+                # Get neutral elemental mass fraction
+                neutral_massfrac = self.get_parameter(element[0], silo_instant)
+                # Add neutral elemental mass fraction into top ion mass fraction first
+                top_ion_massfrac = self.get_parameter(element[0], silo_instant)
+                # Add neutral mass fraction into total number density
+                for level in range(Nlevel):
+                    n_total[level] += neutral_massfrac[level] / const.mass[element_name]
+
+                # For each subsequent ion
+                for i, ion in enumerate(element[1:], start=1):
+                    charge = i - 1  # Charge is one less than ionization state index.
+                    ion_massfrac = self.get_parameter(ion, silo_instant)
+
+                    # Update the top ion and mass fraction sum for each grid level.
+                    for level in range(Nlevel):
+                        top_ion_massfrac[level] -= ion_massfrac[level]
+                        massfrac_sum[level] += charge * ion_massfrac[level]  # Update mass fraction sum by ion charge.
+                        n_total[level] += ion_massfrac[level] / const.mass[element_name]
+
+                # Finalize mass fraction sum and update electron density for each grid level.
+                for level in range(Nlevel):
+                    # Add contribution of the top ion with atomic number, ensuring non-negative values.
+                    massfrac_sum[level] += atomic_number * np.maximum(top_ion_massfrac[level], 0.0)
+                    # Calculate electron number density using mass fraction sum and atomic mass.
+                    ne[level] += massfrac_sum[level] / const.mass[element_name]
+                    n_total[level] += top_ion_massfrac[level] / const.mass[element_name]
+
+            # Scale the electron number density by the density for each grid level.
+            ne = [density[level] * ne[level] for level in range(Nlevel)]
+
+            n_total = [density[level] * n_total[level] for level in range(Nlevel)]
+            for level in range(Nlevel):
+                n_total[level] += ne[level]
+
+            print(" returning total number density array")
+            return n_total
+
+
+

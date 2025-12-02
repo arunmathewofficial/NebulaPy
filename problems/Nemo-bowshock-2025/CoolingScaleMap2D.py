@@ -40,21 +40,6 @@ def generate_velocity_field(pion, silo_instant, wind_speed, stellar_speed):
 
     return velocity_field
 
-def ntot(silo_instant):
-    # todo: move this method to pion class
-    '''
-    Calculate total number density including all ions
-    :param silo_instant:
-    :return:
-    '''
-    n_tot = pion.get_ne()
-    # one has to get the ion list from pion class
-    for ion in ion_list:
-        n_ion = pion.get_ion_number_density(ion, silo_instant)
-        for level in range(N_grid_level):
-            n_tot += n_ion[level]
-    return n_tot
-
 # MIMIR (Set up paths and filenames)
 #output_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/cooling-map'  # Output image directory
 #silo_dir = '/mnt/massive-stars/data/arun_simulations/Nemo_BowShock/high-res/silo'  # Directory containing silo files
@@ -64,7 +49,7 @@ def ntot(silo_instant):
 #out_frequency = None
 
 #Razer Blade (Set up paths and filenames)
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/coolscales'  # Output image directory
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/coolingscales'  # Output image directory
 silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silo-200kyr'  # Directory containing silo files
 filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
 start_time = None
@@ -132,11 +117,6 @@ for step, silo_instant in enumerate(batched_silos):
     sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
     print(f" step: {step}/{Nstep} | simulation time: {sim_time:.6e}")
 
-    # h5 metadata
-    metadata['step'] = step
-    metadata['simulation-time'] = sim_time.value
-    metadata['time-unit'] = str(sim_time.unit)
-
     # Extract necessary physical parameters for the current time instant
     density = pion.get_parameter('Density', silo_instant)  # Retrieve density
     temperature = pion.get_parameter('Temperature', silo_instant)  # Retrieve temperature
@@ -151,30 +131,17 @@ for step, silo_instant in enumerate(batched_silos):
     # Retrieve the electron number density
     ne = pion.get_ne(silo_instant)
     # Retrieve the total number density from the particular instant from the chemistry container
-    ntot = ntot(silo_instant)
-    
+    ntot = pion.get_ntot(silo_instant)
+
     for index, ion in enumerate(ion_list):
 
         util.nebula_info(f"computing {ion} cooling time-scale map")
         cooling = nebula.cooling(pion_ion=ion, verbose=True)
-        ion_name = ion.replace('+', 'p')
-        ion_output_dir = os.path.join(output_dir, ion_name)
-        os.makedirs(ion_output_dir, exist_ok=True)
-
-        # calculating normalization factor
-        mass_density_ism = 1.0E-24
-        mass_H = const.mass['H']
-        norm = (mass_H / mass_density_ism) ** 2.0
-
-        data_title = f"Bow-Shock cooling time-scale for ion the {ion}"
-
-        h5_filename = f"{filebase}_coolmap_{ion_name}_{str(step).zfill(4)}.h5"
-        h5_file = os.path.join(ion_output_dir, h5_filename)
 
         # Retrieve the ion number density
         n_ion = pion.get_ion_number_density(ion, silo_instant)
 
-        print(f" generating {ion} cooling timescale map for each grid level(s)")
+        print(f" generating {ion} cooling rate map for each grid level(s)")
         # Initialize arrays for ion cooling rate
         ion_cooling_rate = [np.zeros(shape) for shape in shape_list]
         for level in range(N_grid_level):
@@ -182,81 +149,9 @@ for step, silo_instant in enumerate(batched_silos):
                 temperature=temperature[level], ne=ne[level])
             ion_cooling_rate[level] = level_cooling_rate_map
 
-        # Initialize arrays for ion cooling time scale map
-        ion_cooling_timescale_map = [np.zeros(shape) for shape in shape_list]
-
         for level in range(N_grid_level):
-            ion_cooling_timescale_map[level] = 3.0 * const.kB * temperature[level] * SEC_TO_YEAR / (2.0 * ne[level] * n_ion[level] * ion_cooling_rate[level])
             total_cooling_function[level] += n_ion[level] * ion_cooling_rate[level]
 
-        # saving data to h5 file ########################################################
-        print(f" saving cooling timescale map data to: {h5_filename}")
-        with h5py.File(h5_file, "w") as file:
-            # Add heading and title
-            file.attrs['head'] = heading
-            file.attrs['title'] = data_title
-            # Save metadata
-            meta = file.create_group("metadata")
-            for key, value in metadata.items():
-                if isinstance(value, list):
-                    meta.create_dataset(key, data=value)
-                else:
-                    meta.attrs[key] = value
-            # Save cooling function map
-            file.create_dataset("cooling_timescale_map", data=np.array(ion_cooling_timescale_map, dtype=np.float32))
-        # end of saving data to h5 file #################################################
-
-        # generating image
-        fig, ax = plt.subplots(figsize=(8, 6))
-
-        ax.text(0.05, 0.9, 'time = %5.2f kyr' % sim_time.value, transform=ax.transAxes,
-                fontsize=12, color='white')
-        ax.set_xlim(mesh_edges_min[0][0].value, mesh_edges_max[0][0].value)
-        ax.set_ylim(mesh_edges_min[0][1].value, mesh_edges_max[0][1].value)
-
-        # Assuming parameter_data, dims_min_1, dims_max_1, and cmap_value are defined
-        # Assuming ax is already defined
-        for level in range(N_grid_level):
-            plot_data = np.log10(ion_cooling_timescale_map[level])
-            extents = [mesh_edges_min[level][0].value, mesh_edges_max[level][0].value,
-                       mesh_edges_min[level][1].value, mesh_edges_max[level][1].value]
-
-            image = ax.imshow(plot_data, interpolation='nearest', cmap='inferno',
-                              extent=extents, origin='lower',
-                              vmin=0, vmax=6
-                              )
-
-        # Create divider for existing axes instance
-        divider = make_axes_locatable(ax)
-        # Append axes to the right of ax1
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-
-        # Add colorbar with appropriate ticks
-        colorbar = plt.colorbar(image, cax=cax, ticks=MultipleLocator(1))
-
-        # Set the formatter for the colorbar
-        colorbar.ax.yaxis.set_major_formatter(ScalarFormatter())
-        colorbar.ax.yaxis.get_major_formatter().set_scientific(False)  # Disable scientific notation
-        colorbar.ax.yaxis.get_major_formatter().set_useOffset(False)  # Disable offset
-
-        # Update the ticks for the colorbar
-        colorbar.update_ticks()
-
-        ax.set_xlabel('z (pc)', fontsize=12)
-        ax.set_ylabel('R (pc)', fontsize=12)
-
-        # Correctly add text to the plot
-
-        ax.text(0.65, 0.9, f"${ion}~\\tau_{{\\mathrm{{cool}}}}(\\mathrm{{yr}})$",
-                transform=ax.transAxes, fontsize=12, color='black')
-        ax.tick_params(axis='both', which='major', labelsize=13)
-
-        # fig.subplots_adjust(wspace=0, hspace=0)  # Remove the whitespace between the images
-        filename = f"{filebase}_cooltime_{ion_name}_{str(step).zfill(4)}.png"
-        filepath = os.path.join(ion_output_dir, filename)
-        plt.savefig(filepath, bbox_inches="tight", dpi=300)
-        plt.close(fig)
-        print(f" saving cooling function map image to: {filename}")
 
     # total cooling time scale and cooling lenghtscale
     util.nebula_info("generating total cooling time-scale and length-scale maps")
@@ -264,7 +159,6 @@ for step, silo_instant in enumerate(batched_silos):
     # get total number density including all ions ntot
     for level in range(N_grid_level):
         total_cooling_timescale[level] = 3.0 * const.kB * ntot[level] * temperature[level] / (2.0 * ne[level] * total_cooling_function[level])
-        # Find min and max
 
     # Convert the list of arrays into a single array to find global min/max
     all_timescales = np.concatenate(total_cooling_timescale)
@@ -278,6 +172,12 @@ for step, silo_instant in enumerate(batched_silos):
     flow_velocity = generate_velocity_field(pion, silo_instant, wind_speed, stellar_speed)
     for level in range(N_grid_level):
         total_cooling_lengthscale[level] = flow_velocity[level] * total_cooling_timescale[level]
+
+    all_lengthscales = np.concatenate(total_cooling_lengthscale)
+    min_lengthscale = np.min(all_lengthscales)
+    max_lengthscale = np.max(all_lengthscales)
+    print(f" minimum cooling lengthscale from the snapshot: {min_lengthscale * CM_TO_PC:.5e} pc")
+    print(f" maximum cooling lengthscale from the snapshot: {max_lengthscale * CM_TO_PC:.5e} pc")
 
     # generating cooling time scale map image
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -293,7 +193,7 @@ for step, silo_instant in enumerate(batched_silos):
                    mesh_edges_min[level][1].value, mesh_edges_max[level][1].value]
         image = ax.imshow(plot_data, interpolation='nearest', cmap='inferno',
                           extent=extents, origin='lower',
-                          vmin=0, vmax=6
+                          #vmin=0, vmax=6
                           )
     # Create divider for existing axes instance
     divider = make_axes_locatable(ax)
