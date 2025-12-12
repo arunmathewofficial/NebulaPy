@@ -18,22 +18,31 @@ import warnings
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
-
-#Razer Blade
-OutputDir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/coolmap'  # Output image directory
-# Set up paths and filenames
-SiloDir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'  # Directory containing silo files
-Filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+# Mimir -> Set up paths and filenames
+OutputDir = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/CWBs-2026'  # Output image directory
+SiloDir = '/mnt/massive-stars/data/wr140-nemo/wr140_NEMO_d07e13_d2l6n128'  # Directory containing silo files
+Filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
 start_time = None
 finish_time = None
 time_unit = None
 out_frequency = None
 ion_list = ['Fe25+', 'Fe26+']
 
+#Razer Blade
+#OutputDir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/coolmap'  # Output image directory
+# Set up paths and filenames
+#SiloDir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'  # Directory containing silo files
+#Filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
+#start_time = None
+#finish_time = None
+#time_unit = None
+#out_frequency = None
+#ion_list = ['Fe25+', 'Fe26+']
+
 # Batch the silo files according to the time instant
 batched_silos = util.batch_silos(
-    silo_dir=SiloDir,
-    filebase=Filebase,
+    SiloDir,
+    Filebase,
     start_time=start_time,
     finish_time=finish_time,
     time_unit=time_unit,
