@@ -119,7 +119,7 @@ for step, silo_instant in enumerate(batched_silos):
         ax.tick_params(axis='both', which='major', labelsize=12)
 
     # Add a single colorbar for the entire figure
-    cbar_ax = fig.add_axes([0.125, 0.91, 0.775, 0.015])  # [left, bottom, width, height]
+    #cbar_ax = fig.add_axes([0.125, 0.91, 0.775, 0.015])  # [left, bottom, width, height]
     fig.colorbar(image, cax=cbar_ax, orientation='horizontal', ticks=MultipleLocator(0.2))
     plt.subplots_adjust(hspace=0.000, wspace=0.00)
 
