@@ -90,7 +90,7 @@ for step, silo_instant in enumerate(batched_silos):
         ax.set_ylim(mesh_edges_min[0][1].value, mesh_edges_max[0][1].value)
 
         ax.set_xlim(-7.0e13, 7.0e13)
-        ax.set_ylim(0, 7.0e13)
+        ax.set_ylim(0, 7.0e14)
 
         '''
         if not i in (8, 9):
