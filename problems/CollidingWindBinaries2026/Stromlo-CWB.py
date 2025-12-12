@@ -60,6 +60,9 @@ N_grid_level = pion.geometry_container['Nlevel']
 mesh_edges_min = pion.geometry_container['edges_min']
 mesh_edges_max = pion.geometry_container['edges_max']
 
+print(mesh_edges_min)
+print(mesh_edges_max)
+
 # Extract all chemistry information from the silo files into a chemistry container
 # This uses the first time instant's silo file to initialize
 pion.load_chemistry()
@@ -75,7 +78,7 @@ for step, silo_instant in enumerate(batched_silos):
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
     # Create a grid of subplots for visualizing ionisation fractions
-    fig, axes = plt.subplots(1, 2, figsize=(8, 10))
+    fig, axes = plt.subplots(1, 2)
     axes = axes.flat
 
     # Plot ionisation fractions for each ion
