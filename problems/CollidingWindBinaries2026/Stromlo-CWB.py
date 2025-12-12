@@ -105,7 +105,7 @@ for step, silo_instant in enumerate(batched_silos):
 
         # Plot data for each grid level
         for level in range(N_grid_level):
-            plot_data = n_ion[level]
+            plot_data = np.log10(n_ion[level])
             extents = [mesh_edges_min[level][0].value, mesh_edges_max[level][0].value,
                        mesh_edges_min[level][1].value, mesh_edges_max[level][1].value]
             image = ax.imshow(plot_data, interpolation='nearest', cmap='viridis',
