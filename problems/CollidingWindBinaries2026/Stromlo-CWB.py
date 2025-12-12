@@ -108,7 +108,7 @@ for step, silo_instant in enumerate(batched_silos):
             plot_data = n_ion[level]
             extents = [mesh_edges_min[level][0].value, mesh_edges_max[level][0].value,
                        mesh_edges_min[level][1].value, mesh_edges_max[level][1].value]
-            image = ax.imshow(plot_data, interpolation='nearest', cmap='Reds',
+            image = ax.imshow(plot_data, interpolation='nearest', cmap='viridis',
                               extent=extents, origin='lower',
                               #vmin=0, vmax=1
                               )
