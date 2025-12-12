@@ -75,7 +75,7 @@ for step, silo_instant in enumerate(batched_silos):
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
     # Create a grid of subplots for visualizing ionisation fractions
-    fig, axes = plt.subplots(5, 2, figsize=(8, 10))
+    fig, axes = plt.subplots(1, 2, figsize=(8, 10))
     axes = axes.flat
 
     # Plot ionisation fractions for each ion
@@ -103,7 +103,9 @@ for step, silo_instant in enumerate(batched_silos):
             extents = [mesh_edges_min[level][0].value, mesh_edges_max[level][0].value,
                        mesh_edges_min[level][1].value, mesh_edges_max[level][1].value]
             image = ax.imshow(plot_data, interpolation='nearest', cmap='Reds',
-                              extent=extents, origin='lower', vmin=0, vmax=1)
+                              extent=extents, origin='lower',
+                              #vmin=0, vmax=1
+                              )
 
         ax.text(0.1, 0.8, ion_list[i], transform=ax.transAxes, fontsize=14,
                 #color=ion_text_color[i]
