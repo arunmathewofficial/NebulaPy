@@ -90,7 +90,7 @@ for step, silo_instant in enumerate(batched_silos):
         ax.set_ylim(mesh_edges_min[0][1].value, mesh_edges_max[0][1].value)
 
         ax.set_xlim(-7.0e13, 7.0e13)
-        ax.set_ylim(0, 7.0e13)
+        ax.set_ylim(0, 2.0e14)
 
         '''
         if not i in (8, 9):
@@ -110,7 +110,7 @@ for step, silo_instant in enumerate(batched_silos):
                        mesh_edges_min[level][1].value, mesh_edges_max[level][1].value]
             image = ax.imshow(plot_data, interpolation='nearest', cmap='viridis',
                               extent=extents, origin='lower',
-                              vmin=0, vmax=4000
+                              vmin=0, vmax=4.0
                               )
 
         ax.text(0.1, 0.8, ion_list[i], transform=ax.transAxes, fontsize=14,
