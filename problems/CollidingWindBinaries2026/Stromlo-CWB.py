@@ -76,8 +76,13 @@ for step, silo_instant in enumerate(batched_silos):
     sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
-    # rows = ions (3), cols = (upper, lower)
-    fig, axes = plt.subplots(len(ion_list), 2, figsize=(6, 7), sharex=True, sharey=False)
+    # rows = hemispheres (upper, lower), cols = ions
+    fig, axes = plt.subplots(
+        2, len(ion_list),
+        figsize=(3 * len(ion_list), 6),
+        sharex=True,
+        sharey=False
+    )
 
     last_image = None
     v_min, v_max = 0.0, 10.0
@@ -85,22 +90,21 @@ for step, silo_instant in enumerate(batched_silos):
     xlim = (-7.0e13, 2.0e13)
     ylim = 1.5e14
 
-    for i, ion in enumerate(ion_list):
+    for j, ion in enumerate(ion_list):
         n_ion = pion.get_ion_number_density(ion, silo_instant)
 
-        axU = axes[i, 0]  # upper hemisphere
-        axL = axes[i, 1]  # lower hemisphere (mirrored)
+        axU = axes[0, j]  # upper hemisphere
+        axL = axes[1, j]  # lower hemisphere (mirror)
 
-        # Axis limits + ticks
-        axU.set_xlim(*xlim);
+        # Axis limits
+        axU.set_xlim(*xlim)
         axL.set_xlim(*xlim)
         axU.set_ylim(0.0, ylim)
         axL.set_ylim(-ylim, 0.0)
 
-        axU.tick_params(axis='both', which='major', labelsize=11)
-        axL.tick_params(axis='both', which='major', labelsize=11)
+        axU.tick_params(labelsize=11)
+        axL.tick_params(labelsize=11)
 
-        # Plot each AMR/grid level
         for level in range(N_grid_level):
             plot_data = np.log10(n_ion[level])
 
@@ -109,29 +113,41 @@ for step, silo_instant in enumerate(batched_silos):
             y_min = mesh_edges_min[level][1].value
             y_max = mesh_edges_max[level][1].value
 
-            # Upper (as-is)
+            # ---- Upper hemisphere ----
             extU = [x_min, x_max, y_min, y_max]
-            last_image = axU.imshow(plot_data, interpolation='nearest', cmap='viridis',
-                                    extent=extU, origin='lower', vmin=v_min, vmax=v_max)
+            last_image = axU.imshow(
+                plot_data,
+                interpolation='nearest',
+                cmap='viridis',
+                extent=extU,
+                origin='lower',
+                vmin=v_min, vmax=v_max
+            )
 
-            # Lower (mirror)
+            # ---- Lower hemisphere (mirrored) ----
             plot_data_mirror = np.flipud(plot_data)
             extL = [x_min, x_max, -y_max, -y_min]
-            last_image = axL.imshow(plot_data_mirror, interpolation='nearest', cmap='viridis',
-                                    extent=extL, origin='lower', vmin=v_min, vmax=v_max)
+            last_image = axL.imshow(
+                plot_data_mirror,
+                interpolation='nearest',
+                cmap='viridis',
+                extent=extL,
+                origin='lower',
+                vmin=v_min, vmax=v_max
+            )
 
-        # Row label on the left panel
-        axU.text(0.03, 0.90, f"n({ion})", transform=axU.transAxes, fontsize=12)
+        # Column title (ion name)
+        axU.set_title(f"n({ion})", fontsize=12)
 
-    # Column titles
-    axes[0, 0].set_title("Upper hemisphere", fontsize=12)
-    axes[0, 1].set_title("Lower hemisphere (mirrored)", fontsize=12)
+    # Row labels
+    axes[0, 0].set_ylabel("Upper hemisphere", fontsize=12)
+    axes[1, 0].set_ylabel("Lower hemisphere", fontsize=12)
 
-    # One shared colorbar
-    cbar_ax = fig.add_axes([0.125, 0.94, 0.775, 0.02])
+    # Shared colorbar
+    cbar_ax = fig.add_axes([0.125, 0.93, 0.775, 0.02])
     fig.colorbar(last_image, cax=cbar_ax, orientation='horizontal')
 
-    plt.subplots_adjust(hspace=0.0, wspace=0.00, top=0.90)
+    plt.subplots_adjust(hspace=0.02, wspace=0.02, top=0.90)
 
     Filename = f"{Filebase}_FeNumDen_{sim_time.value:.2f}kyr.png"
     plt.savefig(os.path.join(OutputDir, Filename), bbox_inches="tight", dpi=300)
