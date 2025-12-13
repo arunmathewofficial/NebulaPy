@@ -107,7 +107,7 @@ for step, silo_instant in enumerate(batched_silos):
         axL.tick_params(labelsize=11)
 
         for level in range(N_grid_level):
-            plot_data = np.log10(n_ion + 1e-99)
+            plot_data = np.log10(n_ion[level] + 1e-99)
 
             x_min = mesh_edges_min[level][0].value
             x_max = mesh_edges_max[level][0].value
