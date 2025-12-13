@@ -90,7 +90,7 @@ for step, silo_instant in enumerate(batched_silos):
 
         # Common x-limits
         for ax in (axU, axL):
-            ax.set_xlim(-7.0e13, 7.0e13)
+            ax.set_xlim(-7.0e13, 4.0e13)
             ax.tick_params(axis='both', which='major', labelsize=12)
 
         # Upper/lower y-limits
@@ -132,8 +132,7 @@ for step, silo_instant in enumerate(batched_silos):
             )
 
         # Panel labels
-        axU.text(0.05, 0.90, f"{ion} (upper)", transform=axU.transAxes, fontsize=13)
-        axL.text(0.05, 0.90, f"{ion} (lower)", transform=axL.transAxes, fontsize=13)
+        axU.text(0.05, 0.90, f"n({ion})", transform=axU.transAxes, fontsize=13)
 
     # One shared colorbar (use the last imshow handle)
     cbar_ax = fig.add_axes([0.125, 0.93, 0.775, 0.02])
