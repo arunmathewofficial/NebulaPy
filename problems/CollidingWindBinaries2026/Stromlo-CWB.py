@@ -68,76 +68,89 @@ print(mesh_edges_max)
 pion.load_chemistry()
 
 runtime = 0.0
+
 # Loop over each time instant in the batched silo files
 for step, silo_instant in enumerate(batched_silos):
-    silo_instant_start_time = time.time()  # Record the start time
+    silo_instant_start_time = time.time()
 
     print(f" ---------------------------")
-    # Print the current simulation time instant
     sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
-    # Create a grid of subplots for visualizing ionisation fractions
-    fig, axes = plt.subplots(1, 2)
-    axes = axes.flat
+    # 2 rows (upper/lower) x 2 cols (Fe25+/Fe26+)
+    fig, axes = plt.subplots(2, 2, figsize=(8, 7), sharex=True, sharey='row')
+    # axes[row, col]: row 0 = upper, row 1 = lower
+    last_image = None
 
-    # Plot ionisation fractions for each ion
-    for i, (ax, ion) in enumerate(zip(axes, ion_list)):
-
+    for j, ion in enumerate(ion_list):  # j=0 Fe25+, j=1 Fe26+
         n_ion = pion.get_ion_number_density(ion, silo_instant)
 
-        ax.set_xlim(mesh_edges_min[0][0].value, mesh_edges_max[0][0].value)
-        ax.set_ylim(mesh_edges_min[0][1].value, mesh_edges_max[0][1].value)
+        axU = axes[0, j]
+        axL = axes[1, j]
 
-        ax.set_xlim(-7.0e13, 7.0e13)
-        ax.set_ylim(0, 2.0e14)
+        # Common x-limits
+        for ax in (axU, axL):
+            ax.set_xlim(-7.0e13, 7.0e13)
+            ax.tick_params(axis='both', which='major', labelsize=12)
 
-        '''
-        if not i in (8, 9):
-            ax.axes.get_xaxis().set_visible(False)  # Remove the x-axis.
-        if not i in (0, 2, 4, 6, 8):
-            ax.axes.get_yaxis().set_visible(False)  # Remove the x-axis.
-        if i in (8, 9):
-            ax.set_xlabel('z (' + distance_unit_str + ')', fontsize=15)
-        if i in (0, 2, 4, 6, 8):
-            ax.set_ylabel('R (' + distance_unit_str + ')', fontsize=15)
-        '''
+        # Upper/lower y-limits
+        axU.set_ylim(0.0,  2.0e14)
+        axL.set_ylim(-2.0e14, 0.0)
 
-        # Plot data for each grid level
+        # Plot data for each AMR/grid level
         for level in range(N_grid_level):
             plot_data = np.log10(n_ion[level])
-            extents = [mesh_edges_min[level][0].value, mesh_edges_max[level][0].value,
-                       mesh_edges_min[level][1].value, mesh_edges_max[level][1].value]
-            image = ax.imshow(plot_data, interpolation='nearest', cmap='viridis',
-                              extent=extents, origin='lower',
-                              vmin=0, vmax=4.0
-                              )
 
-        ax.text(0.1, 0.8, ion_list[i], transform=ax.transAxes, fontsize=14,
-                #color=ion_text_color[i]
-                )
-        ax.tick_params(axis='both', which='major', labelsize=12)
+            x_min = mesh_edges_min[level][0].value
+            x_max = mesh_edges_max[level][0].value
+            y_min = mesh_edges_min[level][1].value
+            y_max = mesh_edges_max[level][1].value
 
-    # Add a single colorbar for the entire figure
-    cbar_ax = fig.add_axes([0.125, 0.91, 0.775, 0.015])  # [left, bottom, width, height]
-    fig.colorbar(image, cax=cbar_ax, orientation='horizontal',
-                 #ticks=MultipleLocator(0.2)
-                 )
-    plt.subplots_adjust(hspace=0.000, wspace=0.00)
+            # --- Upper hemisphere (as-is) ---
+            extU = [x_min, x_max, y_min, y_max]
+            last_image = axU.imshow(
+                plot_data,
+                interpolation='nearest',
+                cmap='viridis',
+                extent=extU,
+                origin='lower',
+                vmin=0, vmax=4.0
+            )
 
-    # Save the figure
+            # --- Lower hemisphere (mirror of upper) ---
+            # Flip vertically so it plots correctly with origin='lower'
+            plot_data_mirror = np.flipud(plot_data)
+            # Map y-range to negative values
+            extL = [x_min, x_max, -y_max, -y_min]
+            last_image = axL.imshow(
+                plot_data_mirror,
+                interpolation='nearest',
+                cmap='viridis',
+                extent=extL,
+                origin='lower',
+                vmin=0, vmax=4.0
+            )
+
+        # Panel labels
+        axU.text(0.05, 0.90, f"{ion} (upper)", transform=axU.transAxes, fontsize=13)
+        axL.text(0.05, 0.90, f"{ion} (lower)", transform=axL.transAxes, fontsize=13)
+
+    # One shared colorbar (use the last imshow handle)
+    cbar_ax = fig.add_axes([0.125, 0.93, 0.775, 0.02])
+    fig.colorbar(last_image, cax=cbar_ax, orientation='horizontal')
+
+    plt.subplots_adjust(hspace=0.02, wspace=0.02, top=0.90)
+
     Filename = f"{Filebase}_FeNumDen_{sim_time.value:.2f}kyr.png"
     plt.savefig(os.path.join(OutputDir, Filename), bbox_inches="tight", dpi=300)
     plt.close(fig)
+
     print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
 
-
-    silo_instant_finish_time = time.time()  # Record the finish time
-    # Calculate the time spent on the current step
-    dt = silo_instant_finish_time - silo_instant_start_time
-    # Update the runtime with the time spent on the current step
+    dt = time.time() - silo_instant_start_time
     runtime += dt
     print(f" runtime: {runtime:.4e} s | dt: {dt:.4e} s")
+
 
 
 
