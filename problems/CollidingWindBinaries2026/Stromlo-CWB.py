@@ -85,7 +85,7 @@ for step, silo_instant in enumerate(batched_silos):
     )
 
     last_image = None
-    v_min, v_max = 0.0, 10.0
+    v_min, v_max = 0.0, 5.0
 
     xlim = (-7.0e13, 2.0e13)
     ylim = 1.5e14
