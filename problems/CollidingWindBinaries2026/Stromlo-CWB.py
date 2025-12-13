@@ -119,7 +119,7 @@ for step, silo_instant in enumerate(batched_silos):
             last_image = axU.imshow(
                 plot_data,
                 interpolation='nearest',
-                cmap='viridis',
+                cmap='plasma',
                 extent=extU,
                 origin='lower',
                 vmin=v_min, vmax=v_max
@@ -131,7 +131,7 @@ for step, silo_instant in enumerate(batched_silos):
             last_image = axL.imshow(
                 plot_data_mirror,
                 interpolation='nearest',
-                cmap='viridis',
+                cmap='plasma',
                 extent=extL,
                 origin='lower',
                 vmin=v_min, vmax=v_max
