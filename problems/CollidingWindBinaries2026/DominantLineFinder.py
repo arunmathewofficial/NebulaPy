@@ -44,8 +44,8 @@ os.environ["OPENBLAS_NUM_THREADS"] = "1"
 OutputDir = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/CWBs-2026'  # Output image directory
 SiloDir = '/mnt/massive-stars/data/wr140-nemo/wr140_NEMO_d07e13_d2l6n128'  # Directory containing silo files
 filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
-start_time = 1.0e6  # in sec
-finish_time = 1.2e6
+start_time = 1.2e6  # in sec
+finish_time = 1.25e6
 time_unit = 'sec'
 out_freq = None
 
