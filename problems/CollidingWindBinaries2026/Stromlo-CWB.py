@@ -94,8 +94,8 @@ for step, silo_instant in enumerate(batched_silos):
             ax.tick_params(axis='both', which='major', labelsize=12)
 
         # Upper/lower y-limits
-        axU.set_ylim(0.0,  2.0e14)
-        axL.set_ylim(-2.0e14, 0.0)
+        axU.set_ylim(0.0,  1.5e14)
+        axL.set_ylim(-1.5e14, 0.0)
 
         # Plot data for each AMR/grid level
         for level in range(N_grid_level):
@@ -128,7 +128,7 @@ for step, silo_instant in enumerate(batched_silos):
                 cmap='viridis',
                 extent=extL,
                 origin='lower',
-                vmin=0, vmax=4.0
+                vmin=0, vmax=5.0
             )
 
         # Panel labels
