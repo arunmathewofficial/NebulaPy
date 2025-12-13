@@ -80,7 +80,7 @@ for step, silo_instant in enumerate(batched_silos):
     # rows = hemispheres (upper, lower), cols = ions
     fig, axes = plt.subplots(
         2, len(ion_list),
-        figsize=(4.0, 3.3),
+        figsize=(3.9, 3.4),
         sharex=True,
         sharey=False
     )
@@ -138,7 +138,7 @@ for step, silo_instant in enumerate(batched_silos):
             )
 
         # Column (ion name)
-        axU.text(0.25, 0.90, f"log n({ion})", transform=axU.transAxes, fontsize=9, color='white')
+        axU.text(0.2, 0.90, f"log n({ion})", transform=axU.transAxes, fontsize=9, color='white')
 
         # X labels
         axU.get_xaxis().set_visible(False)
