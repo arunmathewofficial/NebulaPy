@@ -17,6 +17,7 @@ from matplotlib.ticker import MultipleLocator, ScalarFormatter
 import warnings
 # Suppress specific warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
+cm2au = 6.68459e-14  # cm to au conversion factor
 
 # Mimir -> Set up paths and filenames
 OutputDir = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/CWBs-2026'  # Output image directory
@@ -57,8 +58,8 @@ pion = nebula.pion(batched_silos, verbose=True)
 # from the first silo file in the batch and saves them into a geometry container.
 pion.load_geometry(scale='cm')
 N_grid_level = pion.geometry_container['Nlevel']
-mesh_edges_min = pion.geometry_container['edges_min']
-mesh_edges_max = pion.geometry_container['edges_max']
+mesh_edges_min = pion.geometry_container['edges_min'] * cm2au
+mesh_edges_max = pion.geometry_container['edges_max'] * cm2au
 
 print(mesh_edges_min)
 print(mesh_edges_max)
@@ -87,8 +88,8 @@ for step, silo_instant in enumerate(batched_silos):
     last_image = None
     v_min, v_max = 0.0, 4.0
 
-    xlim = (-7.0e13, 2.0e13)
-    ylim = 1.5e14
+    xlim = (-4.67, 1.34)
+    ylim = 10
 
     for j, ion in enumerate(ion_list):
         n_ion = pion.get_ion_number_density(ion, silo_instant)
