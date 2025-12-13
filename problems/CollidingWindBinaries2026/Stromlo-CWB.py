@@ -79,13 +79,13 @@ for step, silo_instant in enumerate(batched_silos):
     # rows = hemispheres (upper, lower), cols = ions
     fig, axes = plt.subplots(
         2, len(ion_list),
-        figsize=(5, 5),
+        figsize=(4, 5),
         sharex=True,
         sharey=False
     )
 
     last_image = None
-    v_min, v_max = 0.0, 5.0
+    v_min, v_max = 0.0, 4.0
 
     xlim = (-7.0e13, 2.0e13)
     ylim = 1.5e14
