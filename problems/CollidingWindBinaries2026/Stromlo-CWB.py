@@ -138,16 +138,16 @@ for step, silo_instant in enumerate(batched_silos):
             )
 
         # Column (ion name)
-        axU.text(0.03, 0.90, f"n({ion})", transform=axU.transAxes, fontsize=12)
+        axU.text(0.03, 0.90, f"n({ion})", transform=axU.transAxes, fontsize=10, color='white')
 
         # X labels
         axU.get_xaxis().set_visible(False)
-        axL.set_xlabel(f'z (au)', fontsize=12)
+        axL.set_xlabel(f'z (au)', fontsize=10)
 
         # Y labels
         if j == 0:
-            axU.set_ylabel(f'R (au)', fontsize=12)
-            axL.set_ylabel(f'R (au)', fontsize=12)
+            axU.set_ylabel(f'R (au)', fontsize=10)
+            axL.set_ylabel(f'R (au)', fontsize=10)
         else:
             axU.get_yaxis().set_visible(False)
             axL.get_yaxis().set_visible(False)
