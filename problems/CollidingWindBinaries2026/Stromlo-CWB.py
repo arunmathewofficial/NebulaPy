@@ -138,7 +138,7 @@ for step, silo_instant in enumerate(batched_silos):
             )
 
         # Column (ion name)
-        axU.text(0.03, 0.90, f"n({ion})", transform=axU.transAxes, fontsize=10, color='white')
+        axU.text(0.4, 0.90, f"n({ion})", transform=axU.transAxes, fontsize=9, color='white')
 
         # X labels
         axU.get_xaxis().set_visible(False)
