@@ -68,7 +68,6 @@ print(mesh_edges_max)
 pion.load_chemistry()
 
 runtime = 0.0
-
 # Loop over each time instant in the batched silo files
 for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()
@@ -81,6 +80,8 @@ for step, silo_instant in enumerate(batched_silos):
     fig, axes = plt.subplots(2, 2, figsize=(4, 7), sharex=True, sharey='row')
     # axes[row, col]: row 0 = upper, row 1 = lower
     last_image = None
+    v_min = 0.0
+    v_max = 10.0
 
     for j, ion in enumerate(ion_list):  # j=0 Fe25+, j=1 Fe26+
         n_ion = pion.get_ion_number_density(ion, silo_instant)
@@ -114,7 +115,7 @@ for step, silo_instant in enumerate(batched_silos):
                 cmap='viridis',
                 extent=extU,
                 origin='lower',
-                vmin=0, vmax=4.0
+                vmin=v_min, vmax=v_max
             )
 
             # --- Lower hemisphere (mirror of upper) ---
@@ -128,7 +129,7 @@ for step, silo_instant in enumerate(batched_silos):
                 cmap='viridis',
                 extent=extL,
                 origin='lower',
-                vmin=0, vmax=10.0
+                vmin=v_min, vmax=v_max
             )
 
         # Panel labels
