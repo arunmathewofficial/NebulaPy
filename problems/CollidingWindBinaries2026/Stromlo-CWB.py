@@ -154,7 +154,7 @@ for step, silo_instant in enumerate(batched_silos):
 
 
     # Shared colorbar
-    cbar_ax = fig.add_axes([0.125, 0.93, 0.775, 0.02])
+    cbar_ax = fig.add_axes([0.125, 0.95, 0.775, 0.02])
     fig.colorbar(last_image, cax=cbar_ax, orientation='horizontal')
 
     plt.subplots_adjust(hspace=0.0, wspace=0.0, top=0.90)
