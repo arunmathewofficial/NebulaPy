@@ -139,7 +139,7 @@ for step, silo_instant in enumerate(batched_silos):
     cbar_ax = fig.add_axes([0.125, 0.93, 0.775, 0.02])
     fig.colorbar(last_image, cax=cbar_ax, orientation='horizontal')
 
-    plt.subplots_adjust(hspace=0.02, wspace=0.02, top=0.90)
+    plt.subplots_adjust(hspace=0.0, wspace=0.00, top=0.90)
 
     Filename = f"{Filebase}_FeNumDen_{sim_time.value:.2f}kyr.png"
     plt.savefig(os.path.join(OutputDir, Filename), bbox_inches="tight", dpi=300)
