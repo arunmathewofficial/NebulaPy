@@ -22,9 +22,9 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by ze
 OutputDir = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/CWBs-2026'  # Output image directory
 SiloDir = '/mnt/massive-stars/data/wr140-nemo/wr140_NEMO_d07e13_d2l6n128'  # Directory containing silo files
 Filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
-start_time = None
+start_time = 3.054997e-05
 finish_time = None
-time_unit = None
+time_unit = 'sec'
 out_frequency = None
 ion_list = ['Fe25+', 'Fe26+']
 
