@@ -110,7 +110,7 @@ for step, silo_instant in enumerate(batched_silos):
                        mesh_edges_min[level][1].value, mesh_edges_max[level][1].value]
             image = ax.imshow(plot_data, interpolation='nearest', cmap='viridis',
                               extent=extents, origin='lower',
-                              #vmin=0, vmax=1
+                              vmin=0, vmax=4000
                               )
 
         ax.text(0.1, 0.8, ion_list[i], transform=ax.transAxes, fontsize=14,
