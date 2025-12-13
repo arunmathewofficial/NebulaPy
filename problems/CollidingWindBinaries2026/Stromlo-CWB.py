@@ -78,7 +78,7 @@ for step, silo_instant in enumerate(batched_silos):
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
     # 2 rows (upper/lower) x 2 cols (Fe25+/Fe26+)
-    fig, axes = plt.subplots(2, 2, figsize=(5, 7), sharex=True, sharey='row')
+    fig, axes = plt.subplots(2, 2, figsize=(4, 7), sharex=True, sharey='row')
     # axes[row, col]: row 0 = upper, row 1 = lower
     last_image = None
 
@@ -90,7 +90,7 @@ for step, silo_instant in enumerate(batched_silos):
 
         # Common x-limits
         for ax in (axU, axL):
-            ax.set_xlim(-7.0e13, 4.0e13)
+            ax.set_xlim(-7.0e13, 2.0e13)
             ax.tick_params(axis='both', which='major', labelsize=12)
 
         # Upper/lower y-limits
