@@ -128,7 +128,7 @@ for step, silo_instant in enumerate(batched_silos):
                 cmap='viridis',
                 extent=extL,
                 origin='lower',
-                vmin=0, vmax=5.0
+                vmin=0, vmax=10.0
             )
 
         # Panel labels
