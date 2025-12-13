@@ -79,7 +79,7 @@ for step, silo_instant in enumerate(batched_silos):
     # rows = hemispheres (upper, lower), cols = ions
     fig, axes = plt.subplots(
         2, len(ion_list),
-        figsize=(5,6),
+        figsize=(5, 6),
         sharex=True,
         sharey=False
     )
@@ -139,9 +139,18 @@ for step, silo_instant in enumerate(batched_silos):
         # Column title (ion name)
         axU.set_title(f"n({ion})", fontsize=12)
 
-    # Row labels
-    axes[0, 0].set_ylabel("Upper hemisphere", fontsize=12)
-    axes[1, 0].set_ylabel("Lower hemisphere", fontsize=12)
+        # X labels
+        axU.get_xaxis().set_visible(False)
+        axL.set_xlabel(f'z ()', fontsize=12)
+
+        # Y labels
+        if j == 0:
+            axU.set_ylabel(f'R (Upper hemisphere)', fontsize=12)
+            axL.set_ylabel(f'R (Lower hemisphere)', fontsize=12)
+        else:
+            axU.get_yaxis().set_visible(False)
+            axL.get_yaxis().set_visible(False)
+
 
     # Shared colorbar
     cbar_ax = fig.add_axes([0.125, 0.93, 0.775, 0.02])
