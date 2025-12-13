@@ -127,7 +127,7 @@ for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()
 
     print(f" ---------------------------")
-    sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
+    sim_time = pion.get_simulation_time(silo_instant, time_unit='sec')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
     with open(outfile, "a") as file:
