@@ -79,7 +79,7 @@ for step, silo_instant in enumerate(batched_silos):
     # rows = hemispheres (upper, lower), cols = ions
     fig, axes = plt.subplots(
         2, len(ion_list),
-        figsize=(4, 5),
+        figsize=(4, 4.5),
         sharex=True,
         sharey=False
     )
