@@ -89,7 +89,7 @@ for step, silo_instant in enumerate(batched_silos):
     v_min, v_max = 0.0, 4.0
 
     xlim = (-4.7, 1.34)
-    ylim = 10
+    ylim = 8.0
 
     for j, ion in enumerate(ion_list):
         n_ion = pion.get_ion_number_density(ion, silo_instant)
