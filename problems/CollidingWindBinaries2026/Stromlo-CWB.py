@@ -88,7 +88,7 @@ for step, silo_instant in enumerate(batched_silos):
     last_image = None
     v_min, v_max = 0.0, 4.0
 
-    xlim = (-4.67, 1.34)
+    xlim = (-4.7, 1.34)
     ylim = 10
 
     for j, ion in enumerate(ion_list):
@@ -137,17 +137,17 @@ for step, silo_instant in enumerate(batched_silos):
                 vmin=v_min, vmax=v_max
             )
 
-        # Column title (ion name)
-        axU.set_title(f"n({ion})", fontsize=12)
+        # Column (ion name)
+        axU.text(0.03, 0.90, f"n({ion})", transform=axU.transAxes, fontsize=12)
 
         # X labels
         axU.get_xaxis().set_visible(False)
-        axL.set_xlabel(f'z ()', fontsize=12)
+        axL.set_xlabel(f'z (au)', fontsize=12)
 
         # Y labels
         if j == 0:
-            axU.set_ylabel(f'R (Upper hemisphere)', fontsize=12)
-            axL.set_ylabel(f'R (Lower hemisphere)', fontsize=12)
+            axU.set_ylabel(f'R (au)', fontsize=12)
+            axL.set_ylabel(f'R (au)', fontsize=12)
         else:
             axU.get_yaxis().set_visible(False)
             axL.get_yaxis().set_visible(False)
