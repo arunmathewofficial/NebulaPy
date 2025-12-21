@@ -391,7 +391,7 @@ class pion():
                 # If verbose is enabled, print the chemistry code
                 if self.verbose:
                     print(f" ---------------------------")
-                    print(f" loading chemistry module: NEMO")
+                    print(f" loading microphysics module: NEMO")
 
                 # Loop through each process
                 for index, process in enumerate(processes):
@@ -414,9 +414,7 @@ class pion():
                 element_list = list(const.nebula_elements.keys())
                 # save the number of tracers in the chemistry_container dictionary
                 self.chemistry_container['Ntracers'] = Ntracers
-                # If verbose is enabled, print the number of chemical tracers
-                if self.verbose:
-                    print(f" N chemical tracers: {Ntracers}")
+
 
                 # Loop through each tracer index
                 for i in range(Ntracers):
@@ -432,9 +430,7 @@ class pion():
                         tracer_elements.append(element)
                         # get the full element name from the nebula_elements dictionary
                         mass_fractions[element] = f'Tr{i:03}_' + chem_tracer
-                        # if verbose is enabled, print the found element name
-                        if self.verbose:
-                            print(f" found {const.nebula_elements[element]}")
+
                         # get the index of the element in the element_list
                         element_index = element_list.index(element)
                         # append the tracer with the corresponding element to the mpv10tracers list
@@ -450,6 +446,13 @@ class pion():
                         element_index = element_list.index(element)
                         # gppend the tracer with the corresponding ion to the mpv10tracers list
                         elementWiseTracers[element_index].append(f'Tr{i:03}_' + chem_tracer.replace('+', 'p'))
+
+                # If verbose is enabled, print the number of chemical tracers
+                if self.verbose:
+                    print(f" Enabled elements           : {len(tracer_elements)}")
+                    print(f" Chemical tracers (total)   : {Ntracers}")
+                    print(" Elements included:")
+                    print("  " + "   ".join(tracer_elements))
 
                 # save mass fraction to chemistry_container dictionary
                 #self.chemistry_container['mass_fractions'] = mass_fractions

@@ -148,6 +148,7 @@ for step, silo_instant in enumerate(batched_silos):
             level_cooling_rate_map = cooling.generate_cooling_rate_map(
                 temperature=temperature[level], ne=ne[level])
             ion_cooling_rate[level] = level_cooling_rate_map
+        del cooling
 
         for level in range(N_grid_level):
             total_cooling_function[level] += n_ion[level] * ion_cooling_rate[level]
@@ -161,23 +162,22 @@ for step, silo_instant in enumerate(batched_silos):
         total_cooling_timescale[level] = 3.0 * const.kB * ntot[level] * temperature[level] / (2.0 * ne[level] * total_cooling_function[level])
 
     # Convert the list of arrays into a single array to find global min/max
-    all_timescales = np.concatenate(total_cooling_timescale)
-    min_timescale = np.min(all_timescales)
-    max_timescale = np.max(all_timescales)
-    print(f" minimum cooling timescale from the snapshot: {min_timescale * SEC_TO_YEAR:.5e} yr")
-    print(f" maximum cooling timescale from the snapshot: {max_timescale * SEC_TO_YEAR:.5e} yr")
+    # Convert list → array if needed
+    tc = np.array(total_cooling_timescale)
 
-    print(" calculating cooling length-scale map")
-    # generate flow velocity (this is an approximate method)
-    flow_velocity = generate_velocity_field(pion, silo_instant, wind_speed, stellar_speed)
-    for level in range(N_grid_level):
-        total_cooling_lengthscale[level] = flow_velocity[level] * total_cooling_timescale[level]
+    # Flat indices
+    flat_min = np.argmin(tc)
+    flat_max = np.argmax(tc)
 
-    all_lengthscales = np.concatenate(total_cooling_lengthscale)
-    min_lengthscale = np.min(all_lengthscales)
-    max_lengthscale = np.max(all_lengthscales)
-    print(f" minimum cooling lengthscale from the snapshot: {min_lengthscale * CM_TO_PC:.5e} pc")
-    print(f" maximum cooling lengthscale from the snapshot: {max_lengthscale * CM_TO_PC:.5e} pc")
+    # 3D indices (i, j, k)
+    min_idx = np.unravel_index(flat_min, tc.shape)
+    max_idx = np.unravel_index(flat_max, tc.shape)
+
+    min_val = tc[min_idx]
+    max_val = tc[max_idx]
+
+    print(f" Minimum cooling timescale: {min_val * SEC_TO_YEAR:.5e} yr at index {min_idx}")
+    print(f" Maximum cooling timescale: {max_val * SEC_TO_YEAR:.5e} yr at index {max_idx}")
 
     # generating cooling time scale map image
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -213,6 +213,8 @@ for step, silo_instant in enumerate(batched_silos):
     ax.text(0.65, 0.9, f"$\\tau_{{\\mathrm{{cool}}}}(\\mathrm{{yr}})$",
             transform=ax.transAxes, fontsize=12, color='white')
     ax.tick_params(axis='both', which='major', labelsize=13)
+
+
     # ax.axes.get_xaxis().set_visible(False)  # Remove the x-axis
 
     # fig.subplots_adjust(wspace=0, hspace=0)  # Remove the whitespace between the images
@@ -221,6 +223,20 @@ for step, silo_instant in enumerate(batched_silos):
     plt.savefig(filepath, bbox_inches="tight", dpi=300)
     plt.close(fig)
     print(f" saving total cooling time-scale map to: {timescale_filename}")
+
+    '''
+    print(" calculating cooling length-scale map")
+    # generate flow velocity (this is an approximate method)
+    flow_velocity = generate_velocity_field(pion, silo_instant, wind_speed, stellar_speed)
+    for level in range(N_grid_level):
+        total_cooling_lengthscale[level] = flow_velocity[level] * total_cooling_timescale[level]
+
+    all_lengthscales = np.concatenate(total_cooling_lengthscale)
+    min_lengthscale = np.min(all_lengthscales)
+    max_lengthscale = np.max(all_lengthscales)
+    print(f" minimum cooling lengthscale from the snapshot: {min_lengthscale * CM_TO_PC:.5e} pc")
+    print(f" maximum cooling lengthscale from the snapshot: {max_lengthscale * CM_TO_PC:.5e} pc")
+
 
     # generating cooling length scale map image
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -264,6 +280,7 @@ for step, silo_instant in enumerate(batched_silos):
     plt.savefig(filepath, bbox_inches="tight", dpi=300)
     plt.close(fig)
     print(f" saving total cooling length-scale map to: {lengthscale_filename}")
+    '''
 
     silo_instant_finish_time = time.time()  # Record the finish time
     # Calculate the time spent on the current step
