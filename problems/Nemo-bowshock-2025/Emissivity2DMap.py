@@ -94,9 +94,9 @@ runtime = 0.0
 for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()
 
+    print(f" ---------------------------")
     # --- Get Simulation Time ---
     sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
-    print(f" ---------------------------")
     print(f" Step: {step}/{N_time_instant - 1} | Simulation Time: {sim_time:.6e} kyr")
 
     # --- Retrieve Physical Parameters ---
@@ -114,6 +114,7 @@ for step, silo_instant in enumerate(batched_silos):
     print(f" Saving emissivity map data into {h5_filename}")
 
     with h5py.File(h5_file, "w") as file:
+        # Add heading and title
         file.attrs['head'] = heading
         file.attrs['title'] = data_title
 
