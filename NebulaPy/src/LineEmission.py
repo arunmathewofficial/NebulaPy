@@ -235,7 +235,7 @@ class line_emission():
         dummy_ne_array = [1.0]
         species = chianti(pion_ion=self.ion, temperature=dummy_temperature_array, ne=dummy_ne_array, verbose=False)
         spectroscopic_name = species.chianti_ion.Spectroscopic
-        completion_msg = f'finished computing the luminosity for all {spectroscopic_name} lines'
+        completion_msg = f'chianti: finished computing the luminosity for all {spectroscopic_name} lines'
 
 
         # Check if the species has emission lines
@@ -243,7 +243,8 @@ class line_emission():
             util.nebula_warning(f"{spectroscopic_name} has no line emission associated")
             return {'spectroscopic': spectroscopic_name}
         else:
-            all_lines = species.get_line_emissivity(allLines=False)['wvl']
+            all_lines = species.get_allLines()
+            all_lines = all_lines[all_lines != 0]
         del species
 
         # Initialize an array to store total line luminosities
@@ -268,7 +269,7 @@ class line_emission():
                 cell_volume_row = cell_volume[level][row]
                 grid_mask_row = grid_mask[level][row]
 
-                prefix_msg = f'computing the luminosity of {spectroscopic_name} lines at grid-level {level}'
+                prefix_msg = f'chianti: computing the luminosity of {spectroscopic_name} lines at grid-level {level}'
                 suffix_msg = 'complete'
                 completion_msg_condition = (level == NGlevel - 1 and row == rows - 1)
 
@@ -276,6 +277,10 @@ class line_emission():
                 species = chianti(pion_ion=self.ion, temperature=temperature_row, ne=ne_row, verbose=False)
                 all_lines_emissivity_info_row = species.get_line_emissivity(allLines=False)
                 del species
+
+                if not np.array_equal(all_lines, np.abs(all_lines_emissivity_info_row['wvl'])):
+                    util.nebula_exit_with_error("internal consistency check failed: line arrays from "
+                                                "get_allLines() and get_line_emissivity() differ")
 
                 all_lines_emissivity_row = all_lines_emissivity_info_row['emiss']
 
@@ -298,7 +303,7 @@ class line_emission():
         #print(f" completed the luminosity computation for all {spectroscopic_name} lines", end='\n')
 
         # Retrieve the N most luminous lines
-        print(f" retrieving the top {Nlines} most luminous {spectroscopic_name} lines", end='\n')
+        print(f" chianti: retrieving the top {Nlines} most luminous {spectroscopic_name} lines", end='\n')
 
         indices = np.argsort(species_all_line_luminosity)[-Nlines:]  # Get indices of the brightest lines
         brightest_lines_luminosity = species_all_line_luminosity[indices]
@@ -555,12 +560,3 @@ class line_emission():
 
         # Return a dictionary mapping line identifiers to their computed luminosities
         return dict(zip(line_keys, lines_luminosity))
-
-
-    ######################################################################################
-    # check the line list exist in all lines of the species
-    ######################################################################################
-    def pyneb_line_batch_check(self, lines):
-
-        util.nebula_warning('this feature is not implemented for PyNeb')
-

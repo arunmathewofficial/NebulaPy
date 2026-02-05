@@ -29,8 +29,8 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by ze
 #out_frequency = None
 
 #Razer Blade (Set up paths and filenames)
-output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/coolmap'  # Output image directory
-silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silos-200kyr'  # Directory containing silo files
+output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/cooling_rate'  # Output image directory
+silo_dir = '/home/tony/Desktop/multi-ion-bowshock/high-res-silo-200kyr'  # Directory containing silo files
 filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'  # Base name of the silo files
 start_time = None
 finish_time = None

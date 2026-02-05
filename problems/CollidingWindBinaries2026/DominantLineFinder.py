@@ -44,15 +44,15 @@ os.environ["OPENBLAS_NUM_THREADS"] = "1"
 OutputDir = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/CWBs-2026'  # Output image directory
 SiloDir = '/mnt/massive-stars/data/wr140-nemo/wr140_NEMO_d07e13_d2l6n128'  # Directory containing silo files
 filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
-start_time = 1.2e6  # in sec
+start_time = 1.24e6  # in sec
 finish_time = 1.25e6
 time_unit = 'sec'
 out_freq = None
 
 # Output directory and filebase configuration for Razer Blade
-#output_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/out'  # Change as needed
-#silo_dir = '/home/tony/Desktop/multi-ion-bowshock/sims/silo'
-#filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+OutputDir = '/home/tony/Desktop/CWBs-2026'  # Change as needed
+SiloDir = '/home/tony/Desktop/CWBs-2026/Silo-n128'
+filebase = 'wr140_NEMO_d07e13_d2l6n128'   # Base name of the silo files
 
 # PION simulation Name
 pion_simulation_name = 'NEMOv1.0 Colliding Wind Binary WR140'
@@ -61,7 +61,10 @@ pion_simulation_name = 'NEMOv1.0 Colliding Wind Binary WR140'
 ion_list = [
     'H', 'H1+',
     'He', 'He1+', 'He2+',
-    'C', 'C1+', 'C2+', 'C3+', 'C4+', 'C5+', 'C6+',
+    'C',
+    'C1+',
+    'C2+', 'C3+',
+    'C4+', 'C5+', 'C6+',
     'N', 'N1+', 'N2+', 'N3+', 'N4+', 'N5+', 'N6+', 'N7+',
     'O', 'O1+', 'O2+', 'O3+', 'O4+', 'O5+', 'O6+', 'O7+', 'O8+',
     'Ne1+', 'Ne2+', 'Ne3+', 'Ne4+', 'Ne5+', 'Ne6+', 'Ne7+', 'Ne8+', 'Ne9+', 'Ne10+',
