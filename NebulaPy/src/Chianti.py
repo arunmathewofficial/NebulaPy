@@ -319,21 +319,21 @@ class chianti:
 
         # If there are missing lines, provide suggestions
         if missing_lines:
-            suggestion_lines = [" suggestions for missing lines:"]
+            suggestion_lines = [" Suggestions for missing lines:"]
             for line in missing_lines:
                 try:
                     closest = min(all_lines, key=lambda x: abs(float(x) - float(line)))
                     suggestion_lines.append(
-                        f" {float(line):.3f} Å — do you mean {float(closest):.3f} Å?"
+                        f" {float(line):8.3f} Å — do you mean {float(closest):9.3f} Å?"
                     )
                 except Exception:
-                    suggestion_lines.append(f" {float(line):.3f} Å — no close match found")
+                    suggestion_lines.append(f" {float(line):8.3f} Å — no close match found")
 
             suggestion_str = "\n".join(suggestion_lines)
 
             util.nebula_exit_with_error(
-                f"following {self.chianti_ion.Spectroscopic} line(s) were not found in Chianti: {missing_lines}\n"
-                f" note: Chianti spectral line data are based on theoretical models\n"
+                f"Following {self.chianti_ion.Spectroscopic} line(s) were not found in Chianti: {missing_lines}\n"
+                f" Note: Chianti spectral line data are based on theoretical models\n"
                 f"{suggestion_str}"
             )
 

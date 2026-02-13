@@ -18,7 +18,7 @@ def nebula_exit_with_error(errorMessage):
     """
     RED = "\033[91m"
     RESET = "\033[0m"
-    print(f'{RED} error: {errorMessage}{RESET}')
+    print(f'{RED} Error: {errorMessage}{RESET}')
     print(f' NebulaPy {version.__version__} exiting ...')
     sys.exit()
 
@@ -32,7 +32,7 @@ def nebula_warning(warnMessage):
     """
     YELLOW = "\033[93m"
     RESET = "\033[0m"
-    print(f'{YELLOW} warning: {warnMessage}{RESET}')
+    print(f'{YELLOW} Warning: {warnMessage}{RESET}')
 
 ######################################################################################
 # Nebula Info
@@ -44,7 +44,7 @@ def nebula_info(infoMessage):
     """
     BLUE = "\033[94m"
     RESET = "\033[0m"
-    print(f'{BLUE} info: {infoMessage}{RESET}')
+    print(f'{BLUE} Info: {infoMessage}{RESET}')
 
 ######################################################################################
 # Nebula version
@@ -97,18 +97,18 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
     start_time_sec = start_time * factor if start_time is not None else None
     finish_time_sec = finish_time * factor if finish_time is not None else None
 
-    print(" ---------------------------")
-    print(" batching silo files into time instances:")
-    print(f" starting time: {start_time} {time_unit}")
-    print(f" finishing time: {finish_time} {time_unit}")
-    print(f" output frequency: {out_frequency}")
+    print("─" * 85)
+    print(" Batching silo files into time instances:")
+    print(f" Starting time: {start_time} {time_unit}")
+    print(f" Finishing time: {finish_time} {time_unit}")
+    print(f" Output frequency: {out_frequency}")
 
     # Construct search pattern for silo files
     search_pattern = os.path.join(dir, f"{filebase}_*.silo")
     all_silos = glob.glob(search_pattern)
 
     if not all_silos:
-        nebula_exit_with_error(f"no '{filebase}' silo files found in '{dir}'")
+        nebula_exit_with_error(f"No '{filebase}' silo files found in '{dir}'")
 
     # Assume the number of grid levels; this may need to be adjusted based on actual usage
     # Open header data
@@ -126,7 +126,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
 
     # for uniform grid *********************************************************************
     if Nlevels == 1:
-        print(f" grid: uniform")
+        print(f" Grid: uniform")
         silos = sorted(all_silos)
         batched_silos = [[silo] for silo in silos]
         selected_silos = []
@@ -152,12 +152,12 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
 
         Ninstances = len(batched_silos)
         print(f" {Ninstances} time instances between {start_time} {time_unit} and {finish_time} {time_unit}")
-        print(" batching completed")
+        print(" Batching completed")
         return batched_silos
 
     # for nested grid *********************************************************************
     else:
-        print(f" grid: nested with {Nlevels} levels")
+        print(f" Grid: nested with {Nlevels} levels")
         # Pattern to match level 00 files
         pattern = re.compile(r'_level00_0000\.\d+\.silo$')
         # Find and sort level 00 files, one per time instant
@@ -205,7 +205,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
                 level_instant_file = next((file for file in all_silos if level_pattern.search(file)), None)
 
                 if level_instant_file is None:
-                    nebula_exit_with_error(f"missing silo file for level {level} instant {instant_extension}")
+                    nebula_exit_with_error(f"Missing silo file for level {level} instant {instant_extension}")
                 else:
                     # Append the found file to the corresponding time instant group
                     batched_silos[i].append(level_instant_file)
@@ -250,15 +250,15 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
             if finish_time_sec > sim_walltime_sec:
                 sim_walltime = sim_walltime_sec * inverse_conversion_factors.get(time_unit, 1)
                 nebula_warning(
-                    f"specified finish time {float(finish_time):.3f} {time_unit} exceeds the simulation"
+                    f"Specified finish time {float(finish_time):.3f} {time_unit} exceeds the simulation"
                     f" walltime {float(sim_walltime):.3f} {time_unit}"
                 )
 
         Ninstances = len(batched_silos)
         print(f" {Ninstances} time instances between {start_time:.3f} {time_unit} and {finish_time:.3f} {time_unit}")
-        print(" silo batching completed")
+        print(" Silo batching completed")
         if not batched_silos:
-            nebula_exit_with_error('no silo files found in the specified time range, check your selection criteria')
+            nebula_exit_with_error('No silo files found in the specified time range, check your selection criteria')
         return batched_silos
 
 ######################################################################################

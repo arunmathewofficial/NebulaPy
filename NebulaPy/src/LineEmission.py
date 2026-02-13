@@ -38,11 +38,17 @@ class line_emission():
         missing_line = [line for line in lines if line not in all_lines]
         if missing_line:
             missing_line_str = ", ".join(map(str, missing_line))
-            util.nebula_exit_with_error(f"requested line(s) {spectroscopic_name} {missing_line_str} not "
+            util.nebula_exit_with_error(f"Requested line(s) {spectroscopic_name} {missing_line_str} not "
                                         f"found in the CHIANTI database")
         else:
-            print(f" requested {spectroscopic_name:>6} lines exist in the CHIANTI database")
+            print(f" Requested {spectroscopic_name:>6} lines exist in the CHIANTI database")
 
+
+    ######################################################################################
+    # check the line list exist in pyneb database
+    ######################################################################################
+    def pyneb_line_batch_check(self, lines):
+        util.nebula_warning("Line check not implemented for PyNeb")
 
     ######################################################################################
     # line luminosity in 1D spherical setting
