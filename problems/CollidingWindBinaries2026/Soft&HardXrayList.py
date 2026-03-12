@@ -8,48 +8,55 @@ output_file = os.path.join(output_dir, "Soft&HardXrayList.txt")
 os.makedirs(output_dir, exist_ok=True)
 
 # -------------------------------------------------
-# X-ray band limits
+# Energy conversion
 # -------------------------------------------------
-SOFT_MIN, SOFT_MAX = 0.3, 2.0   # keV
-HARD_MIN, HARD_MAX = 2.0, 10.0  # keV
+def angstrom_to_keV(w):
+    return 12.39841984 / w
 
-def angstrom_to_keV(wavelength_A):
-    return 12.39841984 / wavelength_A
+
+SOFT_MIN, SOFT_MAX = 0.3, 2.0
+HARD_MIN, HARD_MAX = 2.0, 10.0
+
+# -------------------------------------------------
+# Storage
+# -------------------------------------------------
+steps = {}
+current_step = None
+current_time = None
 
 # -------------------------------------------------
 # Read file
 # -------------------------------------------------
-steps = {}
-current_step = None
-current_time_s = None
+with open(input_file) as f:
+    for line in f:
 
-with open(input_file, "r") as f:
-    for raw_line in f:
-        line = raw_line.strip()
+        line = line.strip()
 
         if not line:
             continue
 
         if line.startswith("Step:"):
+
             m = re.search(r"Step:\s*(\d+)\s*\|\s*Simulation Time:\s*([0-9.eE+\-]+)", line)
+
             if m:
                 current_step = int(m.group(1))
-                current_time_s = float(m.group(2))
-                if current_step not in steps:
-                    steps[current_step] = {
-                        "simulation_time_s": current_time_s,
-                        "soft": [],
-                        "hard": []
-                    }
+                current_time = float(m.group(2))
+
+                steps[current_step] = {
+                    "time": current_time,
+                    "soft": [],
+                    "hard": [],
+                    "other": []
+                }
+
             continue
 
         if line.startswith("#"):
             continue
 
-        if "No free-bound emission associated with" in line:
-            continue
-
         parts = line.split()
+
         if len(parts) < 4:
             continue
 
@@ -57,113 +64,88 @@ with open(input_file, "r") as f:
             element = parts[0]
             ion = parts[1]
             wavelength_str = parts[2]
-            wavelength_A = float(wavelength_str)
             luminosity = float(parts[3])
 
-            energy_keV = angstrom_to_keV(wavelength_A)
-            line_label = f"{element} {ion} {wavelength_str}"
+            wavelength = float(wavelength_str)
 
-            row = {
-                "line": line_label,
-                "luminosity": luminosity,
-                "energy_keV": energy_keV
-            }
+            energy = angstrom_to_keV(wavelength)
 
-            if SOFT_MIN <= energy_keV < SOFT_MAX:
+            line_name = f"{element} {ion} {wavelength_str}"
+
+            row = (line_name, luminosity, energy)
+
+            if SOFT_MIN <= energy < SOFT_MAX:
                 steps[current_step]["soft"].append(row)
-            elif HARD_MIN <= energy_keV <= HARD_MAX:
+
+            elif HARD_MIN <= energy <= HARD_MAX:
                 steps[current_step]["hard"].append(row)
 
-        except ValueError:
+            else:
+                steps[current_step]["other"].append(row)
+
+        except:
             continue
 
 # -------------------------------------------------
-# Sort by luminosity within each band
+# Sort lines by luminosity
 # -------------------------------------------------
 for step in steps:
-    steps[step]["soft"].sort(key=lambda x: x["luminosity"], reverse=True)
-    steps[step]["hard"].sort(key=lambda x: x["luminosity"], reverse=True)
+
+    for band in ["soft", "hard", "other"]:
+        steps[step][band].sort(key=lambda x: x[1], reverse=True)
 
 # -------------------------------------------------
-# Write one combined output file
+# Write ONE output file
 # -------------------------------------------------
 with open(output_file, "w") as out:
-    for step in sorted(steps.keys()):
-        soft_rows = steps[step]["soft"]
-        hard_rows = steps[step]["hard"]
+    for step in sorted(steps):
 
-        if not soft_rows and not hard_rows:
-            continue
+        time = steps[step]["time"]
 
-        sim_time = steps[step]["simulation_time_s"]
+        header = f"Step: {step} | Simulation Time: {time:.6e} (s)"
 
-        out.write(f"Step: {step} | Simulation Time: {sim_time:.6e} (s)\n\n")
+        print(header)
+        out.write(header + "\n\n")
 
-        if soft_rows:
-            out.write("Soft X-ray lines\n")
-            out.write(f"{'Line':<24} {'Luminosity':>15} {'Energy (keV)':>15}\n")
-            out.write("-" * 60 + "\n")
-            for row in soft_rows:
-                out.write(
-                    f"{row['line']:<24} "
-                    f"{row['luminosity']:>15.6e} "
-                    f"{row['energy_keV']:>15.6f}\n"
-                )
+
+        def print_block(title, data):
+
+            if not data:
+                return
+
+            print(title)
+            out.write(title + "\n")
+
+            col = f"{'Line':<24}{'Luminosity':>15}{'Energy (keV)':>15}"
+
+            print(col)
+            out.write(col + "\n")
+
+            line = "-" * 55
+
+            print(line)
+            out.write(line + "\n")
+
+            for line_name, lum, energy in data:
+                row = f"{line_name:<24}{lum:>15.6e}{energy:>15.4f}"
+
+                print(row)
+                out.write(row + "\n")
+
+            print()
             out.write("\n")
 
-        if hard_rows:
-            out.write("Hard X-ray lines\n")
-            out.write(f"{'Line':<24} {'Luminosity':>15} {'Energy (keV)':>15}\n")
-            out.write("-" * 60 + "\n")
-            for row in hard_rows:
-                out.write(
-                    f"{row['line']:<24} "
-                    f"{row['luminosity']:>15.6e} "
-                    f"{row['energy_keV']:>15.6f}\n"
-                )
-            out.write("\n")
 
-        out.write("=" * 72 + "\n\n")
+        print_block("Soft X-ray lines", steps[step]["soft"])
+        print_block("Hard X-ray lines", steps[step]["hard"])
+        print_block("Other bright lines", steps[step]["other"])
 
-# -------------------------------------------------
-# Display on screen
-# -------------------------------------------------
-for step in sorted(steps.keys()):
-    soft_rows = steps[step]["soft"]
-    hard_rows = steps[step]["hard"]
+        sep = "=" * 70
 
-    if not soft_rows and not hard_rows:
-        continue
-
-    sim_time = steps[step]["simulation_time_s"]
-
-    print(f"Step: {step} | Simulation Time: {sim_time:.6e} (s)")
-    print()
-
-    if soft_rows:
-        print("Soft X-ray lines")
-        print(f"{'Line':<24} {'Luminosity':>15} {'Energy (keV)':>15}")
-        print("-" * 60)
-        for row in soft_rows:
-            print(
-                f"{row['line']:<24} "
-                f"{row['luminosity']:>15.6e} "
-                f"{row['energy_keV']:>15.6f}"
-            )
+        print(sep)
         print()
 
-    if hard_rows:
-        print("Hard X-ray lines")
-        print(f"{'Line':<24} {'Luminosity':>15} {'Energy (keV)':>15}")
-        print("-" * 60)
-        for row in hard_rows:
-            print(
-                f"{row['line']:<24} "
-                f"{row['luminosity']:>15.6e} "
-                f"{row['energy_keV']:>15.6f}"
-            )
-        print()
+        out.write(sep + "\n\n")
 
-    print("=" * 72)
-
-print(f"\nOutput written to:\n{output_file}")
+print("Output file:")
+print(output_file)
