@@ -20,7 +20,7 @@ warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by ze
 cm2au = 6.68459e-14  # cm to au conversion factor
 
 # Mimir -> Set up paths and filenames
-OutputDir = '/net/maedoc.ap.dias.ie/maedoc/home_cr/arun/Desktop/plots/CWBs-2026'  # Output image directory
+OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Silo-n128'  # Output image directory
 SiloDir = '/mnt/massive-stars/data/wr140-nemo/wr140_NEMO_d07e13_d2l6n128'  # Directory containing silo files
 Filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
 start_time = 1.0e6  # in sec
