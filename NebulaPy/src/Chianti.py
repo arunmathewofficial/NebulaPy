@@ -368,116 +368,24 @@ class chianti:
         # Return the dictionary containing emissivity values for the requested lines.
         return line_emissivity
 
-    ######################################################################################
-    # get line spectrum
-    ######################################################################################
-    def get_line_spectrum(self, wavelength, species_density, shell_volume, allLines=True,
-                          filtername=None, filterfactor=None):
-        """
-        Calculates the intensities for spectral lines of a specified ion, considering elemental
-        abundance, ionization fraction, and emission measure.
 
-        The method convolves the intensity results to simulate an observed spectrum. By default,
-        it uses a Gaussian filter with a resolving power of 1000 to match the units of the continuum
-        and line spectrum.
 
-        Note:
-        Emissivity has the unit \( \text{ergs} \, \text{s}^{-1} \, \text{str}^{-1} \).
-        Intensity is given by:
-        \[
-        \text{Intensity} = \text{Ab} \times \text{ion\_frac} \times \text{emissivity} \times \frac{\text{em}}{\text{ne}}
-        \]
-        where the emission measure is given by:
-        \[
-        \text{em} = \int N_e \, N_H \, d\ell
-        \]
-        Intensity has the units \( \text{ergs} \, \text{cm}^{-2} \, \text{s}^{-1} \, \text{str}^{-1} \).
 
-        Parameters
-        ----------
-        wavelength : array-like
-            Array of wavelength values.
-        Ab : float
-            Elemental abundance.
-        ion_frac : float
-            Ionization fraction.
-        em : array-like
-            Emission measure values.
-        allLines : bool, optional
-            Whether to include all spectral lines (default is True).
-        select_filter : str, optional
-            Filter type to use for convolution, default is 'default'.
-        factor : float, optional
-            Factor for filter resolution, default is 1000.
 
-        Returns
-        -------
-        line_spectrum : ndarray
-            Array of convolved line intensities across the wavelength range.
-        """
-        if self.verbose:
-            print(f" retrieving emissivity values for all spectral lines of {self.chianti_ion.Spectroscopic}")
 
-        # Get emissivity of the specified ion (units: ergs s^-1 str^-1)
-        self.chianti_ion.emiss(allLines)
-        emissivity = self.chianti_ion.Emiss['emiss']
 
-        # Number of temperature points and spectral lines
-        N_temp = len(self.temperature)
-        emission_measure = np.ones(N_temp)
-        lines = self.chianti_ion.Emiss['wvl']
-        N_lines = len(lines)
-
-        # Initialize the intensity array
-        intensity = np.zeros((N_temp, N_lines), dtype=np.float64)
-
-        # Calculate intensity for each temperature
-        if self.verbose:
-            print(f" calculating line intensity for {self.chianti_ion.Spectroscopic}")
-        for temp_idx in range(N_temp):
-            intensity[temp_idx] = emissivity[:, temp_idx] * emission_measure[temp_idx] / self.ne[temp_idx]
-        if self.verbose:
-            print(f" {self.chianti_ion.Spectroscopic} line calculation completed")
-        # Define the wavelength range and number of wavelength points
-        wvl_range = [wavelength[0], wavelength[-1]]
-        N_wvl = len(wavelength)
-
-        # Select filter and factor
-        filter = (chfilters.gaussianR, 1000.)
-        useFilter = filter[0]
-        useFactor = filter[1]
-
-        # Initialize the line spectrum array
-        line_spectrum = np.zeros((N_temp, N_wvl), dtype=np.float64)
-
-        # Get indices of lines within the wavelength range
-        selected_idx = chianti_util.between(lines, wvl_range)
-
-        if len(selected_idx) == 0:
-            if self.verbose:
-                print(f' no lines found for {self.chianti_ion.Spectroscopic} in the wavelength '
-                      f'range {wvl_range[0]:.2e} - {wvl_range[1]:.2e} Angstrom')
-                print(' skipping ...')
-        else:
-            # Convolve the intensities with the filter for each temperature
-            for temp_idx in range(N_temp):
-                for wvl_idx in selected_idx:
-                    line = lines[wvl_idx]
-                    line_spectrum[temp_idx] += useFilter(wavelength, line, factor=useFactor) \
-                                               * intensity[temp_idx, wvl_idx]
-
-        # differential volume emission measure
-        DVEM = self.ne * species_density * shell_volume
-        # multiplying
-        line_spectrum = line_spectrum * DVEM[:, np.newaxis]
-
-        return line_spectrum
 
 
     ######################################################################################
-    # get free-free emission
+    # all below code need to be verified
     ######################################################################################
-    def get_bremsstrahlung_emission(self, wavelength, species_density, shell_volume):
+
+    # todo- comment by Arun: working on bremsstrahlung emission
+
+    ######################################################################################
+    # get bremsstrahlung emission
+    ######################################################################################
+    def get_bremsstrahlung_emission(self, wavelength, species_density):
         """
         Calculates the free-free emission (bremsstrahlung) for a single ion using the following formula:
         .. math::
@@ -519,9 +427,14 @@ class chianti:
             self.chianti_ion_name,
             temperature=self.temperature,
             abundance=None,
-            em=None,
-            verbose=self.verbose)
+            em=[1.e+27],
+            verbose=True)
 
+
+
+
+
+        '''
         # If verbose, print the ion's spectroscopic label
         if self.verbose:
             print(f' calculating bremsstrahlung emission for {self.chianti_ion.Spectroscopic}')
@@ -565,14 +478,141 @@ class chianti:
             print(f' {self.chianti_ion.Spectroscopic} bremsstrahlung emission calculation completed')
 
         # differential volume emission measure
-        DVEM = self.ne * species_density * shell_volume
+        #DVEM = self.ne * species_density * shell_volume
+
         # multiplying
-        bremsstrahlung_emission = bremsstrahlung_emission * DVEM[:, np.newaxis]
+        #bremsstrahlung = bremsstrahlung_emission * DVEM[:, np.newaxis]
+        '''
+        continuum_spectrum.freeFree(wavelength, includeAbund=False, includeIoneq=False)
+        bremsstrahlung_emission = continuum_spectrum.FreeFree['intensity']
 
         return bremsstrahlung_emission
 
+
+
     ######################################################################################
-    # get free-bound emission
+    # get line spectrum # todo- comment by Arun: not verified
+    ######################################################################################
+    def get_line_emission(self, wavelength,
+                          #species_density,
+                          # shell_volume,
+                          allLines=True,
+                          filtername=None, filterfactor=None):
+        """
+        Calculates the intensities for spectral lines of a specified ion, considering elemental
+        abundance, ionization fraction, and emission measure.
+
+        The method convolves the intensity results to simulate an observed spectrum. By default,
+        it uses a Gaussian filter with a resolving power of 1000 to match the units of the continuum
+        and line spectrum.
+
+        Note:
+        Emissivity has the unit \( \text{ergs} \, \text{s}^{-1} \, \text{str}^{-1} \).
+        Intensity is given by:
+        \[
+        \text{Intensity} = \text{Ab} \times \text{ion\_frac} \times \text{emissivity} \times \frac{\text{em}}{\text{ne}}
+        \]
+        where the emission measure is given by:
+        \[
+        \text{em} = \int N_e \, N_H \, d\ell
+        \]
+        Intensity has the units \( \text{ergs} \, \text{cm}^{-2} \, \text{s}^{-1} \, \text{str}^{-1} \).
+
+        Parameters
+        ----------
+        wavelength : array-like
+            Array of wavelength values.
+        Ab : float
+            Elemental abundance.
+        ion_frac : float
+            Ionization fraction.
+        em : array-like
+            Emission measure values.
+        allLines : bool, optional
+            Whether to include all spectral lines (default is True).
+        select_filter : str, optional
+            Filter type to use for convolution, default is 'default'.
+        factor : float, optional
+            Factor for filter resolution, default is 1000.
+
+        Returns
+        -------
+        line_spectrum : ndarray
+            Array of convolved line intensities across the wavelength range.
+        """
+
+        '''
+        if self.verbose:
+            print(f" retrieving emissivity values for all spectral lines of {self.chianti_ion.Spectroscopic}")
+
+        # Get emissivity of the specified ion (units: ergs s^-1 str^-1)
+        self.chianti_ion.emiss(allLines)
+        emissivity = self.chianti_ion.Emiss['emiss']
+
+        # Number of temperature points and spectral lines
+        N_temp = len(self.temperature)
+        emission_measure = np.ones(N_temp)
+        lines = self.chianti_ion.Emiss['wvl']
+        N_lines = len(lines)
+
+        # Initialize the intensity array
+        intensity = np.zeros((N_temp, N_lines), dtype=np.float64)
+
+
+
+        # Calculate intensity for each temperature
+        if self.verbose:
+            print(f" calculating line intensity for {self.chianti_ion.Spectroscopic}")
+        for temp_idx in range(N_temp):
+            #intensity[temp_idx] = emissivity[:, temp_idx] * emission_measure[temp_idx] / self.ne[temp_idx]
+            intensity[temp_idx] = emissivity[:, temp_idx]
+        if self.verbose:
+            print(f" {self.chianti_ion.Spectroscopic} line calculation completed")
+        # Define the wavelength range and number of wavelength points
+        wvl_range = [wavelength[0], wavelength[-1]]
+        N_wvl = len(wavelength)
+
+        # Select filter and factor
+        filter = (chfilters.gaussianR, 1000.)
+        useFilter = filter[0]
+        useFactor = filter[1]
+
+        # Initialize the line spectrum array
+        line_spectrum = np.zeros((N_temp, N_wvl), dtype=np.float64)
+
+        # Get indices of lines within the wavelength range
+        selected_idx = chianti_util.between(lines, wvl_range)
+
+        if len(selected_idx) == 0:
+            if self.verbose:
+                print(f' no lines found for {self.chianti_ion.Spectroscopic} in the wavelength '
+                      f'range {wvl_range[0]:.2e} - {wvl_range[1]:.2e} Angstrom')
+                print(' skipping ...')
+        else:
+            # Convolve the intensities with the filter for each temperature
+            for temp_idx in range(N_temp):
+                for wvl_idx in selected_idx:
+                    line = lines[wvl_idx]
+                    line_spectrum[temp_idx] += useFilter(wavelength, line, factor=useFactor) \
+                                               * intensity[temp_idx, wvl_idx]
+
+        # differential volume emission measure
+        #DVEM = self.ne * species_density * shell_volume
+        # multiplying
+        #line_spectrum = line_spectrum * DVEM[:, np.newaxis]
+        '''
+        fe25 = ch.ion('fe_25', temperature=[2.e+6], eDensity=1.e+9, em=1.e+27)
+
+        fe25.intensityPlot(wvlRange=[210, 220.0])
+
+
+        #return line_spectrum
+
+
+
+
+    ######################################################################################
+    # get free-bound emission # todo- comment by Arun: not verified
     ######################################################################################
     def get_freebound_emission(self, wavelength, species_density, shell_volume, verner=True):
         """

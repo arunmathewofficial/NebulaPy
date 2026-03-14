@@ -1,3 +1,5 @@
+import numpy as np
+
 import NebulaPy.src as nebula
 #from NebulaPy.tools import util
 #import time
@@ -11,18 +13,15 @@ import NebulaPy.src as nebula
 
 elements = ['Fe']
 
-
-xray_emission = nebula.xray(
-    min_photon_energy=0.5,  # Minimum photon energy in keV
+spectrum = nebula.spectrum(
+    min_photon_energy=1.0,  # Minimum photon energy in keV
     max_photon_energy=10.0,  # Maximum photon energy in keV
-    energy_point_count=1000,
+    energy_point_count=4000,
     elements=elements,
-    bremsstrahlung=False,
-    freebound=True,
+    bremsstrahlung=True,
+    freebound=False,
     lines=False,
     twophoton=False,
-    multiprocessing=True,
-    ncores=12,
     verbose=True
 )
 
@@ -108,46 +107,71 @@ for step, silo_instant in enumerate(batched_silos):
     plt.legend(fontsize=14, frameon=False)
     plt.savefig(dem_file)  # Save as a PNG file
     plt.close()  # Close the plot to free memory
+'''
 
 
-    # making plot
-    generated_wvl_array = xray_emission.xray_containter['wvl_array']
-    d = 10 * 3.086e+18 # cm
-    xray_spectrum = 4.0 * const.pi * np.sum(spectrum, axis=0) / (d*d)
+'''
+temperature = [3.e+7]
+density = [1.e+9]
+ne = [100]
+ion_fraction = [1.0]
 
-    plt.figure(figsize=(8, 6))  # Set the figure size
-    # Format and replace '.' with 'p' to avoid issues in filenames
-    out_filename = filebase + f"_t{int(sim_time.value)}_fb.png"
-    out_file = os.path.join(output_path, out_filename)
 
-    # Plot the spectrum with the corresponding temperature
-    plt.plot(generated_wvl_array, xray_spectrum, linestyle='-', color='b', label=f'time = {sim_time.value:.4e} kyr')
-    plt.xlabel(r'$\lambda \, (\AA)$', fontsize=14)
-    plt.ylabel(r'$F_{\lambda} \, (egr \, cm^{-2} \, s^{-1} \, \AA^{-1}$)', fontsize=14)
-    plt.legend(fontsize=14, frameon=False)
-    plt.savefig(out_file)  # Save as a PNG file
-    plt.close()
 
-    # Create a DataFrame with wavelength (x) and spectrum (y)
-    df = pd.DataFrame({
-        'Wavelength': generated_wvl_array,
-        'Spectrum': xray_spectrum
-    })
 
-    # Specify the output path and filename
-    filename = os.path.join(output_path, f'xray_spectrum_t{sim_time.value:.4e}_fb.txt')
-    # Save the DataFrame to a text file
-    print(f"Saving X-ray spectrum into file")
-    df.to_csv(filename, sep='\t', index=False)
+spectrum = spectrum.xray_spectrum(temperature=temperature, density=density, ne=ne,
+                                        # #elemental_abundances=filtered_elem_mass_frac,
+                                        ion_fractions=ion_fraction,
+                                        #shell_volume=shell_volume,
+                                        #dem_indices=dem_indices
+                                        )
+
+
+wavelength = spectrum["wavelength"]
+emission = spectrum["spectrum"]
+
+print(emission)
+
+import matplotlib.pyplot as plt
+# Plot
+plt.figure(figsize=(8, 5))
+
+plt.plot(wavelength, emission, linewidth=2)
+
+plt.xlabel("Wavelength (Å)")
+plt.ylabel("Bremsstrahlung Emission (erg cm$^{-3}$ s$^{-1}$ Å$^{-1}$)")
+plt.title("Free-Free (Bremsstrahlung) Spectrum")
+
+plt.yscale("log")   # spectra usually span many orders
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
 
 '''
 
 
+import ChiantiPy.core as ch
+import ChiantiPy.tools.data as chdata
+
+
+
+fe25 = ch.ion('fe_25', temperature=[2.e+6], eDensity=1.e+9, em=1.e+27)
 
 
 
 
+wvl = 200 + 0.125 * np.arange(801)
 
+
+fe25.populate()
+fe25.intensity()
+fe25.spectrum(wavelength=wvl)
+
+plotimport ChiantiPy.tools.data as chdata
+
+
+fe25.intensityPlot(wvlRange=[210, 220.0])
 
 
 
