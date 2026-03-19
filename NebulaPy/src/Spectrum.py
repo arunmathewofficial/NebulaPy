@@ -1,16 +1,16 @@
 from NebulaPy.tools import constants as const
-import multiprocessing as mp
-import copy
-from datetime import datetime
-from ChiantiPy.base import specTrails
+#import multiprocessing as mp
+#import copy
+#from datetime import datetime
+#from ChiantiPy.base import specTrails
 from .Chianti import chianti
 import numpy as np
-from ChiantiPy.core import mspectrum
+#from ChiantiPy.core import mspectrum
 from NebulaPy.tools import util as util
-import ChiantiPy.tools.mputil as mputil
-import ChiantiPy.tools.util as chianti_util
+#import ChiantiPy.tools.mputil as mputil
+#import ChiantiPy.tools.util as chianti_util
 
-from .ChiantiMultiProc import *
+#from .ChiantiMultiProc import *
 
 from NebulaPy.src.LineEmission import line_emission
 
@@ -25,8 +25,11 @@ class spectrum:
     ######################################################################################
     def __init__(
             self,
-            min_photon_energy, max_photon_energy, energy_point_count,
-            elements,
+            min_wavelength=None,
+            max_wavelength=None,
+            min_photon_energy=None,
+            max_photon_energy=None,
+            N_point=1000,
             bremsstrahlung=False,
             freebound=False,
             lines=False,
@@ -35,12 +38,9 @@ class spectrum:
             filterfactor=None,
             allLines=True,
             verbose=True
-            ):
+    ):
 
-        self.min_energy = min_photon_energy
-        self.max_energy = max_photon_energy
-        self.N_wvl = energy_point_count
-        self.elements = elements
+        # flags and parameters
         self.bremsstrahlung = bremsstrahlung
         self.freebound = freebound
         self.lines = lines
@@ -50,67 +50,119 @@ class spectrum:
         self.allLines = allLines
         self.verbose = verbose
 
-        if self.verbose:
-            print(f" ---------------------------")
-            print(" initiating X-ray spectrum calculation...")
-            print(f" bremsstrahlung emission = {self.bremsstrahlung}")
-            print(f" free-bound emission = {self.freebound}")
-            print(f" line intensity = {self.lines}")
-            print(f" two photon emission = {self.twophoton}")
-            if not (self.bremsstrahlung or self.freebound or self.lines):
-                util.nebula_exit_with_error(" no emission processes specified")
+        if not (bremsstrahlung or freebound or lines or twophoton):
+            util.nebula_exit_with_error("No emission processes specified")
 
-        self.xray_containter = {
-            'min_energy': self.min_energy,
-            'max_energy': self.max_energy,
-            'energy_unit': 'keV'
-        }
-        self.setup()
+        # wavelength and photon energy inputs
+        if min_wavelength is not None and max_wavelength is not None:
+            self.min_wvl, self.max_wvl = min_wavelength, max_wavelength
 
-    ######################################################################################
-    #
-    ######################################################################################
-    def setup(self):
-        self.min_wvl = const.kev2Ang / self.max_energy
-        self.max_wvl = const.kev2Ang / self.min_energy
+        elif min_photon_energy is not None and max_photon_energy is not None:
+            self.min_wvl = const.kev2Ang / max_photon_energy
+            self.max_wvl = const.kev2Ang / min_photon_energy
 
-        self.min_wvl = const.kev2Ang / self.max_energy
-        self.max_wvl = const.kev2Ang / self.min_energy
-        self.xray_containter['min_wvl'] = self.min_wvl
-        self.xray_containter['max_wvl'] = self.max_wvl
-        self.xray_containter['wvl_unit'] = 'Angstrom'
+        else:
+            util.nebula_exit_with_error(
+                "Provide either wavelength range or photon energy range."
+            )
+
+        if self.min_wvl <= 0.0 or self.max_wvl <= 0.0:
+            util.nebula_exit_with_error("Wavelength bounds must be positive.")
+
+        if self.min_wvl >= self.max_wvl:
+            util.nebula_exit_with_error(
+                "Minimum wavelength must be smaller than maximum wavelength."
+            )
+
+        self.N_wvl = N_point
         self.wavelength = np.linspace(self.min_wvl, self.max_wvl, self.N_wvl)
-        self.xray_containter['wvl_array'] = self.wavelength
+
+        # Verbose output
+        if self.verbose:
+            print("--- Spectrum Calculation --------------------------------")
+            print(f" Bremsstrahlung : {self.bremsstrahlung} | Free-bound : {self.freebound}")
+            print(f" Lines          : {self.lines}          | Two-photon : {self.twophoton}")
+            print(f" Grid points    : {self.N_wvl}")
+            print("---------------------------------------------------------")
 
 
-        # Initialize the chianti object with the given elements, temperature, and electron density.
-        chianti_obj = chianti(
-            pion_elements=self.elements,
-            temperature=[1.e+7], #dummy temperatute
-            ne=[1.e+9], # dummy electron density
+
+    ######################################################################################
+    # Build Species Attributes
+    ######################################################################################
+    def build_species_attributes(self, elements, elemental_abundances):
+        """
+        Build species attributes and validate elemental abundances.
+
+        Parameters
+        ----------
+        elements : list
+            Elements used in the spectral calculation.
+        elemental_abundances : dict
+            Elemental abundances given as mass fractions. Must sum to unity.
+        """
+
+        # Validate abundance input
+        if not isinstance(elemental_abundances, dict):
+            util.nebula_exit_with_error(
+                "Provide elemental abundances (mass fractions)"
+            )
+
+        total_abundance = sum(elemental_abundances.values())
+
+        # Check all elements exist
+        missing = set(elements) - set(elemental_abundances.keys())
+        if missing:
+            util.nebula_exit_with_error(
+                f"Missing abundances for elements {', '.join(missing)}"
+            )
+
+        if not np.isclose(total_abundance, 1.0, rtol=1e-8):
+            util.nebula_exit_with_error(
+                f"Elemental abundances must sum to unity (sum = {total_abundance:.8f})"
+            )
+
+        # Check for negative abundances
+        for elem, val in elemental_abundances.items():
+            if val < 0.0:
+                util.nebula_exit_with_error(
+                    f"Negative abundance detected for element '{elem}'"
+                )
+
+        # Initialize CHIANTI object (dummy plasma state)
+        chianti_spec = chianti(
+            pion_elements=elements,
+            temperature=[1.0e7],  # dummy temperature
+            ne=[1.0e9],  # dummy density
             verbose=self.verbose
         )
+        # Return chianti ion attributes for the species
+        self.chianti_species_attributes = chianti_spec.species_attributes_container
+        self.elemental_abundances = elemental_abundances
 
-        # Update the xray_container with the species attributes.
-        self.xray_containter.update(chianti_obj.species_attributes_container)
-        self.species_attributes = chianti_obj.species_attributes_container
+        # do not terminate rather del
+        del chianti_spec
+
 
 
 
     ######################################################################################
-    #
+    # compute spectrum for a cell or set of cells
+    # todo: is this name appropritate for this fucntion
     ######################################################################################
-    def xray_spectrum(self,
+    def compute_emission(self,
                        temperature,
                        density,
                        ne,
-                       #elemental_abundances,
-                       ion_fractions,
+                       #ion_fractions,
                        #shell_volume,
                        #dem_indices
                        ):
         """
-        Calculate X-ray intensity for given temperature and electron density (ne).
+        # todo:
+        compute for a set of cells. the parameters should be arrays of the same length,
+         each element corresponds to a cell. the output is also an array of the same length,
+          each element is the spectrum of the corresponding cell.
 
         Parameters:
         - temperature: List or array of temperatures (in K) for the calculation.
@@ -123,34 +175,33 @@ class spectrum:
         - ncores: Number of processor cores to use in multiprocessing (default is 3).
 
         Returns:
-        - Total X-ray intensity from selected emission types as a NumPy array.
+        # todo: return what?
         """
 
-        #indices = [i for i, T in enumerate(temperature) if self.Tmin <= T < self.Tmax]
-        #temperature = temperature[indices]
-        #self.xray_containter['temperature'] = temperature
-        #density = density[indices]
-        #ne = ne[indices]
-        #shell_volume = shell_volume[indices]
-        #emission_measure = shell_volume
+        # 👉 Numba for inner loops
+        # 👉 Multiprocessing for outer cell chunks
 
-        #if len(elemental_abundances) != self.elements.size:
-        #    util.nebula_exit_with_error('elemental abundance count does not match element count')
+        # info: there is no multiprocessing calculation for this method, rather make use of Numba. Will
+        #  use multiprocessing to parallelize over cells.
 
         # Convert the temperature list to a NumPy array for efficient numerical operations.
-        temperature = np.array(temperature)
-        N_temp = len(temperature)  # Determine the number of temperature values.
+        temperature = np.array(temperature, dtype=np.float64)
+        density = np.asarray(density, dtype=np.float64)
+        ne = np.asarray(ne, dtype=np.float64)
 
-        # Initialize empty arrays for storing X-ray intensity values.
-        bremsstrahlung_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
-        freebound_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
-        line_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
-        twophoton_spectrum = np.zeros((N_temp, self.N_wvl), np.float64)
+        # Determine the number of temperature values
+        N_temp = len(temperature)
 
-        for species in self.species_attributes:
+        # Initialize empty arrays for ???.
+        bremsstrahlung_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+        freebound_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+        line_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+        twophoton_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+
+        for species in self.chianti_species_attributes:
 
             # find the element the species belong to
-            element = self.species_attributes[species]['Element']
+            element = self.chianti_species_attributes[species]['Element']
             # position of the corresponding element of the species in silo elements array
             #pos = np.where(self.elements == element)[0][0]
             # charge of the species
@@ -169,7 +220,35 @@ class spectrum:
             #else:
             #    species_num_density = density * ion_fractions[pos][q] / const.mass[element]
 
+            # todo: should supply the right ion fraction for the species
 
+            # todo: need to create object for each species and call the corresponding method to calculate
+            #  the emission for the species, then sum over all species to get the total emission.
+            #  This is because the line emission is calculated for each species separately in CHIANTI,
+            #  while the bremsstrahlung and free-bound emissions are calculated for the plasma as a whole.
+
+            species_processes = self.chianti_species_attributes[species]['keys']
+
+            CHIANTI = chianti(
+                chianti_ion=species,
+                temperature=temperature,
+                ne=ne,
+                verbose=self.verbose
+            )
+
+            # Bremsstrahlung (free-free)
+            if self.bremsstrahlung and 'ff' in species_processes:
+                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission(
+                    wavelength=self.wavelength
+                )
+
+            # Line emission
+            if self.lines and 'line' in species_processes:
+                line_emission = CHIANTI.get_line_emission()
+
+            CHIANTI.terminate()
+
+        '''
         ion_density = [1.0]
 
         chianti_ion = chianti(chianti_ion='fe_25', temperature=temperature, ne=ne,
@@ -181,4 +260,7 @@ class spectrum:
 
         #spectrum = {"spectrum": bremsstrahlung_emission, "wavelength": self.wavelength}
         #spectrum = {"spectrum": line_emission, "wavelength": self.wavelength}
+        
+        
         return spectrum
+        '''

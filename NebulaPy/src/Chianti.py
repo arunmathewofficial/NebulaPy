@@ -26,7 +26,10 @@ class chianti:
     ######################################################################################
     # class initialization
     ######################################################################################
-    def __init__(self, temperature, ne, chianti_ion=None, pion_ion=None, pion_elements=None, verbose=False):
+    def __init__(self, temperature, ne,
+                 chianti_ion=None, pion_ion=None, pion_elements=None,
+                 continuum=False,
+                 verbose=False):
 
         self.temperature = temperature
         self.ne = ne
@@ -385,7 +388,7 @@ class chianti:
     ######################################################################################
     # get bremsstrahlung emission
     ######################################################################################
-    def get_bremsstrahlung_emission(self, wavelength, species_density):
+    def get_bremsstrahlung_emission(self, wavelength):
         """
         Calculates the free-free emission (bremsstrahlung) for a single ion using the following formula:
         .. math::
@@ -419,22 +422,15 @@ class chianti:
             The calculated free-free emission for the given wavelength(s).
         """
 
+        print(f"freefree: {self.chianti_ion_name}")
+
         # Calculate the ion's nuclear charge (Z)
         Zion = self.chianti_ion.Ion - 1
 
         # Create a continuum object for calculating Gaunt factors
-        continuum_spectrum = continuum(
-            self.chianti_ion_name,
-            temperature=self.temperature,
-            abundance=None,
-            em=[1.e+27],
-            verbose=True)
+        continuum_gaunt = continuum(self.chianti_ion_name, temperature=self.temperature,
+                                    abundance=None, em=None, verbose=True)
 
-
-
-
-
-        '''
         # If verbose, print the ion's spectroscopic label
         if self.verbose:
             print(f' calculating bremsstrahlung emission for {self.chianti_ion.Spectroscopic}')
@@ -461,8 +457,8 @@ class chianti:
                             np.outer(self.temperature, wavelength)) / (wavelength ** 2)
 
         # Calculate the Gaunt factor using the continuum spectrum object
-        gf_itoh = continuum_spectrum.itoh_gaunt_factor(wavelength)
-        gf_sutherland = continuum_spectrum.sutherland_gaunt_factor(wavelength)
+        gf_itoh = continuum_gaunt.itoh_gaunt_factor(wavelength)
+        gf_sutherland = continuum_gaunt.sutherland_gaunt_factor(wavelength)
         gf = np.where(np.isnan(gf_itoh), gf_sutherland, gf_itoh)
 
         # Optionally, apply an energy factor if flux is in photons (commented out by default)
@@ -482,18 +478,25 @@ class chianti:
 
         # multiplying
         #bremsstrahlung = bremsstrahlung_emission * DVEM[:, np.newaxis]
+
+
         '''
         continuum_spectrum.freeFree(wavelength, includeAbund=False, includeIoneq=False)
         bremsstrahlung_emission = continuum_spectrum.FreeFree['intensity']
+        
+        '''
 
-        return bremsstrahlung_emission
+        print(bremsstrahlung_emission)
+
+        return None
 
 
 
     ######################################################################################
     # get line spectrum # todo- comment by Arun: not verified
     ######################################################################################
-    def get_line_emission(self, wavelength,
+    def get_line_emission(self,
+                          #wavelength,
                           #species_density,
                           # shell_volume,
                           allLines=True,
@@ -601,12 +604,17 @@ class chianti:
         # multiplying
         #line_spectrum = line_spectrum * DVEM[:, np.newaxis]
         '''
+
+
+        ''''
         fe25 = ch.ion('fe_25', temperature=[2.e+6], eDensity=1.e+9, em=1.e+27)
-
         fe25.intensityPlot(wvlRange=[210, 220.0])
+        '''
+
+        print(f"line: {self.chianti_ion_name}")
 
 
-        #return line_spectrum
+        return None
 
 
 

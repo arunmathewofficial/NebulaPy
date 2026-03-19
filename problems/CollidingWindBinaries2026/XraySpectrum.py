@@ -1,4 +1,4 @@
-import numpy as np
+#import numpy as np
 
 import NebulaPy.src as nebula
 #from NebulaPy.tools import util
@@ -11,19 +11,9 @@ import NebulaPy.src as nebula
 #from NebulaPy.tools import constants as const
 #import pandas as pd
 
-elements = ['Fe']
+#elements = ['Fe']
 
-spectrum = nebula.spectrum(
-    min_photon_energy=1.0,  # Minimum photon energy in keV
-    max_photon_energy=10.0,  # Maximum photon energy in keV
-    energy_point_count=4000,
-    elements=elements,
-    bremsstrahlung=True,
-    freebound=False,
-    lines=False,
-    twophoton=False,
-    verbose=True
-)
+
 
 
 '''
@@ -153,25 +143,71 @@ plt.show()
 
 import ChiantiPy.core as ch
 import ChiantiPy.tools.data as chdata
+import numpy as np
+import matplotlib.pyplot as plt
+
+#import numpy as np
+
+import NebulaPy.src as nebula
+#from NebulaPy.tools import util
+#import time
+#from pypion.ReadData import ReadData
+#import matplotlib.pyplot as plt
+#import numpy as np
+#import astropy.units as unit
+#import os
+#from NebulaPy.tools import constants as const
+#import pandas as pd
+
+
+spectrum = nebula.spectrum(
+    min_wavelength=None,  # Minimum wavelength in Angstroms
+    max_wavelength=None,  # Maximum wavelength in Angstroms
+    min_photon_energy=1.0,  # Minimum photon energy in keV
+    max_photon_energy=10.0,  # Maximum photon energy in keV
+    N_point=4000,
+    bremsstrahlung=True,
+    freebound=False,
+    lines=True,
+    twophoton=False,
+    filtername=None,
+    filterfactor=None,
+    allLines=True,
+    verbose=True
+)
+
+elements = ["H", "He", "Fe"]
+elemental_abundances = {"H": 0.70, "He": 0.28, "Fe": 0.02}
+spectrum.build_species_attributes(elements=elements,
+                                  elemental_abundances=elemental_abundances)
+
+
+temperature = [2.e+6, 3.e+7, 1.e+8]
+ne = [1.e+9, 1.e+9, 1.e+9]
+
+
+# to calculate for a single cell or set of cells.
+temperature = [2.e+6, 3.e+7, 1.e+8]
+density = [1.e+9, 1.e+9, 1.e+9]
+ne = [1.e+9, 1.e+9, 1.e+9]
+
+spectrum.compute_emission(temperature=temperature, density=density, ne=ne)
 
 
 
-fe25 = ch.ion('fe_25', temperature=[2.e+6], eDensity=1.e+9, em=1.e+27)
-
-
-
-
+'''
+fe25 = ch.ion('fe_14', temperature=[2.e+6, 3.e+7], eDensity=1.e+9, em=1.e+27)
 wvl = 200 + 0.125 * np.arange(801)
-
-
-fe25.populate()
-fe25.intensity()
 fe25.spectrum(wavelength=wvl)
+print(fe25.Spectrum['intensity'].shape)
+fe25.spectrumPlot(wvlRange=[264., 275.], integrated=True, top=5)
+plt.figure()
+plt.plot(wvl, fe25.Spectrum['integrated'])
+xy = plt.axis()
+plt.show()
+'''
 
-plotimport ChiantiPy.tools.data as chdata
 
-
-fe25.intensityPlot(wvlRange=[210, 220.0])
 
 
 
