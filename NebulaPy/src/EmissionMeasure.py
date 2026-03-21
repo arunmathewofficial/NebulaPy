@@ -1,3 +1,12 @@
+import numpy as np
+import math
+from astropy import units as u
+import time
+
+pi = math.pi
+m_p = 1.6726219e-24  # g
+k = 1.38064852e-16  # erg/K
+mu = 0.61  # mH
 
 
 class emission_measure():
@@ -10,7 +19,7 @@ class emission_measure():
         pass
 
     ######################################################################################
-    # differential emission measure
+    # differential emission measure todo: not verified
     ######################################################################################
     def DEM(self, dem_indices, ne, shellvolume):
         """
@@ -47,7 +56,7 @@ class emission_measure():
         return DEM
 
     ######################################################################################
-    # generate differential emission measure indices
+    # generate differential emission measure indices todo: not verified
     ######################################################################################
     def generate_dem_indices(self, temperature, Tmin, Tmax, Nbins):
         # Calculate the logarithmic width of each bin
@@ -86,4 +95,64 @@ class emission_measure():
 
         # Return the list of indices for further processing or analysis.
         return {'indices': dem_indices, 'Tb': Tb}
+
+
+    ###############################################################################
+    def volume2D(self, xmax, xmin, ngrid):  # Calculates the volume of each cell in the image grid
+        xmax = xmax
+        xmin = xmin
+        ngrid = ngrid
+        # Calculate the size of each cell in the x, y, and z-direction:
+        delta_z = (xmax[0] - xmin[0]) / ngrid[0]
+        delta_R = (xmax[1] - xmin[1]) / ngrid[1]
+        # Create a 2D array of zeros with the same dimensions as ngrid:
+        v = np.zeros((ngrid[1], ngrid[0]))
+        # Loop through each element in the Volume array:
+        for ycells in range(ngrid[1]):
+            rmin = ycells * delta_R
+            rmax = (ycells + 1) * delta_R
+            for xcells in range(ngrid[0]):
+                v[ycells, xcells] = delta_z * np.pi * (rmax ** 2 - rmin ** 2)
+        del delta_z
+        del delta_R
+        del xmax
+        del xmin
+        del ngrid
+        return v
+
+
+    ###############################################################################
+    def dem2D(self, temp_bin, hw):
+        # Function to calculate the differential emission measure of the nebula
+        # See Green et al. (2019) - Bubble Nebula - paper for details.
+        # temp_bin: array of temperature bins in logspace
+        # hw:       half-width of bin
+        D = self.get_2Darray("Density")
+        density = D['data']
+        temp = self.get_2Darray("Temperature")['data']
+        mask = self.get_2Darray("NG_Mask")['data']
+        ngrid = self.ngrid()
+        lim_max = (D['max_extents'] * u.cm).value
+        lim_min = (D['min_extents'] * u.cm).value
+        sim_time = D['sim_time']
+
+        dem_bin_all = np.zeros(len(temp_bin))
+
+        for j in range(len(density)):
+            denj = density[j]
+            tempj = temp[j]
+            maskj = mask[j]
+            volj = self.volume2D(lim_max[j], lim_min[j], ngrid)
+            nei = denj * maskj
+            nei = nei * 1.2 * 0.715 / m_p  # assume 1.2 electrons per H ion
+            # These are the two arrays I need:
+            vol_den = volj * nei * nei
+            log_masktemp = np.log10(tempj * maskj)
+            # If masktemp[i,j,k] is in one bin range w, then add vol_dens[i,j,k] to dem[w]
+            for w in range(len(temp_bin)):
+              pick = np.zeros_like(log_masktemp)
+              pick[(log_masktemp>=(temp_bin[w]-hw))&(log_masktemp<(temp_bin[w]+hw))] = 1
+              dem_bin_all[w] += np.sum(vol_den * pick)
+
+        return {'sim_time': sim_time, 'dem_bin': dem_bin_all}
 

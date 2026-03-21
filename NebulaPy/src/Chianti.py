@@ -160,26 +160,37 @@ class chianti:
 
         # Loop through the sorted keys in the dictionary of species
         if self.verbose:
-            print(f" retrieving species attributes")
+            print(f"Retrieving species attributes")
 
+        # First pass: compute width
+        names_tmp = [
+            chianti_util.convertName(akey)['spectroscopic']
+            for akey in sorted(species.Todo.keys())
+        ]
+        width = max(len(name) for name in names_tmp) + 2  # tight padding
+
+        # Loop with 6 columns
+        ncol = 7
         count = 0
-        for akey in sorted(species.Todo.keys()):
-            self.species_attributes_container[akey] = chianti_util.convertName(akey)  # Convert the key and store it
-            # If verbose mode is enabled, print the spectroscopic name
-            if self.verbose:
-                # Print a comma-separated list of names with up to 10 items per line
-                print(f" {self.species_attributes_container[akey]['spectroscopic']}", end='')
-                count += 1
-                # Print a newline after every 10 items
-                if count % 10 == 0:
-                    print()  # Move to the next line
-                else:
-                    print(", ", end='')  # Continue on the same line
 
+        for akey in sorted(species.Todo.keys()):
+            self.species_attributes_container[akey] = chianti_util.convertName(akey)
+
+            if self.verbose:
+                name = self.species_attributes_container[akey]['spectroscopic']
+                print(f"{name:<{width}}", end='')
+                count += 1
+
+                if count % ncol == 0:
+                    print()
             self.species_attributes_container[akey]['keys'] = species.Todo[akey]  # Store relevant data
-            # Remove unnecessary data from the dictionary
             del self.species_attributes_container[akey]['filename']
             del self.species_attributes_container[akey]['experimental']
+
+        # handle last row
+        if self.verbose and count % ncol != 0:
+            print()
+
 
 
         # Finalize the species attributes dictionary
@@ -383,14 +394,13 @@ class chianti:
     # all below code need to be verified
     ######################################################################################
 
-    # todo- comment by Arun: working on bremsstrahlung emission
 
     ######################################################################################
-    # get bremsstrahlung emission
+    # get bremsstrahlung emission rate info: verified OK
     ######################################################################################
-    def get_bremsstrahlung_emission(self, wavelength):
+    def get_bremsstrahlung_emission_rate(self, wavelength):
         """
-        Calculates the free-free emission (bremsstrahlung) for a single ion using the following formula:
+        Calculates the free-free emission (bremsstrahlung) rate for a single ion using the following formula:
         .. math::
            \\frac{dW}{dtdVd\lambda} = \\frac{c}{3m_e}\\left(\\frac{\\alpha h}{\pi}\\right)^3
            \\left(\\frac{2\pi}{3m_e k_B}\\right)^{1/2}\\frac{Z^2}{\lambda^2 T^{1/2}}
@@ -401,28 +411,17 @@ class chianti:
 
         The free-free emission is calculated in units of
         :math:`\mathrm{erg}\ \mathrm{cm}^3\ \mathrm{s}^{-1}\ \mathrm{\mathring{A}}^{-1}\ \mathrm{str}^{-1}`.
-        If the emission measure is provided, the result will be multiplied by
-        :math:`\mathrm{cm}^{-5}` (for line-of-sight emission measure) or
-        :math:`\mathrm{cm}^{-3}` (for volumetric emission measure).
 
         Parameters:
         ----------
         wavelength : array-like
             The wavelength(s) at which to calculate the emission, in angstroms.
-        elemental_abundance : float
-            The abundance of the element in the plasma.
-        ion_fraction : float
-            The fraction of the element in the ionization state of interest.
-        emission_measure : float
-            The emission measure, which may be line-of-sight or volumetric.
 
         Returns:
         -------
         free_free_emission : numpy.ndarray
-            The calculated free-free emission for the given wavelength(s).
+            The calculated free-free emission rate for the given wavelength(s).
         """
-
-        print(f"freefree: {self.chianti_ion_name}")
 
         # Calculate the ion's nuclear charge (Z)
         Zion = self.chianti_ion.Ion - 1
@@ -433,7 +432,7 @@ class chianti:
 
         # If verbose, print the ion's spectroscopic label
         if self.verbose:
-            print(f' calculating bremsstrahlung emission for {self.chianti_ion.Spectroscopic}')
+            print(f'Computing bremsstrahlung emission rate for {self.chianti_ion.Spectroscopic}')
 
         # Ensure wavelength is treated as an array
         wavelength = np.atleast_1d(wavelength)
@@ -446,12 +445,6 @@ class chianti:
         # Include temperature dependence in the prefactor
         prefactor *= Zion ** 2 / np.sqrt(self.temperature)
 
-        # Apply the elemental abundance and ion fraction to the prefactor
-        #prefactor *= elemental_abundance * ion_fraction
-
-        # Include the emission measure in the prefactor
-        #prefactor *= emission_measure
-
         # Calculate the exponential factor based on temperature and wavelength
         exp_factor = np.exp(-const.planck * (1.e8 * const.light) / const.boltzmann /
                             np.outer(self.temperature, wavelength)) / (wavelength ** 2)
@@ -461,34 +454,14 @@ class chianti:
         gf_sutherland = continuum_gaunt.sutherland_gaunt_factor(wavelength)
         gf = np.where(np.isnan(gf_itoh), gf_sutherland, gf_itoh)
 
-        # Optionally, apply an energy factor if flux is in photons (commented out by default)
-        energy_factor = 1.0
-        # if chdata.Defaults['flux'] == 'photon':
-        #     energy_factor = const.planck * (1.e8 * const.light) / wavelength
-
         # Calculate the final free-free emission and ensure the result is properly shaped
-        bremsstrahlung_emission = (prefactor[:, np.newaxis] * exp_factor * gf / energy_factor).squeeze()
+        bremsstrahlung_emission_rate = (prefactor[:, np.newaxis] * exp_factor * gf).squeeze()
 
         # If verbose, indicate completion
         if self.verbose:
-            print(f' {self.chianti_ion.Spectroscopic} bremsstrahlung emission calculation completed')
+            print(f"[DONE] {self.chianti_ion.Spectroscopic}: bremsstrahlung emission computed")
 
-        # differential volume emission measure
-        #DVEM = self.ne * species_density * shell_volume
-
-        # multiplying
-        #bremsstrahlung = bremsstrahlung_emission * DVEM[:, np.newaxis]
-
-
-        '''
-        continuum_spectrum.freeFree(wavelength, includeAbund=False, includeIoneq=False)
-        bremsstrahlung_emission = continuum_spectrum.FreeFree['intensity']
-        
-        '''
-
-        print(bremsstrahlung_emission)
-
-        return None
+        return bremsstrahlung_emission_rate
 
 
 

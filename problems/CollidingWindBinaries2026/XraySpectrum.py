@@ -159,12 +159,13 @@ import NebulaPy.src as nebula
 #from NebulaPy.tools import constants as const
 #import pandas as pd
 
+OutDir = '/Users/tony/Desktop/CWBs-NEMOv1'
 
 spectrum = nebula.spectrum(
-    min_wavelength=None,  # Minimum wavelength in Angstroms
-    max_wavelength=None,  # Maximum wavelength in Angstroms
-    min_photon_energy=1.0,  # Minimum photon energy in keV
-    max_photon_energy=10.0,  # Maximum photon energy in keV
+    min_wavelength=1.0,  # Minimum wavelength in Angstroms
+    max_wavelength=100.0,  # Maximum wavelength in Angstroms
+    min_photon_energy=None,  # Minimum photon energy in keV
+    max_photon_energy=None,  # Maximum photon energy in keV
     N_point=4000,
     bremsstrahlung=True,
     freebound=False,
@@ -176,36 +177,48 @@ spectrum = nebula.spectrum(
     verbose=True
 )
 
-elements = ["H", "He", "Fe"]
-elemental_abundances = {"H": 0.70, "He": 0.28, "Fe": 0.02}
+elements = ["H", "He", "O"]
+elemental_abundances = {"H": 0.70, "He": 0.28, "O": 0.02}
 spectrum.build_species_attributes(elements=elements,
                                   elemental_abundances=elemental_abundances)
 
 
-temperature = [2.e+6, 3.e+7, 1.e+8]
+temperature = [3.e+6, 3.e+7, 1.e+8]
 ne = [1.e+9, 1.e+9, 1.e+9]
 
 
 # to calculate for a single cell or set of cells.
-temperature = [2.e+6, 3.e+7, 1.e+8]
-density = [1.e+9, 1.e+9, 1.e+9]
+#temperature = [2.e+6, 3.e+7, 1.e+8]
+#density = [1.e+9, 1.e+9, 1.e+9]
+#ne = [1.e+9, 1.e+9, 1.e+9]
+
+temperature = [3.e+7]
+density = [1.e+9]
 ne = [1.e+9, 1.e+9, 1.e+9]
 
+
+
+
+# info: only looking at free-free emission
+# my calculation
+wvl = spectrum.wavelength
 spectrum.compute_emission(temperature=temperature, density=density, ne=ne)
+emission_my = spectrum.intensity
+
+c = ch.continuum('o_8', temperature=temperature, em=1.e+27,)
+c.freeFree(wvl, includeAbund=False, includeIoneq=False)
+emission_chianti = c.FreeFree['intensity']
 
 
 
-'''
-fe25 = ch.ion('fe_14', temperature=[2.e+6, 3.e+7], eDensity=1.e+9, em=1.e+27)
-wvl = 200 + 0.125 * np.arange(801)
-fe25.spectrum(wavelength=wvl)
-print(fe25.Spectrum['intensity'].shape)
-fe25.spectrumPlot(wvlRange=[264., 275.], integrated=True, top=5)
+
 plt.figure()
-plt.plot(wvl, fe25.Spectrum['integrated'])
+plt.title(f"OVIII Free–Free Emission Spectrum at T = {temperature[0]:.2e} K")
+plt.plot(wvl, emission_my, linewidth=2, color='black', label='NebulaPy Free-Free')
+plt.plot(wvl, emission_chianti, linewidth=2, color='red', label='ChiantiPy Free-Free', linestyle='dotted')
 xy = plt.axis()
-plt.show()
-'''
+outfile = OutDir + "/xray_spectrum.png"
+plt.savefig(outfile)
 
 
 

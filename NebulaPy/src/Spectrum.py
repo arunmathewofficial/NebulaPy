@@ -81,7 +81,7 @@ class spectrum:
         if self.verbose:
             print("--- Spectrum Calculation --------------------------------")
             print(f" Bremsstrahlung : {self.bremsstrahlung} | Free-bound : {self.freebound}")
-            print(f" Lines          : {self.lines}          | Two-photon : {self.twophoton}")
+            print(f" Lines          : {self.lines} | Two-photon : {self.twophoton}")
             print(f" Grid points    : {self.N_wvl}")
             print("---------------------------------------------------------")
 
@@ -200,6 +200,10 @@ class spectrum:
 
         for species in self.chianti_species_attributes:
 
+            if species != 'o_8':
+                continue
+
+
             # find the element the species belong to
             element = self.chianti_species_attributes[species]['Element']
             # position of the corresponding element of the species in silo elements array
@@ -238,13 +242,14 @@ class spectrum:
 
             # Bremsstrahlung (free-free)
             if self.bremsstrahlung and 'ff' in species_processes:
-                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission(
+                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate(
                     wavelength=self.wavelength
                 )
 
+
             # Line emission
-            if self.lines and 'line' in species_processes:
-                line_emission = CHIANTI.get_line_emission()
+            #if self.lines and 'line' in species_processes:
+            #    line_emission = CHIANTI.get_line_emission()
 
             CHIANTI.terminate()
 
@@ -260,7 +265,8 @@ class spectrum:
 
         #spectrum = {"spectrum": bremsstrahlung_emission, "wavelength": self.wavelength}
         #spectrum = {"spectrum": line_emission, "wavelength": self.wavelength}
-        
-        
-        return spectrum
         '''
+
+
+        self.intensity = bremsstrahlung_emission * 1.e+27
+
