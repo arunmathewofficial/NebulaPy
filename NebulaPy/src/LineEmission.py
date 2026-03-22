@@ -6,7 +6,7 @@ import copy
 from .PyNeb import pyneb
 import multiprocessing
 from multiprocessing import Pool, Manager
-
+from typing import Optional
 
 class line_emission():
 
@@ -189,7 +189,15 @@ class line_emission():
     ######################################################################################
     # get dominant list of lines for a simulation snapshot in cylindrical coordinate system
     ######################################################################################
-    def get_species_dominant_lines(self, temperature, ne, species_density, cell_volume, grid_mask, Nlines):
+    def get_species_dominant_lines(
+            self,
+            temperature,
+            ne,
+            species_density,
+            cell_volume,
+            grid_mask,
+            Nlines: Optional[int] = None
+    ):
         """
         Computes the most luminous emission lines for a given species in a 1D or 2D dataset.
 
@@ -241,15 +249,17 @@ class line_emission():
         dummy_ne_array = [1.0]
         species = chianti(pion_ion=self.ion, temperature=dummy_temperature_array, ne=dummy_ne_array, verbose=False)
         spectroscopic_name = species.chianti_ion.Spectroscopic
-        completion_msg = f'chianti: finished computing the luminosity for all {spectroscopic_name} lines'
-
+        completion_msg = f'Chianti: finished computing the luminosity for all {spectroscopic_name} lines'
+        keys = species.species_attributes_container[species.chianti_ion_name]['keys']
 
         # Check if the species has emission lines
-        if 'line' not in species.species_attributes_container[species.chianti_ion_name]['keys']:
+        if 'line' not in keys:
             util.nebula_warning(f"{spectroscopic_name} has no line emission associated")
             return {'spectroscopic': spectroscopic_name}
         else:
             all_lines = species.get_allLines()
+            # get A value, transition info
+            allLineTransitions = species.get_allLineTransitions()
             all_lines = all_lines[all_lines != 0]
         del species
 
@@ -267,6 +277,7 @@ class line_emission():
             # Initialize luminosity storage for this level
             species_all_lines_luminosity_level = np.zeros_like(all_lines)
 
+
             # Loop over each row (assumes a 2D dataset)
             for row in range(rows):
                 temperature_row = temperature[level][row]
@@ -275,7 +286,7 @@ class line_emission():
                 cell_volume_row = cell_volume[level][row]
                 grid_mask_row = grid_mask[level][row]
 
-                prefix_msg = f'chianti: computing the luminosity of {spectroscopic_name} lines at grid-level {level}'
+                prefix_msg = f'Chianti: computing the luminosity of {spectroscopic_name} lines at grid-level {level}'
                 suffix_msg = 'complete'
                 completion_msg_condition = (level == NGlevel - 1 and row == rows - 1)
 
@@ -306,19 +317,44 @@ class line_emission():
             # Accumulate luminosity across all grid levels
             species_all_line_luminosity += species_all_lines_luminosity_level
 
-        #print(f" completed the luminosity computation for all {spectroscopic_name} lines", end='\n')
-
         # Retrieve the N most luminous lines
-        print(f" chianti: retrieving the top {Nlines} most luminous {spectroscopic_name} lines", end='\n')
+        # Handle Nlines option
+        if Nlines is None:
+            print(f" Chianti: retrieving ALL luminous {spectroscopic_name} lines")
+            # Sort all lines (descending)
+            indices = np.argsort(species_all_line_luminosity)[::-1]
+        else:
+            if not isinstance(Nlines, int) or Nlines <= 0:
+                raise ValueError("Nlines must be a positive integer or None")
+            print(f" Chianti: retrieving top {Nlines} most luminous {spectroscopic_name} lines")
 
-        indices = np.argsort(species_all_line_luminosity)[-Nlines:]  # Get indices of the brightest lines
+            # Top N lines (sorted)
+            indices = np.argsort(species_all_line_luminosity)[-Nlines:][::-1]
+
         brightest_lines_luminosity = species_all_line_luminosity[indices]
         brightest_lines = all_lines[indices]
+
+        # Sort A value and transition into
+        Avalue = np.zeros(len(brightest_lines))
+        transition_lower = np.full(len(brightest_lines), "—", dtype=object)
+        transition_upper = np.full(len(brightest_lines), "—", dtype=object)
+        if 'line' in keys:
+            # Build lookup (fast + preserves mapping)
+            lookup = {w: i for i, w in enumerate(allLineTransitions['wvl'])}
+            for i, wvl in enumerate(brightest_lines):
+                idx = lookup.get(wvl, None)
+                if idx is not None:
+                    Avalue[i] = allLineTransitions['Avalue'][idx]
+                    transition_lower[i] = allLineTransitions['Lower'][idx]
+                    transition_upper[i] = allLineTransitions['Upper'][idx]
 
         return {
             'spectroscopic': spectroscopic_name,
             'lines': brightest_lines,
-            'luminosity': brightest_lines_luminosity
+            'luminosity': brightest_lines_luminosity,
+            'Avalue': Avalue,
+            'Lower': transition_lower,
+            'Upper': transition_upper
         }
 
     ######################################################################################

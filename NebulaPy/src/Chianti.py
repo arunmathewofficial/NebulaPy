@@ -258,7 +258,7 @@ class chianti:
     ######################################################################################
     # get all lines and transitions of the ion
     ######################################################################################
-    def get_allLinesTransitions(self):
+    def get_allLineTransitions(self):
         """
         Retrieve all spectral lines associated with a specified ion
         :return: wave-length array
@@ -274,7 +274,7 @@ class chianti:
 
         wvl = np.abs(wvl)
         A_value = np.abs(A_value)
-        return {'Reference': Ref, 'wvl': wvl, 'Avalue': A_value, 'From': Pretty1, 'To': Pretty2}
+        return {'Reference': Ref, 'wvl': wvl, 'Avalue': A_value, 'Lower': Pretty1, 'Upper': Pretty2}
 
     ######################################################################################
     # Get line emissivity, this is an internal method

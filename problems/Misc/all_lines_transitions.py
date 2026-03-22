@@ -23,8 +23,8 @@ with open(outfile, 'w') as f:
     # Write header
     f.write(Reference)
     f.write('\n\n')
-    f.write(f"{'wvl':<{12}} {'Avalue':<{12}} {'From':<{25}} {'To':<{25}}\n")
+    f.write(f"{'wvl':<{12}} {'Avalue':<{12}} {'Lower':<{25}} {'Upper':<{25}}\n")
 
     # Write each row
-    for w, a, fr, to in zip(allLineData['wvl'], allLineData['Avalue'], allLineData['From'], allLineData['To']):
+    for w, a, fr, to in zip(allLineData['wvl'], allLineData['Avalue'], allLineData['Lower'], allLineData['Upper']):
         f.write(f"{w:<{12}.4f} {a:<{12}.3e} {fr:<{25}} {to:<{25}}\n")
