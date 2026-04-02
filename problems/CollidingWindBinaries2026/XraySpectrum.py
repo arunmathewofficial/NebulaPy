@@ -1,166 +1,100 @@
 #import numpy as np
-
 import NebulaPy.src as nebula
-#from NebulaPy.tools import util
-#import time
+from NebulaPy.tools import util
+import time
 #from pypion.ReadData import ReadData
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 #import numpy as np
 #import astropy.units as unit
 #import os
 #from NebulaPy.tools import constants as const
 #import pandas as pd
 
-#elements = ['Fe']
 
 
+# info these need to be removed once the code is tested
+import ChiantiPy.core as ch
+import ChiantiPy.tools.data as chdata
 
 
-'''
+# constants
+cm2au = 6.68459e-14  # cm to au conversion factor
+
+
+#Razer Blade -> Set up paths and filenames
+OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/'  # Output image directory
+SiloDir = '/Users/tony/Desktop/CWBs-NEMOv1/Silo-n128'  # Directory containing silo files
+Filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
+start_time = 1.0e6  # in sec
+finish_time = None
+time_unit = 'sec'
+out_frequency = None
+
+
+# Batch the silo files according to the time instant
+batched_silos = util.batch_silos(
+    SiloDir,
+    Filebase,
+    start_time=start_time,
+    finish_time=finish_time,
+    time_unit=time_unit,
+    out_frequency=out_frequency
+)
+
+# Initialize the Pion class from NebulaPy, which handles the simulation data
+pion = nebula.pion(batched_silos, verbose=True)
+
+# Calculates and stores geometric grid parameters.
+# For example, in a spherical geometry, it extracts radius and shell volumes
+# from the first silo file in the batch and saves them into a geometry container.
+pion.load_geometry(scale='cm')
+N_grid_level = pion.geometry_container['Nlevel']
+mesh_edges_min = pion.geometry_container['edges_min'] * cm2au
+mesh_edges_max = pion.geometry_container['edges_max'] * cm2au
+
+
+EM = nebula.emission_measure()
+
+
 runtime = 0.0
 # Loop over each time instant in the batched silo files
 for step, silo_instant in enumerate(batched_silos):
-    silo_instant_start_time = time.time()  # Record the start time
+    silo_instant_start_time = time.time()
 
-    # Read the data from the current silo file
-    dataio = ReadData(silo_instant)
-    basic = dataio.get_1Darray('Density')  # Retrieve basic simulation data, such as density
-    sim_time = (basic['sim_time'] * unit.s).to(unit.kyr)  # Convert simulation time to kiloyears
-    dataio.close()  # Close the data file
-
-    # Print the current time instant
     print(f" ---------------------------")
+    sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
-    temperature = pion.get_parameter('Temperature', silo_instant)
-    density = pion.get_parameter('Density', silo_instant)
-    ne = pion.get_ne(silo_instant)
-    elemental_mass_fraction = pion.get_elemental_mass_frac(silo_instant)
-    ion_fractions = pion.get_tracer_values(silo_instant)
+    print(EM.DEM2D(temp_bin=np.arange(5.0, 8.0, 0.1), hw=0.05))
 
-    Tmin = 1e+5
-    Tmax = 1e+9
+    # Plot the differential emission measure for the current time instant
+    plt.figure()
+    plt.title(f"Differential Emission Measure")
+    Filename = f"{Filebase}_FeNumDen_{sim_time.value:.2f}kyr.png"
+    OutImageFile = os.path.join(OutputDir, Filename)
+    plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)
+    plt.close()
 
-    ##
-    #hack
-    relevant_grid_points = np.where((temperature >= Tmin) & (temperature <= Tmax))[0]
-    temperature = temperature[relevant_grid_points]
-    density = density[relevant_grid_points]
-    ne = ne[relevant_grid_points]
-    shell_volume = shell_volume_original[relevant_grid_points]
-    filtered_elem_mass_frac = []
-    for e in range(len(elemental_mass_fraction)):
-        # Ensure the slice operation is valid for each elemental_mass_fraction[e]
-        filtered_elem_mass_frac.append(elemental_mass_fraction[e][relevant_grid_points])
+    print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
 
-    filtered_ion_frac = []
-    for e in range(len(ion_fractions)):
-        element_wise = []
-        for i in range(len(ion_fractions[e])):
-            element_wise.append(ion_fractions[e][i][relevant_grid_points])
-        filtered_ion_frac.append(element_wise)
-    ##
-
-    dem = pion.generate_dem_indices(temperature=temperature, Tmin=Tmin, Tmax=Tmax, Nbins=100)
-    dem_indices = dem['indices']
-
-    spectrum = xray_emission.xray_intensity(
-        temperature=temperature,
-        density=density, ne=ne,
-        elemental_abundances=filtered_elem_mass_frac,
-        ion_fractions=filtered_ion_frac,
-        shell_volume=shell_volume,
-        dem_indices=dem_indices
-    )
-
-
-    silo_instant_finish_time = time.time()  # Record the finish time
-    # Calculate the time spent on the current step
-    dt = silo_instant_finish_time - silo_instant_start_time
-    # Update the runtime with the time spent on the current step
+    dt = time.time() - silo_instant_start_time
     runtime += dt
     print(f" runtime: {runtime:.4e} s | dt: {dt:.4e} s")
 
-    # calculate differential emission measure
-    DEM = pion.DEM(
-        dem_indices=dem_indices,
-        ne=ne,
-        shellvolume=shell_volume,
-    )
 
-    # making DEM plot
-    dem_filename = filebase + f"_t{int(sim_time.value)}_dem.png"
-    dem_file = os.path.join(output_path, dem_filename)
-    plt.plot(dem['Tb'], np.log10(DEM), linestyle='-', color='b', label=f'time = {sim_time.value:.4e} kyr')
-    plt.xlabel(r'log(T$_b$) K', fontsize=14)
-    plt.ylabel(r'log(DEM) cm$^{-3}$', fontsize=14)
-    plt.legend(fontsize=14, frameon=False)
-    plt.savefig(dem_file)  # Save as a PNG file
-    plt.close()  # Close the plot to free memory
-'''
+
+
+
+
+
+
+
+# info: code to test the spectrum calculation for a single temperature
+#  and density point, which can be used to compare with ChiantiPy's
+#  free-free emission calculation for the same conditions.
 
 
 '''
-temperature = [3.e+7]
-density = [1.e+9]
-ne = [100]
-ion_fraction = [1.0]
-
-
-
-
-spectrum = spectrum.xray_spectrum(temperature=temperature, density=density, ne=ne,
-                                        # #elemental_abundances=filtered_elem_mass_frac,
-                                        ion_fractions=ion_fraction,
-                                        #shell_volume=shell_volume,
-                                        #dem_indices=dem_indices
-                                        )
-
-
-wavelength = spectrum["wavelength"]
-emission = spectrum["spectrum"]
-
-print(emission)
-
-import matplotlib.pyplot as plt
-# Plot
-plt.figure(figsize=(8, 5))
-
-plt.plot(wavelength, emission, linewidth=2)
-
-plt.xlabel("Wavelength (Å)")
-plt.ylabel("Bremsstrahlung Emission (erg cm$^{-3}$ s$^{-1}$ Å$^{-1}$)")
-plt.title("Free-Free (Bremsstrahlung) Spectrum")
-
-plt.yscale("log")   # spectra usually span many orders
-plt.grid(True)
-
-plt.tight_layout()
-plt.show()
-
-'''
-
-
-import ChiantiPy.core as ch
-import ChiantiPy.tools.data as chdata
-import numpy as np
-import matplotlib.pyplot as plt
-
-#import numpy as np
-
-import NebulaPy.src as nebula
-#from NebulaPy.tools import util
-#import time
-#from pypion.ReadData import ReadData
-#import matplotlib.pyplot as plt
-#import numpy as np
-#import astropy.units as unit
-#import os
-#from NebulaPy.tools import constants as const
-#import pandas as pd
-
-OutDir = '/Users/tony/Desktop/CWBs-NEMOv1'
-
 spectrum = nebula.spectrum(
     min_wavelength=1.0,  # Minimum wavelength in Angstroms
     max_wavelength=100.0,  # Maximum wavelength in Angstroms
@@ -181,36 +115,20 @@ elements = ["H", "He", "O"]
 elemental_abundances = {"H": 0.70, "He": 0.28, "O": 0.02}
 spectrum.build_species_attributes(elements=elements,
                                   elemental_abundances=elemental_abundances)
-
-
-temperature = [3.e+6, 3.e+7, 1.e+8]
-ne = [1.e+9, 1.e+9, 1.e+9]
-
-
-# to calculate for a single cell or set of cells.
-#temperature = [2.e+6, 3.e+7, 1.e+8]
-#density = [1.e+9, 1.e+9, 1.e+9]
-#ne = [1.e+9, 1.e+9, 1.e+9]
-
+                                  
 temperature = [3.e+7]
 density = [1.e+9]
 ne = [1.e+9, 1.e+9, 1.e+9]
 
-
-
-
-# info: only looking at free-free emission
 # my calculation
 wvl = spectrum.wavelength
 spectrum.compute_emission(temperature=temperature, density=density, ne=ne)
 emission_my = spectrum.intensity
 
+# chianti calculation
 c = ch.continuum('o_8', temperature=temperature, em=1.e+27,)
 c.freeFree(wvl, includeAbund=False, includeIoneq=False)
 emission_chianti = c.FreeFree['intensity']
-
-
-
 
 plt.figure()
 plt.title(f"OVIII Free–Free Emission Spectrum at T = {temperature[0]:.2e} K")
@@ -220,9 +138,7 @@ xy = plt.axis()
 outfile = OutDir + "/xray_spectrum.png"
 plt.savefig(outfile)
 
-
-
-
+'''
 
 
 

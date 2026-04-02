@@ -15,7 +15,7 @@ class emission_measure():
     ######################################################################################
     # initializing
     ######################################################################################
-    def __init__(self):
+    def __init__(self, verbose=False):
         pass
 
     ######################################################################################
@@ -122,7 +122,7 @@ class emission_measure():
 
 
     ###############################################################################
-    def dem2D(self, temp_bin, hw):
+    def DEM2D(self, temp_bin, hw):
         # Function to calculate the differential emission measure of the nebula
         # See Green et al. (2019) - Bubble Nebula - paper for details.
         # temp_bin: array of temperature bins in logspace
