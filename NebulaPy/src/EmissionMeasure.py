@@ -124,7 +124,7 @@ class emission_measure():
 
 
     ###############################################################################
-    def DEM2D(self, density, temperature, ne, mask, ngrid, mesh_edges_min, mesh_edges_max, temp_bin, hw):
+    def DEM2D(self, density, temperature, ne, mask, ngrid, volume, mesh_edges_min, mesh_edges_max, temp_bin, hw):
         # Function to calculate the differential emission measure of the nebula
         # See Green et al. (2019) - Bubble Nebula - paper for details.
         # temp_bin: array of temperature bins in logspace
@@ -137,6 +137,7 @@ class emission_measure():
         ngrid = ngrid
         lim_max = (mesh_edges_max * u.cm).value
         lim_min = (mesh_edges_min * u.cm).value
+        vol = volume
 
         dem_bin_all = np.zeros(len(temp_bin))
 
@@ -145,9 +146,12 @@ class emission_measure():
             denj = density[j]
             tempj = temp[j]
             maskj = mask[j]
-            volj = self.volume2D(lim_max[j], lim_min[j], ngrid)
-            nei = denj * maskj
-            nei = nei * 1.2 * 0.715 / m_p  # assume 1.2 electrons per H ion
+            # info:
+            #volj = self.volume2D(lim_max[j], lim_min[j], ngrid)
+            volj = vol[j]
+            #nei = denj * maskj
+            #nei = nei * 1.2 * 0.715 / m_p  # assume 1.2 electrons per H ion
+            nei = ne[j]
             # These are the two arrays I need:
             vol_den = volj * nei * nei
             log_masktemp = np.log10(tempj * maskj)

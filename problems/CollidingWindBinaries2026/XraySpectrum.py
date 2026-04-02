@@ -56,8 +56,8 @@ N_grid_level = pion.geometry_container['Nlevel']
 #mesh_edges_max = pion.geometry_container['edges_max'] * cm2au
 mesh_edges_min = pion.geometry_container['edges_min']
 mesh_edges_max = pion.geometry_container['edges_max']
-N_grid  = pion.geometry_container['Ngrid']
-
+N_grid = pion.geometry_container['Ngrid']
+cell_volume = pion.get_2D_cell_volumes()
 
 
 EM = nebula.emission_measure()
@@ -82,9 +82,12 @@ for step, silo_instant in enumerate(batched_silos):
     temperature_bin = np.arange(3.0, 8.5, 0.02)
 
     em = EM.DEM2D(density=density, temperature=temperature,
-                  ne=ne, mask=grid_mask, ngrid=N_grid,
+                  ne=ne,
+                  mask=grid_mask,
+                  ngrid=N_grid,
                   mesh_edges_min=mesh_edges_min,
                   mesh_edges_max=mesh_edges_max,
+                  volume = cell_volume,
                   temp_bin=temperature_bin,
                   hw=0.05)
 

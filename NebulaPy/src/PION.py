@@ -307,7 +307,7 @@ class pion():
     ######################################################################################
     # cylindrical grid 2D volume
     ######################################################################################
-    def get_cylindrical_cell_volume(self):
+    def get_2D_cell_volumes(self):
         """
         Computes the volume of grid cells in a cylindrical coordinate system.
 
@@ -340,7 +340,7 @@ class pion():
 
         # Convert to appropriate units
         unit_factors = {'cm': unit.cm ** 3, 'pc': unit.pc ** 3}  # Add more cases as needed
-        return cell_volume * unit_factors[self.dim_scale]
+        return cell_volume #* unit_factors[self.dim_scale]
 
 
     # ==================================================================================#
