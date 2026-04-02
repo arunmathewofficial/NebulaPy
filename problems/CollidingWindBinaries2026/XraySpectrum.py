@@ -4,9 +4,9 @@ from NebulaPy.tools import util
 import time
 #from pypion.ReadData import ReadData
 import matplotlib.pyplot as plt
-#import numpy as np
+import numpy as np
 #import astropy.units as unit
-#import os
+import os
 #from NebulaPy.tools import constants as const
 #import pandas as pd
 
@@ -22,10 +22,10 @@ cm2au = 6.68459e-14  # cm to au conversion factor
 
 
 #Razer Blade -> Set up paths and filenames
-OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/'  # Output image directory
-SiloDir = '/Users/tony/Desktop/CWBs-NEMOv1/Silo-n128'  # Directory containing silo files
+OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
+SiloDir = '//home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
 Filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
-start_time = 1.0e6  # in sec
+start_time = 1.24e6  # in sec
 finish_time = None
 time_unit = 'sec'
 out_frequency = None
@@ -44,13 +44,20 @@ batched_silos = util.batch_silos(
 # Initialize the Pion class from NebulaPy, which handles the simulation data
 pion = nebula.pion(batched_silos, verbose=True)
 
+# load chemistry
+pion.load_chemistry()
+
 # Calculates and stores geometric grid parameters.
 # For example, in a spherical geometry, it extracts radius and shell volumes
 # from the first silo file in the batch and saves them into a geometry container.
 pion.load_geometry(scale='cm')
 N_grid_level = pion.geometry_container['Nlevel']
-mesh_edges_min = pion.geometry_container['edges_min'] * cm2au
-mesh_edges_max = pion.geometry_container['edges_max'] * cm2au
+#mesh_edges_min = pion.geometry_container['edges_min'] * cm2au
+#mesh_edges_max = pion.geometry_container['edges_max'] * cm2au
+mesh_edges_min = pion.geometry_container['edges_min']
+mesh_edges_max = pion.geometry_container['edges_max']
+N_grid  = pion.geometry_container['Ngrid']
+
 
 
 EM = nebula.emission_measure()
@@ -65,11 +72,28 @@ for step, silo_instant in enumerate(batched_silos):
     sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
-    print(EM.DEM2D(temp_bin=np.arange(5.0, 8.0, 0.1), hw=0.05))
+    # Extract temperature and electron number density
+    temperature = pion.get_parameter('Temperature', silo_instant)
+    density = pion.get_parameter('Density', silo_instant)
+    ne = pion.get_ne(silo_instant)
+    grid_mask = pion.geometry_container['mask']
+
+
+    temperature_bin = np.arange(3.0, 8.5, 0.02)
+
+    em = EM.DEM2D(density=density, temperature=temperature,
+                  ne=ne, mask=grid_mask, ngrid=N_grid,
+                  mesh_edges_min=mesh_edges_min,
+                  mesh_edges_max=mesh_edges_max,
+                  temp_bin=temperature_bin,
+                  hw=0.05)
+
+    dem = em['dem_bin']
 
     # Plot the differential emission measure for the current time instant
     plt.figure()
     plt.title(f"Differential Emission Measure")
+    plt.plot(temperature_bin, np.log10(dem))
     Filename = f"{Filebase}_FeNumDen_{sim_time.value:.2f}kyr.png"
     OutImageFile = os.path.join(OutputDir, Filename)
     plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)

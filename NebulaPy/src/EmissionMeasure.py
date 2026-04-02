@@ -3,6 +3,7 @@ import math
 from astropy import units as u
 import time
 
+
 pi = math.pi
 m_p = 1.6726219e-24  # g
 k = 1.38064852e-16  # erg/K
@@ -102,6 +103,7 @@ class emission_measure():
         xmax = xmax
         xmin = xmin
         ngrid = ngrid
+
         # Calculate the size of each cell in the x, y, and z-direction:
         delta_z = (xmax[0] - xmin[0]) / ngrid[0]
         delta_R = (xmax[1] - xmin[1]) / ngrid[1]
@@ -122,21 +124,22 @@ class emission_measure():
 
 
     ###############################################################################
-    def DEM2D(self, temp_bin, hw):
+    def DEM2D(self, density, temperature, ne, mask, ngrid, mesh_edges_min, mesh_edges_max, temp_bin, hw):
         # Function to calculate the differential emission measure of the nebula
         # See Green et al. (2019) - Bubble Nebula - paper for details.
         # temp_bin: array of temperature bins in logspace
         # hw:       half-width of bin
-        D = self.get_2Darray("Density")
-        density = D['data']
-        temp = self.get_2Darray("Temperature")['data']
-        mask = self.get_2Darray("NG_Mask")['data']
-        ngrid = self.ngrid()
-        lim_max = (D['max_extents'] * u.cm).value
-        lim_min = (D['min_extents'] * u.cm).value
-        sim_time = D['sim_time']
+
+
+        density = density
+        temp = temperature
+        mask = mask
+        ngrid = ngrid
+        lim_max = (mesh_edges_max * u.cm).value
+        lim_min = (mesh_edges_min * u.cm).value
 
         dem_bin_all = np.zeros(len(temp_bin))
+
 
         for j in range(len(density)):
             denj = density[j]
@@ -154,5 +157,5 @@ class emission_measure():
               pick[(log_masktemp>=(temp_bin[w]-hw))&(log_masktemp<(temp_bin[w]+hw))] = 1
               dem_bin_all[w] += np.sum(vol_den * pick)
 
-        return {'sim_time': sim_time, 'dem_bin': dem_bin_all}
+        return {'dem_bin': dem_bin_all}
 
