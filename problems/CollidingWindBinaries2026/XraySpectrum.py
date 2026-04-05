@@ -23,9 +23,9 @@ cm2au = 6.68459e-14  # cm to au conversion factor
 
 #Razer Blade -> Set up paths and filenames
 OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
-SiloDir = '//home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
+SiloDir = '/home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
 Filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
-start_time = 1.24e6  # in sec
+start_time = None #1.24e6  # in sec
 finish_time = None
 time_unit = 'sec'
 out_frequency = None
@@ -79,7 +79,7 @@ for step, silo_instant in enumerate(batched_silos):
     grid_mask = pion.geometry_container['mask']
 
 
-    temperature_bin = np.arange(3.0, 8.5, 0.02)
+    temperature_bin = np.arange(2.0, 8.5, 0.02)
 
     em = EM.DEM2D(density=density, temperature=temperature,
                   ne=ne,
@@ -97,7 +97,7 @@ for step, silo_instant in enumerate(batched_silos):
     plt.figure()
     plt.title(f"Differential Emission Measure")
     plt.plot(temperature_bin, np.log10(dem))
-    Filename = f"{Filebase}_FeNumDen_{sim_time.value:.2f}kyr.png"
+    Filename = f"{Filebase}_DEM_{sim_time.value:.2e}kyr.png"
     OutImageFile = os.path.join(OutputDir, Filename)
     plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)
     plt.close()
