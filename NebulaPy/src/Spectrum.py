@@ -32,7 +32,7 @@ class spectrum:
             N_point=1000,
             bremsstrahlung=False,
             freebound=False,
-            lines=False,
+            line=False,
             twophoton=False,
             filtername=None,
             filterfactor=None,
@@ -43,14 +43,14 @@ class spectrum:
         # flags and parameters
         self.bremsstrahlung = bremsstrahlung
         self.freebound = freebound
-        self.lines = lines
+        self.line = line
         self.twophoton = twophoton
         self.filtername = filtername
         self.filterfactor = filterfactor
         self.allLines = allLines
         self.verbose = verbose
 
-        if not (bremsstrahlung or freebound or lines or twophoton):
+        if not (bremsstrahlung or freebound or line or twophoton):
             util.nebula_exit_with_error("No emission processes specified")
 
         # wavelength and photon energy inputs
@@ -79,11 +79,14 @@ class spectrum:
 
         # Verbose output
         if self.verbose:
-            print("--- Spectrum Calculation --------------------------------")
-            print(f" Bremsstrahlung : {self.bremsstrahlung} | Free-bound : {self.freebound}")
-            print(f" Lines          : {self.lines} | Two-photon : {self.twophoton}")
-            print(f" Grid points    : {self.N_wvl}")
-            print("---------------------------------------------------------")
+            status = lambda x: "ON " if x else "OFF"
+            print(" [SPECTRUM MODULE] Radiative channels:")
+            print(f"   Bremsstrahlung  : {status(self.bremsstrahlung)}")
+            print(f"   Free-bound      : {status(self.freebound)}")
+            print(f"   Line emission   : {status(self.line)}")
+            print(f"   Two-photon      : {status(self.twophoton)}")
+            print(f"   Spectral resolution:  {self.N_wvl}")
+
 
 
 
@@ -198,14 +201,17 @@ class spectrum:
         line_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
         twophoton_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
 
+
+        #self.intensity = np.zeros(N_temp, dtype=np.float64)
+
         for species in self.chianti_species_attributes:
 
-            if species != 'o_8':
+            if species != 'fe_14':
                 continue
-
+            print(f"only fe_14 is calculated in this test...")
 
             # find the element the species belong to
-            element = self.chianti_species_attributes[species]['Element']
+            #element = self.chianti_species_attributes[species]['Element']
             # position of the corresponding element of the species in silo elements array
             #pos = np.where(self.elements == element)[0][0]
             # charge of the species
@@ -242,16 +248,19 @@ class spectrum:
 
             # Bremsstrahlung (free-free)
             if self.bremsstrahlung and 'ff' in species_processes:
-                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate(
+                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate2(
                     wavelength=self.wavelength
                 )
 
+            # bound-free
+            if self.freebound and 'fb' in species_processes:
+                freebound_emission = CHIANTI.get_freebound_emission_rate(wavelength=self.wavelength)
 
-            # Line emission
-            #if self.lines and 'line' in species_processes:
-            #    line_emission = CHIANTI.get_line_emission()
+            # bound-free
+            if self.line and 'fb' in species_processes:
+                line_emission = CHIANTI.get_line_emission_rate(wavelength=self.wavelength)
 
-            CHIANTI.terminate()
+        CHIANTI.terminate()
 
         '''
         ion_density = [1.0]
@@ -267,6 +276,11 @@ class spectrum:
         #spectrum = {"spectrum": line_emission, "wavelength": self.wavelength}
         '''
 
+        self.intensity = {
+            'bremsstrahlung': bremsstrahlung_emission,
+            'freebound': freebound_emission,
+            'line': line_emission,
+        }
 
-        self.intensity = bremsstrahlung_emission * 1.e+27
+        #self.intensity = freebound_emission * 1.e+27
 

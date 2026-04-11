@@ -130,7 +130,8 @@ class emission_measure():
         # temp_bin: array of temperature bins in logspace
         # hw:       half-width of bin
 
-
+        # todo: this function need to be optimized and rewritten.
+        # info: this fucntion is now used inside Xray spectrum.py
         density = density
         temp = temperature
         mask = mask
@@ -146,7 +147,7 @@ class emission_measure():
             denj = density[j]
             tempj = temp[j]
             maskj = mask[j]
-            # info:
+            # info: replaced with my code to calculate the cell volume and ne
             #volj = self.volume2D(lim_max[j], lim_min[j], ngrid)
             volj = vol[j]
             #nei = denj * maskj
