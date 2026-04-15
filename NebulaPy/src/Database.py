@@ -71,7 +71,7 @@ class database:
     ######################################################################################
     # Interpolate ion fraction for a given ion and temperature(s)
     ######################################################################################
-    def get_ion_fraction(self, ion, Temperature):
+    def get_cie_fraction(self, ion, Temperature):
         """
         Interpolate ion fraction for scalar or array Temperature (Kelvin).
         """

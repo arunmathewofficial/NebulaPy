@@ -206,9 +206,9 @@ class spectrum:
 
         for species in self.chianti_species_attributes:
 
-            if species != 'fe_14':
+            if species != 'fe_25':
                 continue
-            print(f"only fe_14 is calculated in this test...")
+            print(f"only fe_25 is calculated in this test...")
 
             # find the element the species belong to
             #element = self.chianti_species_attributes[species]['Element']
@@ -260,7 +260,7 @@ class spectrum:
             if self.line and 'fb' in species_processes:
                 line_emission = CHIANTI.get_line_emission_rate(wavelength=self.wavelength)
 
-        CHIANTI.terminate()
+            CHIANTI.terminate()
 
         '''
         ion_density = [1.0]
@@ -281,6 +281,3 @@ class spectrum:
             'freebound': freebound_emission,
             'line': line_emission,
         }
-
-        #self.intensity = freebound_emission * 1.e+27
-

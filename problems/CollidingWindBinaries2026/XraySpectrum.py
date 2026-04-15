@@ -114,28 +114,99 @@ for step, silo_instant in enumerate(batched_silos):
 '''
 
 
-
-
+'''
+# fixing the following issues
+# info: CIE calculation match for Nebulapy.
 database = nebula.database(verbose=True)
 database.load_cie()
+Temperature = np.logspace(np.log10(200), np.log10(1e9), 100)
+plt.figure()
+plt.title("Fe Ionisation Fractions (CIE)")
+# Loop over all Fe ions (Fe I to Fe XXVI → 1 to 26)
+for i in range(1, 28):
+    chianti_ion = f'fe_{i}'
 
+    CIE_data = database.get_cie_fraction(chianti_ion, Temperature)
 
-# fixing the following issues
-# info: 1. free-free calculation match for Nebulapy and ChiantiPy.
-# info: 2. free-bound calculation match for Nebulapy and ChiantiPy.
-# info: 3. bug fixed in free-free, now returns 2D array of shape (N_temperature, N_wavelength).
-# todo: 4. line emission rate do not match, need to fix it.
-# todo: 5. add two-photon emission calculation and comparison.
-# todo: 6. make sure all the emission calculations return same physical quantity and units.
+    plt.plot(np.log10(Temperature), np.log10(CIE_data),
+             linewidth=2,
+             label=chianti_ion.upper())
+plt.ylim(-2, 0)  # Adjust y-axis limits for better visibility
+plt.xlabel("log10(Temperature [K])")
+plt.ylabel("Ion Fraction")
+plt.legend(ncol=2, fontsize=8)  # better layout for many ions
 
+outfile = OutputDir + "/cie_fe_all.png"
+plt.savefig(outfile, dpi=300)
+plt.close()
 '''
 
+
+
+
+temperature = [1.e+7, 1.e+7]
+density = [1.e+9]
+ne = [1.e+9, 1.e+9]
+chianti_ion = 'fe_25'
+em = 1.0
+
+
+# info: chianti calculation using sub modules in ChiantiPy.
+'''
+i = ch.ion(chianti_ion, temperature, density, em=em)
+c = ch.continuum(chianti_ion, temperature=temperature, em=em)
+wvl = np.arange(2.6e3, 2.9e3, 0.1)
+c.freeFree(wvl, includeAbund=False, includeIoneq=False)
+c.freeBound(wvl, includeAbund=False, includeIoneq=False)
+c.freeFree(wvl)
+c.freeBound(wvl)
+i.twoPhoton(wvl)
+i.spectrum(wvl, filter=(chfilters.gaussian, 0.1), allLines=True)
+ff_emission_chianti = c.FreeFree['intensity']
+fb_emission_chianti = c.FreeBound['intensity']
+#two_photon_emission_chianti = i.TwoPhoton['intensity']
+line_emission_chianti = i.Spectrum['intensity']
+continuum_emission_chianti = ff_emission_chianti + fb_emission_chianti
+#total_emission_chianti = fb_emission_chianti + ff_emission_chianti + two_photon_emission_chianti + line_emission_chianti
+total_emission_chianti = fb_emission_chianti + ff_emission_chianti + line_emission_chianti
+
+plt.figure()
+plt.title(f" {chianti_ion} Emission Spectrum at T = {temperature[0]:.2e} K")
+
+# chianti plots
+plt.plot(wvl, total_emission_chianti[0], linewidth=1, color='black', label='ChiantiPy Total')
+#plt.plot(wvl, two_photon_emission_chianti[0], linewidth=1, color='green', linestyle='dashed', label='ChiantiPy 2-Photon')
+plt.plot(wvl, ff_emission_chianti[0], linewidth=1, color='red', linestyle='dashed', label='ChiantiPy Free-Free')
+plt.plot(wvl, fb_emission_chianti[0], linewidth=1, color='darkorange', linestyle='dotted', label='ChiantiPy Free-Bound')
+plt.plot(wvl, line_emission_chianti[0], label=f'ChiantiPy Line')
+energy = 12.39841984 / wvl
+#print(energy)
+# sort in increasing energy
+idx = np.argsort(energy)
+energy_sorted = energy[idx]
+line_sorted = line_emission_chianti[0][idx]
+#plt.plot(energy_sorted, total_emission_chianti[0][idx], label=f'ChiantiPy Total')
+#plt.plot(energy_sorted, line_sorted, label=f'ChiantiPy Line')
+#plt.plot(energy_sorted, two_photon_emission_chianti[0][idx], linewidth=1, color='green', linestyle='dashed', label='ChiantiPy 2-Photon')
+#plt.plot(energy_sorted, ff_emission_chianti[0][idx], linewidth=1, color='red', linestyle='dashed', label='ChiantiPy Free-Free')
+#plt.plot(energy_sorted, fb_emission_chianti[0][idx], linewidth=1, color='darkorange', linestyle='dotted', label='ChiantiPy Free-Bound')
+
+#plt.ylim(1.e-4, 5)
+#plt.yscale('log')
+plt.legend()
+xy = plt.axis()
+outfile = OutputDir + "/xray_spectrum.png"
+plt.savefig(outfile)
+'''
+
+
+
 spectrum = nebula.spectrum(
-    min_wavelength=200,  # Minimum wavelength in Angstroms
-    max_wavelength=300,  # Maximum wavelength in Angstroms
+    min_wavelength=1.0,  # Minimum wavelength in Angstroms
+    max_wavelength=13,  # Maximum wavelength in Angstroms
     min_photon_energy=None,  # Minimum photon energy in keV
     max_photon_energy=None,  # Maximum photon energy in keV
-    N_point=400,
+    N_point=2000,
     bremsstrahlung=True,
     freebound=True,
     line=True,
@@ -148,50 +219,81 @@ spectrum = nebula.spectrum(
 
 
 elements = ["H", "He", "Fe"]
-elemental_abundances = {"H": 0.70, "He": 0.28, "Fe": 0.02}
+# we use fe abundance =   2.95e-05 todo: is this mass fraction?
+elemental_abundances = {"H": 0.70, "He": 0.2999705, "Fe": 2.95e-05}
 spectrum.build_species_attributes(elements=elements, elemental_abundances=elemental_abundances)
 
-temperature = [2.e+6, 3.e+7]
-density = [1.e+9]
-ne = [1.e+9, 1.e+9]
-chianti_ion = 'fe_14'
-
-# my calculation
+# nebulapy calculation
 wvl = spectrum.wavelength
 spectrum.compute_emission(temperature=temperature, density=density, ne=ne)
-my_ff_emission = spectrum.intensity['bremsstrahlung']
-my_fb_emission = spectrum.intensity['freebound']
+ff_emission = spectrum.intensity['bremsstrahlung']
+fb_emission = spectrum.intensity['freebound']
+# todo: line emission rate do not match, need to fix it.
+line_emission = spectrum.intensity['line']
 
-# chianti calculation
-c = ch.continuum(chianti_ion, temperature=temperature, em=None)
-c.freeFree(wvl, includeAbund=False, includeIoneq=False)
-c.freeBound(wvl, includeAbund=False, includeIoneq=False)
-ff_emission_chianti = c.FreeFree['intensity']
-fb_emission_chianti = c.FreeBound['intensity']
+continuum_emission = ff_emission + fb_emission
+total_emission = continuum_emission + line_emission
+
+abuandance = elemental_abundances['Fe']
+# get the CIE ion fraction for the given ion and temperature
+database = nebula.database(verbose=True)
+database.load_cie()
+ionfrac = database.get_cie_fraction(chianti_ion, temperature)
+print(f"CIE {chianti_ion} ion fraction: {ionfrac}")
+
 
 # line emission for the same conditions
-resolving_power = len(wvl)/1000
-line = ch.ion(chianti_ion, temperature=temperature, eDensity=ne, em=1.0, verbose=True)
-line.spectrum(wvl, filter=(chfilters.gaussian, resolving_power), allLines=True)
+#resolving_power = len(wvl)/1000
+#line = ch.ion(chianti_ion, temperature=temperature, eDensity=ne, em=1.0, verbose=True)
+#line.spectrum(wvl, filter=(chfilters.gaussian, resolving_power), allLines=True)
 # my calculation for line emission
-my_line_emission = spectrum.intensity['line']
+#my_line_emission = spectrum.intensity['line']
+
+
+energy = 12.39841984 / wvl
+# sort in increasing energy
+idx = np.argsort(energy)
+energy = energy[idx]
 
 plt.figure()
-plt.title(f" {chianti_ion} Emission Spectrum at T = {temperature[0]:.2e} K")
-
-
-plt.plot(wvl, my_ff_emission[0],linewidth=2, color='black', label='NebulaPy Free-Free')
-plt.plot(wvl, my_fb_emission[0], linewidth=2, color='blue', label='NebulaPy Free-Free')
-plt.plot(wvl, ff_emission_chianti[0], linewidth=2, color='red', linestyle='dashed', label='ChiantiPy Free-Free')
-plt.plot(wvl, fb_emission_chianti[0], linewidth=2, color='darkorange', linestyle='dotted', label='ChiantiPy Free-Bound')
-
-#plt.plot(wvl, line.Spectrum['intensity'][0], label=f'ChiantiPy Line {}')
-#plt.plot(wvl, my_line_emission[0], label='NebulaPy Line')
-#plt.ylim(0, 400)
+plt.title(f" {chianti_ion} x-ray spectrum at T = {temperature[0]:.2e} K")
+plt.plot(energy, total_emission[0][idx], linewidth=1, color='black', label='ChiantiPy Spectrum')
 plt.legend()
 xy = plt.axis()
-outfile = OutputDir + "/xray_spectrum.png"
+outfile = OutputDir + "/xray_nebulapy.png"
 plt.savefig(outfile)
 
 
+# info: original chianti calculation using spectrum method.
+'''
+ionlist= ['fe_25']
+temperature = np.array([1e+7, 1e+7])
+density = 1e9
+wavelength = np.linspace(1, 13, 2000)
+min_abund = 2.e-5
+spec = ch.spectrum(
+    temperature,
+    density,
+    wavelength,
+    ionList=ionlist,
+    doLines=True,
+    doContinuum=True,
+    #minAbund=min_abund,
+    em=1.e27,
+    verbose=True,
+)
+
+
+energy = 12.39841984 / wavelength
+# sort in increasing energy
+idx = np.argsort(energy)
+energy = energy[idx]
+xray_spectrum = spec.Spectrum['intensity'][0][idx]
+plt.figure()
+plt.title(f" {ionlist[0]} x-ray spectrum at T = {temperature[0]:.2e} K")
+plt.plot(energy, xray_spectrum, linewidth=1, color='black', label='ChiantiPy Spectrum')
+plt.legend()
+xy = plt.axis()
+outfile = OutputDir + "/xray_chainti_test.png"
+plt.savefig(outfile)
 '''
