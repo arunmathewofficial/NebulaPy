@@ -20,8 +20,9 @@ import ChiantiPy.tools.data as chdata
 # constants
 cm2au = 6.68459e-14  # cm to au conversion factor
 
-
+# Macbook
 OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Output image directory
+
 
 '''
 #Razer Blade -> Set up paths and filenames
