@@ -400,71 +400,6 @@ class chianti:
     ######################################################################################
     def get_bremsstrahlung_emission_rate(self, wavelength):
         """
-        Calculates the free-free emission (bremsstrahlung) rate for a single ion using the following formula:
-        .. math::
-           \\frac{dW}{dtdVd\lambda} = \\frac{c}{3m_e}\\left(\\frac{\\alpha h}{\pi}\\right)^3
-           \\left(\\frac{2\pi}{3m_e k_B}\\right)^{1/2}\\frac{Z^2}{\lambda^2 T^{1/2}}
-           \exp\\left(-\\frac{hc}{\lambda k_B T}\\right) \\bar{g}_{ff},
-
-        where :math:`\nu = c/\lambda`, :math:`\\alpha` is the fine structure constant, :math:`Z` is the nuclear charge,
-        and :math:`\\bar{g}_{ff}` is the velocity-averaged Gaunt factor.
-
-        The free-free emission is calculated in units of
-        :math:`\mathrm{erg}\ \mathrm{cm}^3\ \mathrm{s}^{-1}\ \mathrm{\mathring{A}}^{-1}\ \mathrm{str}^{-1}`.
-
-        Parameters:
-        ----------
-        wavelength : array-like
-            The wavelength(s) at which to calculate the emission, in angstroms.
-
-        Returns:
-        -------
-        free_free_emission : numpy.ndarray
-            The calculated free-free emission rate for the given wavelength(s).
-        """
-
-        # Calculate the ion's nuclear charge (Z)
-        Zion = self.chianti_ion.Ion - 1
-
-        # Create a continuum object for calculating Gaunt factors
-        continuum_gaunt = continuum(self.chianti_ion_name, temperature=self.temperature,
-                                    abundance=None, em=None, verbose=True)
-
-        # If verbose, print the ion's spectroscopic label
-        if self.verbose:
-            print(f'Computing bremsstrahlung emission rate for {self.chianti_ion.Spectroscopic}')
-
-        # Ensure wavelength is treated as an array
-        wavelength = np.atleast_1d(wavelength)
-
-        # Define the numerical prefactor for the emission formula
-        prefactor = ((const.c * 1e8) / (3. * const.emass) *
-                     (const.alpha * const.h / const.pi) ** 3 *
-                     np.sqrt(2. * const.pi / (3. * const.emass * const.kB)))
-
-        # Include temperature dependence in the prefactor
-        prefactor *= Zion ** 2 / np.sqrt(self.temperature)
-
-        # Calculate the exponential factor based on temperature and wavelength
-        exp_factor = np.exp(-const.planck * (1.e8 * const.light) / const.boltzmann /
-                            np.outer(self.temperature, wavelength)) / (wavelength ** 2)
-
-        # Calculate the Gaunt factor using the continuum spectrum object
-        gf_itoh = continuum_gaunt.itoh_gaunt_factor(wavelength)
-        gf_sutherland = continuum_gaunt.sutherland_gaunt_factor(wavelength)
-        gf = np.where(np.isnan(gf_itoh), gf_sutherland, gf_itoh)
-
-        # Calculate the final free-free emission and ensure the result is properly shaped
-        bremsstrahlung_emission_rate = (prefactor[:, np.newaxis] * exp_factor * gf).squeeze()
-
-        # If verbose, indicate completion
-        if self.verbose:
-            print(f"[DONE] {self.chianti_ion.Spectroscopic}: bremsstrahlung emission computed")
-
-        return bremsstrahlung_emission_rate
-
-    def get_bremsstrahlung_emission_rate2(self, wavelength):
-        """
         Calculates the free-free emission (bremsstrahlung) rate for a single ion.
 
         Returns
@@ -479,6 +414,9 @@ class chianti:
         # -----------------------------
         # Prepare temperature and wavelength
         # -----------------------------
+
+        print(self.temperature)
+
         temperature = np.asarray(self.temperature, dtype=np.float64).reshape(-1)
         wavelength = np.asarray(wavelength, dtype=np.float64).reshape(-1)
 
@@ -504,11 +442,10 @@ class chianti:
         if self.verbose:
             print(f"Computing bremsstrahlung emission rate for {self.chianti_ion.Spectroscopic}")
 
-        prefactor_const = (
-                (const.c * 1e8) / (3.0 * const.emass)
-                * (const.alpha * const.h / const.pi) ** 3
-                * np.sqrt(2.0 * const.pi / (3.0 * const.emass * const.kB))
-        )
+
+        prefactor_const = ((const.light * 1e8) / 3. / const.emass
+                     * (const.fine * const.planck / np.pi) ** 3
+                     * np.sqrt(2. * const.pi / 3. / const.emass / const.kB))
 
         # shape -> (nT, 1)
         prefactor = (prefactor_const * Zion ** 2 / np.sqrt(temperature))[:, np.newaxis]
@@ -525,8 +462,8 @@ class chianti:
         # -----------------------------
         # Gaunt factors
         # -----------------------------
-        gf_itoh = np.asarray(continuum_gaunt.itoh_gaunt_factor(wavelength), dtype=np.float64)
-        gf_sutherland = np.asarray(continuum_gaunt.sutherland_gaunt_factor(wavelength), dtype=np.float64)
+        gf_itoh = np.asarray(continuum_gaunt.itoh_gaunt_factor(wavelength))
+        gf_sutherland = np.asarray(continuum_gaunt.sutherland_gaunt_factor(wavelength))
 
         # Replace NaNs in Itoh with Sutherland
         gf = np.where(np.isnan(gf_itoh), gf_sutherland, gf_itoh)
@@ -534,32 +471,6 @@ class chianti:
         # -----------------------------
         # Force Gaunt factor to shape (nT, nW)
         # -----------------------------
-        gf = np.squeeze(gf)
-
-        if gf.ndim == 1:
-            # Case: only wavelength dependence returned
-            if gf.size != nW:
-                raise ValueError(
-                    f"Gaunt factor has shape {gf.shape}, expected ({nW},) for 1D case."
-                )
-            gf = np.broadcast_to(gf[np.newaxis, :], (nT, nW))
-
-        elif gf.ndim == 2:
-            if gf.shape == (nT, nW):
-                pass
-            elif gf.shape == (1, nW):
-                gf = np.broadcast_to(gf, (nT, nW))
-            elif gf.shape == (nT, 1):
-                gf = np.broadcast_to(gf, (nT, nW))
-            else:
-                raise ValueError(
-                    f"Unexpected 2D Gaunt factor shape {gf.shape}; expected ({nT}, {nW})."
-                )
-
-        else:
-            raise ValueError(
-                f"Gaunt factor must be 1D or 2D after squeeze, got shape {gf.shape}."
-            )
 
         # -----------------------------
         # Final emission
@@ -567,10 +478,15 @@ class chianti:
         # -----------------------------
         bremsstrahlung_emission_rate = prefactor * exp_factor * gf
 
+
+
         # Final safety check
         bremsstrahlung_emission_rate = np.asarray(
-            bremsstrahlung_emission_rate, dtype=np.float64
-        ).reshape(nT, nW)
+            bremsstrahlung_emission_rate,
+            dtype=np.float64
+        ).squeeze()
+
+        print(f"numerical prefactor: {bremsstrahlung_emission_rate}")
 
         if self.verbose:
             print(f"[DONE] {self.chianti_ion.Spectroscopic}: bremsstrahlung emission computed")

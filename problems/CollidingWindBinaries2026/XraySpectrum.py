@@ -142,9 +142,6 @@ plt.savefig(outfile, dpi=300)
 plt.close()
 '''
 
-
-
-
 temperature = [1.e+7, 1.e+7]
 density = [1.e+9]
 ne = [1.e+9, 1.e+9]
@@ -153,6 +150,7 @@ em = 1.0
 
 
 # info: chianti calculation using sub modules in ChiantiPy.
+#########################################################################
 '''
 i = ch.ion(chianti_ion, temperature, density, em=em)
 c = ch.continuum(chianti_ion, temperature=temperature, em=em)
@@ -191,17 +189,25 @@ line_sorted = line_emission_chianti[0][idx]
 #plt.plot(energy_sorted, two_photon_emission_chianti[0][idx], linewidth=1, color='green', linestyle='dashed', label='ChiantiPy 2-Photon')
 #plt.plot(energy_sorted, ff_emission_chianti[0][idx], linewidth=1, color='red', linestyle='dashed', label='ChiantiPy Free-Free')
 #plt.plot(energy_sorted, fb_emission_chianti[0][idx], linewidth=1, color='darkorange', linestyle='dotted', label='ChiantiPy Free-Bound')
-
 #plt.ylim(1.e-4, 5)
 #plt.yscale('log')
 plt.legend()
 xy = plt.axis()
-outfile = OutputDir + "/xray_spectrum.png"
+outfile = OutputDir + "/Fe25_spectrum_chianti_SubModules.png"
 plt.savefig(outfile)
+#########################################################################
 '''
 
+print("\n\n\n")
+print("NEBULAPY #########################################################################")
 
+temperature = [1.e+7]
+density = [1.e+9]
+ne = [1.e+9, 1.e+9]
+chianti_ion = 'fe_25'
+em = 1.0
 
+# info: nebulapy calculation for the same conditions.
 spectrum = nebula.spectrum(
     min_wavelength=1.0,  # Minimum wavelength in Angstroms
     max_wavelength=13,  # Maximum wavelength in Angstroms
@@ -210,7 +216,7 @@ spectrum = nebula.spectrum(
     N_point=2000,
     bremsstrahlung=True,
     freebound=True,
-    line=True,
+    line=False,
     twophoton=False,
     filtername=None,
     filterfactor=None,
@@ -220,9 +226,11 @@ spectrum = nebula.spectrum(
 
 
 elements = ["H", "He", "Fe"]
-# we use fe abundance =   2.95e-05 todo: is this mass fraction?
-elemental_abundances = {"H": 0.70, "He": 0.2999705, "Fe": 2.95e-05}
+elemental_abundances = {"H": 0.70, "He": 0.29879, "Fe": 1.21e-03}
 spectrum.build_species_attributes(elements=elements, elemental_abundances=elemental_abundances)
+
+
+
 
 # nebulapy calculation
 wvl = spectrum.wavelength
@@ -232,15 +240,24 @@ fb_emission = spectrum.intensity['freebound']
 # todo: line emission rate do not match, need to fix it.
 line_emission = spectrum.intensity['line']
 
-continuum_emission = ff_emission + fb_emission
-total_emission = continuum_emission + line_emission
+continuum_emission = ff_emission \
+                     #+ fb_emission
+total_emission = continuum_emission #+ line_emission
 
-abuandance = elemental_abundances['Fe']
+mass_fraction = elemental_abundances['Fe']
+m_u = 1.6605e-24
+A_Fe = 55.845
+gas_density = density[0] * 1.18 * 1.67e-24
+n_fe = gas_density * mass_fraction / (A_Fe * m_u)
+
+print(f"Number density of Fe: {n_fe:.2e} cm^-3")
 # get the CIE ion fraction for the given ion and temperature
 database = nebula.database(verbose=True)
 database.load_cie()
-ionfrac = database.get_cie_fraction(chianti_ion, temperature)
+ionfrac = database.get_cie_fraction('fe_25', temperature)
 print(f"CIE {chianti_ion} ion fraction: {ionfrac}")
+n_fe25 = n_fe * ionfrac[0]
+print(f"number density of {chianti_ion}: {n_fe25:.2e} cm^-3")
 
 
 # line emission for the same conditions
@@ -250,6 +267,10 @@ print(f"CIE {chianti_ion} ion fraction: {ionfrac}")
 # my calculation for line emission
 #my_line_emission = spectrum.intensity['line']
 
+# scale by the number density of the ion and emission measure
+# EM is set to unity here
+total_emission = total_emission
+
 
 energy = 12.39841984 / wvl
 # sort in increasing energy
@@ -257,18 +278,23 @@ idx = np.argsort(energy)
 energy = energy[idx]
 
 plt.figure()
-plt.title(f" {chianti_ion} x-ray spectrum at T = {temperature[0]:.2e} K")
-plt.plot(energy, total_emission[0][idx], linewidth=1, color='black', label='ChiantiPy Spectrum')
+plt.title(f" NebulaPy {chianti_ion} spectrum at T = {temperature[0]:.2e} K")
+plt.plot(energy, total_emission[0][idx], linewidth=1, color='black', label='NebulaPy Spectrum')
 plt.legend()
 xy = plt.axis()
-outfile = OutputDir + "/xray_nebulapy.png"
+outfile = OutputDir + "/Fe25_spectrum_nebulapy.png"
 plt.savefig(outfile)
+
+print("\n")
+print("CHIANTIPY#########################################################################")
 
 
 # info: original chianti calculation using spectrum method.
-'''
+#################################################################################
+# this calculation use sun_photospheric_2015_scott abundance
+
 ionlist= ['fe_25']
-temperature = np.array([1e+7, 1e+7])
+temperature = np.array([1e+7])
 density = 1e9
 wavelength = np.linspace(1, 13, 2000)
 min_abund = 2.e-5
@@ -277,13 +303,14 @@ spec = ch.spectrum(
     density,
     wavelength,
     ionList=ionlist,
-    doLines=True,
+    doLines=False,
     doContinuum=True,
     #minAbund=min_abund,
-    em=1.e27,
+    em=None, # None will set EM =1.0 for every temperature element.
     verbose=True,
 )
 
+print(spec.Spectrum)
 
 energy = 12.39841984 / wavelength
 # sort in increasing energy
@@ -291,10 +318,58 @@ idx = np.argsort(energy)
 energy = energy[idx]
 xray_spectrum = spec.Spectrum['intensity'][0][idx]
 plt.figure()
-plt.title(f" {ionlist[0]} x-ray spectrum at T = {temperature[0]:.2e} K")
+plt.title(f" ChiantiPy Spectrum Method Ion: {ionlist[0]} at T = {temperature[0]:.2e} K")
 plt.plot(energy, xray_spectrum, linewidth=1, color='black', label='ChiantiPy Spectrum')
 plt.legend()
 xy = plt.axis()
-outfile = OutputDir + "/xray_chainti_test.png"
+outfile = OutputDir + "/Chianti_spectrum_meth_Fe25.png"
 plt.savefig(outfile)
+#################################################################################
+
+
+
+
+
+
+
+
+
+
+# sun_photospheric_2015_scottabundances from chianti database
+''' 
+ 1  12.00  H
+ 2  10.93  He
+ 3   1.05  Li
+ 4   1.38  Be
+ 5   2.70  B
+ 6   8.43  C
+ 7   7.83  N
+ 8   8.69  O
+ 9   4.40  F
+10   7.93  Ne
+11   6.21  Na
+12   7.59  Mg
+13   6.43  Al
+14   7.51  Si
+15   5.41  P
+16   7.12  S
+17   5.50  Cl
+18   6.40  Ar
+19   5.04  K
+20   6.32  Ca
+21   3.16  Sc
+22   4.93  Ti
+23   3.89  V
+24   5.62  Cr
+25   5.42  Mn
+26   7.47  Fe
+27   4.93  Co
+28   6.20  Ni
+29   4.18  Cu
+30   4.56  Zn
+
+
+Convert log abundance to number abundance
+Fe: 7.47
+A(Fe)=10^{7.47−12}=10^{−4.53} = 2.95×10^{-5}
 '''

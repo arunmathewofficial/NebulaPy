@@ -206,9 +206,11 @@ class spectrum:
 
         for species in self.chianti_species_attributes:
 
-            if species != 'fe_25':
+            print(species)
+
+            if species != 'fe_25' and species != 'fe_27':
                 continue
-            print(f"only fe_25 is calculated in this test...")
+            print(f"only {species} is calculated in this test...")
 
             # find the element the species belong to
             #element = self.chianti_species_attributes[species]['Element']
@@ -248,7 +250,7 @@ class spectrum:
 
             # Bremsstrahlung (free-free)
             if self.bremsstrahlung and 'ff' in species_processes:
-                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate2(
+                bremsstrahlung_emission += CHIANTI.get_bremsstrahlung_emission_rate(
                     wavelength=self.wavelength
                 )
 
