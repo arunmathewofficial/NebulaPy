@@ -63,8 +63,12 @@ def compute_emissivity(workerQ, doneQ, timeout=0.1):
                 lines=lines, temperature=temperature, ne=ne,
                 progress_bar=True)
 
+            norm_line_emissivity = np.zeros_like(emissivity)
+            for l in range(N_level):
+                norm_line_emissivity[l] = emissivity[l] * species_density[l] * mask[l]
+
             print(f" Multiprocessing: finished computing emissivity for {ion_name:<4} lines")
-            doneQ.put({ion_name: emissivity})  # Store result
+            doneQ.put({ion_name: norm_line_emissivity})  # Store result
         except queue.Empty:  # Use correct exception for empty queue
             util.nebula_exit_with_error(f"Multiprocessing - no task in queue")
             break  # Queue is empty, exit loop
@@ -278,7 +282,6 @@ if __name__ == "__main__":
 
     # Loop over each time instant in the batched silo files
     runtime = 0.0
-    write_heading = True
     # Number of time instant in NEQ batched silo should be same as IEQ.
     N_time_instant = len(neq_batched_silos)
     for step, (neq_silo, ieq_silo) in enumerate(zip(neq_batched_silos, ieq_batched_silos)):
@@ -362,7 +365,6 @@ if __name__ == "__main__":
         dims_min = (BasicDate['min_extents'] * unit.cm).to(unit.pc)
         distance_unit_str = 'pc'
 
-
         # NEQ emissivity plot
         axs_neq.set_yticks([0.5, 1, 1.5, 2.0])  # Set specific tick positions
         axs_neq.tick_params(axis='y', labelsize=10)  # Adjust font size of y-axis ticks
@@ -376,13 +378,6 @@ if __name__ == "__main__":
                        dims_min[l][1].value, dims_max[l][1].value]
             image = axs_neq.imshow(plot_data, interpolation='nearest', cmap='viridis',
                                        extent=extents, origin='lower', vmin=-27, vmax=-22.0)
-        '''
-        divider = make_axes_locatable(axs_neq)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        colorbar = plt.colorbar(image, cax=cax, ticks=[-27.0, -26.0, -25.0, -24.0, -23.0, -22.0])
-        colorbar.ax.yaxis.set_major_formatter(ScalarFormatter())
-        colorbar.update_ticks()
-        '''
 
         axs_neq.set_ylabel('R (' + distance_unit_str + ')', fontsize=12)
         axs_neq.text(0.88, 0.8, 'NEQ', transform=axs_neq.transAxes,
@@ -404,15 +399,6 @@ if __name__ == "__main__":
             image = axs_ieq.imshow(plot_data, interpolation='nearest', cmap='viridis',
                                     extent=extents, vmin=-27, vmax=-22)
 
-        '''
-        divider = make_axes_locatable(axs_ieq)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        cbar = plt.colorbar(image, cax=cax, ticks=[3.0, 4.0, 5.0, 6.0, 7.0])
-        cbar.ax.yaxis.set_major_formatter(ScalarFormatter())
-        cbar.update_ticks()
-        pos = cax.get_position()
-        cax.set_position([pos.x0, pos.y0 + 0.1, pos.width, pos.height * 0.7])
-        '''
         axs_ieq.text(0.88, 0.1, 'IEQ', transform=axs_ieq.transAxes,
                      color='black', fontsize=12, bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
         axs_ieq.set_xlabel('z (' + distance_unit_str + ')', fontsize=12)
@@ -429,8 +415,6 @@ if __name__ == "__main__":
         fig.savefig(outfile, bbox_inches='tight', dpi=100)
         print(f" Saved snapshot to {filename}")
         plt.close(fig)
-
-
 
         del neq_lines_emissivity_dict
         del ieq_lines_emissivity_dict
