@@ -183,7 +183,7 @@ if __name__ == "__main__":
     spatial_scale = 'cm' # Issue: While calculating line luminosities set spatial scale to 'cm'
     # Output configuration
     output_dir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/Llines-NEQ-IEQ'
-    filename = neq_filebase + '_Llines_NEQ_IEQ.txt'
+    filename = neq_filebase + '_OxyEmiss_NEQ_IEQ.txt'
     outfile = os.path.join(output_dir, filename)
 
 
@@ -261,11 +261,11 @@ if __name__ == "__main__":
         # Initialise emission object
         le = nebula.line_emission(ion, verbose=True)
         # availability check (if applicable)
-        if hasattr(le, "chianti_line_batch_check"):
-            if ion == 'H':
-                le.pyneb_line_batch_check(lines)
-            else:
-                le.chianti_line_batch_check(lines)
+        #if hasattr(le, "chianti_line_batch_check"):
+        #    if ion == 'H':
+        #        le.pyneb_line_batch_check(lines)
+        #    else:
+        #        le.chianti_line_batch_check(lines)
 
         # Store for later luminosity / time-evolution calculations
         line_emission_objects[ion] = le
@@ -275,12 +275,12 @@ if __name__ == "__main__":
     neq_geometry = neq_pion.geometry_container
     N_grid_level_neq = neq_geometry['Nlevel']
     grid_mask_neq = neq_geometry['mask']
-    cell_volume_neq = neq_pion.get_cylindrical_cell_volume().value
+    cell_volume_neq = neq_pion.get_2D_cell_volumes()
 
     ieq_geometry = ieq_pion.geometry_container
     N_grid_level_ieq = ieq_geometry['Nlevel']
     grid_mask_ieq = ieq_geometry['mask']
-    cell_volume_ieq = ieq_pion.get_cylindrical_cell_volume().value
+    cell_volume_ieq = ieq_pion.get_2D_cell_volumes()
 
 
     # Write initial header to the output file
