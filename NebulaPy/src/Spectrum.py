@@ -50,6 +50,7 @@ class spectrum:
         self.allLines = allLines
         self.verbose = verbose
 
+
         if not (bremsstrahlung or freebound or line or twophoton):
             util.nebula_exit_with_error("No emission processes specified")
 
@@ -87,6 +88,8 @@ class spectrum:
             print(f"   Two-photon      : {status(self.twophoton)}")
             print(f"   Spectral resolution:  {self.N_wvl}")
 
+        # Initialize empty attributes for species and elemental abundances
+        self.chianti_species_attributes = {}
 
 
 
@@ -187,6 +190,9 @@ class spectrum:
         # info: there is no multiprocessing calculation for this method, rather make use of Numba. Will
         #  use multiprocessing to parallelize over cells.
 
+        if not self.chianti_species_attributes:
+            util.nebula_exit_with_error(" Species Attributes Container is not initialized or is empty.")
+
         # Convert the temperature list to a NumPy array for efficient numerical operations.
         temperature = np.array(temperature, dtype=np.float64)
         density = np.asarray(density, dtype=np.float64)
@@ -206,11 +212,10 @@ class spectrum:
 
         for species in self.chianti_species_attributes:
 
-            print(species)
-
-            if species != 'fe_25' and species != 'fe_27':
+            if species != 'fe_25':
+                util.nebula_warning(f"Skipping {species} ...")
                 continue
-            print(f"only {species} is calculated in this test...")
+            util.nebula_info(f"Only {species} is calculated in this test...")
 
             # find the element the species belong to
             #element = self.chianti_species_attributes[species]['Element']
@@ -250,7 +255,7 @@ class spectrum:
 
             # Bremsstrahlung (free-free)
             if self.bremsstrahlung and 'ff' in species_processes:
-                bremsstrahlung_emission += CHIANTI.get_bremsstrahlung_emission_rate(
+                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate(
                     wavelength=self.wavelength
                 )
 
@@ -259,7 +264,7 @@ class spectrum:
                 freebound_emission = CHIANTI.get_freebound_emission_rate(wavelength=self.wavelength)
 
             # bound-free
-            if self.line and 'fb' in species_processes:
+            if self.line and 'line' in species_processes:
                 line_emission = CHIANTI.get_line_emission_rate(wavelength=self.wavelength)
 
             CHIANTI.terminate()

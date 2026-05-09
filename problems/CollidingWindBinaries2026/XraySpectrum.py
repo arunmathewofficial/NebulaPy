@@ -142,11 +142,11 @@ plt.savefig(outfile, dpi=300)
 plt.close()
 '''
 
-temperature = [1.e+7, 1.e+7]
-density = [1.e+9]
-ne = [1.e+9, 1.e+9]
-chianti_ion = 'fe_25'
-em = 1.0
+#temperature = [1.e+7]
+#density = [1.e+9]
+#ne = [1.e+9, 1.e+9]
+#chianti_ion = 'fe_25'
+#em = 1.0
 
 
 # info: chianti calculation using sub modules in ChiantiPy.
@@ -198,14 +198,18 @@ plt.savefig(outfile)
 #########################################################################
 '''
 
-print("\n\n\n")
+print("\n")
+ionlist = ['fe_25']
+print(f" Testing for ion {ionlist[0]}")
+print(f" -------------------------------\n")
+
+temperature = np.array([10**7.0])
+density = [1.e+9]
+wavelength = np.linspace(1, 13, 2000)
+
+
 print("NEBULAPY #########################################################################")
 
-temperature = [1.e+7]
-density = [1.e+9]
-ne = [1.e+9, 1.e+9]
-chianti_ion = 'fe_25'
-em = 1.0
 
 # info: nebulapy calculation for the same conditions.
 spectrum = nebula.spectrum(
@@ -216,7 +220,7 @@ spectrum = nebula.spectrum(
     N_point=2000,
     bremsstrahlung=True,
     freebound=True,
-    line=False,
+    line=True,
     twophoton=False,
     filtername=None,
     filterfactor=None,
@@ -229,48 +233,40 @@ elements = ["H", "He", "Fe"]
 elemental_abundances = {"H": 0.70, "He": 0.29879, "Fe": 1.21e-03}
 spectrum.build_species_attributes(elements=elements, elemental_abundances=elemental_abundances)
 
-
+# Calculate number density
+# info: number denisty calculation is just for testing the module
+mass_fraction = elemental_abundances['Fe']
+# Fraction of number denisty of Fe to H, from chianti database
+# sun_photospheric_2015_scott abundance.
+A_Fe = 2.96e-5
+print(f" Fe Abundance: {A_Fe:.2e} cm^-3")
+# get the CIE ion fraction for the given
+# ion and temperature
+database = nebula.database(verbose=True)
+database.load_cie()
+ionfrac = database.get_cie_fraction(ionlist[0], temperature)
+print(f"CIE {ionlist[0]} ion fraction: {ionfrac}")
+A_ion = A_Fe * ionfrac[0]
+print(f"Ion Abuandance {ionlist[0]}: {A_ion:.2e}")
 
 
 # nebulapy calculation
 wvl = spectrum.wavelength
-spectrum.compute_emission(temperature=temperature, density=density, ne=ne)
+spectrum.compute_emission(temperature=temperature, density=density, ne=density)
 ff_emission = spectrum.intensity['bremsstrahlung']
 fb_emission = spectrum.intensity['freebound']
 # todo: line emission rate do not match, need to fix it.
-line_emission = spectrum.intensity['line']
-
-continuum_emission = ff_emission \
-                     #+ fb_emission
-total_emission = continuum_emission #+ line_emission
-
-mass_fraction = elemental_abundances['Fe']
-m_u = 1.6605e-24
-A_Fe = 55.845
-gas_density = density[0] * 1.18 * 1.67e-24
-n_fe = gas_density * mass_fraction / (A_Fe * m_u)
-
-print(f"Number density of Fe: {n_fe:.2e} cm^-3")
-# get the CIE ion fraction for the given ion and temperature
-database = nebula.database(verbose=True)
-database.load_cie()
-ionfrac = database.get_cie_fraction('fe_25', temperature)
-print(f"CIE {chianti_ion} ion fraction: {ionfrac}")
-n_fe25 = n_fe * ionfrac[0]
-print(f"number density of {chianti_ion}: {n_fe25:.2e} cm^-3")
+line_emission = spectrum.intensity['line'][0]
 
 
-# line emission for the same conditions
-#resolving_power = len(wvl)/1000
-#line = ch.ion(chianti_ion, temperature=temperature, eDensity=ne, em=1.0, verbose=True)
-#line.spectrum(wvl, filter=(chfilters.gaussian, resolving_power), allLines=True)
-# my calculation for line emission
-#my_line_emission = spectrum.intensity['line']
+continuum_emission = ff_emission + fb_emission
+total_emission = continuum_emission \
+                 #+ line_emission
 
 # scale by the number density of the ion and emission measure
 # EM is set to unity here
-total_emission = total_emission
-
+em = 1.0
+total_emission = total_emission * A_ion
 
 energy = 12.39841984 / wvl
 # sort in increasing energy
@@ -278,11 +274,11 @@ idx = np.argsort(energy)
 energy = energy[idx]
 
 plt.figure()
-plt.title(f" NebulaPy {chianti_ion} spectrum at T = {temperature[0]:.2e} K")
-plt.plot(energy, total_emission[0][idx], linewidth=1, color='black', label='NebulaPy Spectrum')
+plt.title(f" NebulaPy {ionlist[0]} spectrum at T = {temperature[0]:.2e} K")
+plt.plot(energy, total_emission[idx], linewidth=1, color='black', label='NebulaPy Spectrum')
 plt.legend()
 xy = plt.axis()
-outfile = OutputDir + "/Fe25_spectrum_nebulapy.png"
+outfile = OutputDir + f"/spectrum_nebulapy.png"
 plt.savefig(outfile)
 
 print("\n")
@@ -293,39 +289,44 @@ print("CHIANTIPY################################################################
 #################################################################################
 # this calculation use sun_photospheric_2015_scott abundance
 
-ionlist= ['fe_25']
-temperature = np.array([1e+7])
-density = 1e9
-wavelength = np.linspace(1, 13, 2000)
+
 min_abund = 2.e-5
 spec = ch.spectrum(
     temperature,
-    density,
+    density[0],
     wavelength,
     ionList=ionlist,
     doLines=False,
     doContinuum=True,
     #minAbund=min_abund,
-    em=None, # None will set EM =1.0 for every temperature element.
+    em=None,# None will set EM =1.0 for every temperature element.
     verbose=True,
 )
-
-print(spec.Spectrum)
 
 energy = 12.39841984 / wavelength
 # sort in increasing energy
 idx = np.argsort(energy)
 energy = energy[idx]
-xray_spectrum = spec.Spectrum['intensity'][0][idx]
+xray_spectrum = spec.Spectrum['intensity'][idx]
 plt.figure()
-plt.title(f" ChiantiPy Spectrum Method Ion: {ionlist[0]} at T = {temperature[0]:.2e} K")
+plt.title(f" ChiantiPy {ionlist[0]} Spectrum at T = {temperature[0]:.2e} K")
 plt.plot(energy, xray_spectrum, linewidth=1, color='black', label='ChiantiPy Spectrum')
 plt.legend()
 xy = plt.axis()
-outfile = OutputDir + "/Chianti_spectrum_meth_Fe25.png"
+outfile = OutputDir + f"/spectrum_chiantipy.png"
 plt.savefig(outfile)
 #################################################################################
 
+# info: So far what is acheived
+# info: 1)  the cie ionisation fraction PION obtain is slightly different
+#  from what chinati has. This indroduce a small difference in the spectrum.
+# info: 2) checked both free-free and free-bound emission, they are in good
+#  agreement between NebulaPy and ChiantiPy.
+# info: 3) while calculating spectrum for fe_25, I exclude fe_27 which is calculated
+#  while calculating the spectrum for fe_25. However, including fe_27 does not
+#  change the spectrum.
+# todo: 4) the line emission is different between NebulaPy and ChiantiPy,
+#  which need to be rectified next.
 
 
 
@@ -333,6 +334,50 @@ plt.savefig(outfile)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+'''
+#info: Using differential emission measures (DEM)
+#################################################################################
+#flare.dem → strong high-ionization X-ray/EUV lines (Fe XXIII–XXV)
+#coronal_hole.dem → cooler low-density plasma
+#active_region.dem → enhanced Fe XII–Fe XVI emission
+#prominence.dem → cooler chromospheric/transition-region plasma
+
+import ChiantiPy.tools.io as chio
+demDir = os.path.join(os.environ['XUVTOP'], 'dem')
+demList = os.listdir(demDir)
+
+for idx, demFile in enumerate(demList):
+    print('%i  %s'%(idx, demFile))
+
+demFile_no = 0
+flDict = chio.demRead(demList[demFile_no])
+flTemp = flDict['temperature'][15:]
+flDens = flDict['density'][15:]
+flDem = flDict['dem'][15:]
+flEm = flDict['em'][15:]
+plt.figure()
+plt.title(f" DEM {demList[demFile_no]}")
+plt.plot(flTemp, flDem, linewidth=1, color='black', label='DEM')
+plt.legend()
+xy = plt.axis()
+outfile = OutputDir + f"/dem.png"
+plt.savefig(outfile)
+
+'''
 
 
 # sun_photospheric_2015_scottabundances from chianti database

@@ -160,7 +160,7 @@ class chianti:
 
         # Loop through the sorted keys in the dictionary of species
         if self.verbose:
-            print(f"Retrieving species attributes")
+            print(" [SPECIES ATTRIBUTES] Retrieving attributes for the following species:")
 
         # First pass: compute width
         names_tmp = [
@@ -169,29 +169,54 @@ class chianti:
         ]
         width = max(len(name) for name in names_tmp) + 2  # tight padding
 
-        # Loop with 6 columns
-        ncol = 7
+        # ==========================================
+        #   Display species in formatted box layout
+        # ==========================================
+
+        ncol = 6
         count = 0
+        box_width = width * ncol + ncol + 1
+
+        if self.verbose:
+            print(" ┌" + "─" * (box_width - 2) + "┐")
 
         for akey in sorted(species.Todo.keys()):
+
             self.species_attributes_container[akey] = chianti_util.convertName(akey)
 
+            # Store relevant data
+            self.species_attributes_container[akey]['keys'] = species.Todo[akey]
+
+            # Remove unnecessary entries safely
+            self.species_attributes_container[akey].pop('filename', None)
+            self.species_attributes_container[akey].pop('experimental', None)
+
+            # Verbose boxed output
             if self.verbose:
                 name = self.species_attributes_container[akey]['spectroscopic']
-                print(f"{name:<{width}}", end='')
+
+                if count % ncol == 0:
+                    print(" │", end='')
+
+                print(f"{name:<{width}}", end='│')
+
                 count += 1
 
                 if count % ncol == 0:
                     print()
-            self.species_attributes_container[akey]['keys'] = species.Todo[akey]  # Store relevant data
-            del self.species_attributes_container[akey]['filename']
-            del self.species_attributes_container[akey]['experimental']
 
-        # handle last row
+        # Handle incomplete last row
         if self.verbose and count % ncol != 0:
+
+            remaining = ncol - (count % ncol)
+
+            for _ in range(remaining):
+                print(f"{'':<{width}}│", end='')
+
             print()
 
-
+        if self.verbose:
+            print(" └" + "─" * (box_width - 2) + "┘")
 
         # Finalize the species attributes dictionary
         # At this point, `self.species_attributes` contains all the relevant
@@ -414,8 +439,6 @@ class chianti:
         # -----------------------------
         # Prepare temperature and wavelength
         # -----------------------------
-
-        print(self.temperature)
 
         temperature = np.asarray(self.temperature, dtype=np.float64).reshape(-1)
         wavelength = np.asarray(wavelength, dtype=np.float64).reshape(-1)
@@ -792,8 +815,6 @@ class chianti:
                     line = lines[wvl_idx]
                     line_spectrum[temp_idx] += useFilter(wavelength, line, factor=useFactor) \
                                                * intensity[temp_idx, wvl_idx]
-
-
 
 
         return line_spectrum
