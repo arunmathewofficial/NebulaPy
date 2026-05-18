@@ -203,35 +203,45 @@ ionlist = ['fe_25']
 print(f" Testing for ion {ionlist[0]}")
 print(f" -------------------------------\n")
 
-temperature = np.array([10**7.0])
-density = [1.e+9]
-wavelength = np.linspace(1, 13, 2000)
+temperature = np.array([10**7.0, 10**7.0])
+ne = np.array([1.e+9, 1.e+9])
+density = np.array([1.e+9, 1.e+9])
+species_density = np.array([1.0, 1.0])
+shell_volume = np.array([1.0, 1.0])
+
 
 
 print("NEBULAPY #########################################################################")
 
 
 # info: nebulapy calculation for the same conditions.
+
+elements = ["H", "He", "Fe"]
+elemental_abundances = {"H": 0.70, "He": 0.29879, "Fe": 1.21e-03}
+
 spectrum = nebula.spectrum(
     min_wavelength=1.0,  # Minimum wavelength in Angstroms
     max_wavelength=13,  # Maximum wavelength in Angstroms
     min_photon_energy=None,  # Minimum photon energy in keV
     max_photon_energy=None,  # Maximum photon energy in keV
-    N_point=2000,
+    elements=elements,
+    elemental_abundances=elemental_abundances,
+    CIE=True,
     bremsstrahlung=True,
     freebound=True,
     line=True,
-    twophoton=False,
+    twophoton=True,
     filtername=None,
     filterfactor=None,
+    user_grid=True,
+    grid_size=4000,
     allLines=True,
     verbose=True
 )
 
-
-elements = ["H", "He", "Fe"]
-elemental_abundances = {"H": 0.70, "He": 0.29879, "Fe": 1.21e-03}
-spectrum.build_species_attributes(elements=elements, elemental_abundances=elemental_abundances)
+print("\n")
+print(spectrum.spectrum_container.keys())
+wavelength = spectrum.spectrum_container['wavelength_grid']
 
 # Calculate number density
 # info: number denisty calculation is just for testing the module
@@ -242,40 +252,45 @@ A_Fe = 2.96e-5
 print(f" Fe Abundance: {A_Fe:.2e} cm^-3")
 # get the CIE ion fraction for the given
 # ion and temperature
-database = nebula.database(verbose=True)
-database.load_cie()
-ionfrac = database.get_cie_fraction(ionlist[0], temperature)
+cie = nebula.cieMode(verbose=True)
+cie.load_cie()
+ionfrac = cie.get_cie_fraction(ionlist[0], temperature)
 print(f"CIE {ionlist[0]} ion fraction: {ionfrac}")
-A_ion = A_Fe * ionfrac[0]
-print(f"Ion Abuandance {ionlist[0]}: {A_ion:.2e}")
+A_ion = A_Fe * ionfrac
+print(f"Ion Abuandance {ionlist[0]}: {A_ion}")
+
+
 
 
 # nebulapy calculation
-wvl = spectrum.wavelength
-spectrum.compute_emission(temperature=temperature, density=density, ne=density)
-ff_emission = spectrum.intensity['bremsstrahlung']
-fb_emission = spectrum.intensity['freebound']
-# todo: line emission rate do not match, need to fix it.
-line_emission = spectrum.intensity['line'][0]
+
+spectrum.compute_spectrum_1D(
+    temperature=temperature,
+    ne=ne,
+    species_density=species_density,
+    shell_volume=shell_volume
+)
+
+total_emission = spectrum.spectrum_container['spectrum']
 
 
-continuum_emission = ff_emission + fb_emission
-total_emission = continuum_emission \
-                 #+ line_emission
 
 # scale by the number density of the ion and emission measure
 # EM is set to unity here
 em = 1.0
-total_emission = total_emission * A_ion
+total_emission = total_emission * A_ion[:, np.newaxis]
 
-energy = 12.39841984 / wvl
+
+energy = 12.39841984 / wavelength
 # sort in increasing energy
 idx = np.argsort(energy)
 energy = energy[idx]
 
+total_emission = total_emission[:, idx]
+
 plt.figure()
 plt.title(f" NebulaPy {ionlist[0]} spectrum at T = {temperature[0]:.2e} K")
-plt.plot(energy, total_emission[idx], linewidth=1, color='black', label='NebulaPy Spectrum')
+plt.plot(energy, total_emission[0], linewidth=1, color='black', label='NebulaPy Spectrum')
 plt.legend()
 xy = plt.axis()
 outfile = OutputDir + f"/spectrum_nebulapy.png"
@@ -296,7 +311,7 @@ spec = ch.spectrum(
     density[0],
     wavelength,
     ionList=ionlist,
-    doLines=False,
+    doLines=True,
     doContinuum=True,
     #minAbund=min_abund,
     em=None,# None will set EM =1.0 for every temperature element.
@@ -307,7 +322,7 @@ energy = 12.39841984 / wavelength
 # sort in increasing energy
 idx = np.argsort(energy)
 energy = energy[idx]
-xray_spectrum = spec.Spectrum['intensity'][idx]
+xray_spectrum = spec.Spectrum['intensity'][0][idx]
 plt.figure()
 plt.title(f" ChiantiPy {ionlist[0]} Spectrum at T = {temperature[0]:.2e} K")
 plt.plot(energy, xray_spectrum, linewidth=1, color='black', label='ChiantiPy Spectrum')

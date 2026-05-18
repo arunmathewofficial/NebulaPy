@@ -2,9 +2,9 @@ import numpy as np
 from pathlib import Path
 import os
 from NebulaPy.tools import util as util
+from tqdm import tqdm
 
-class database:
-    import os
+class cieMode:
 
     def __init__(self, verbose=False):
         self.verbose = verbose
@@ -25,6 +25,8 @@ class database:
     ######################################################################################
     # Load CIE ion fraction table from the database directory
     ######################################################################################
+    from tqdm import tqdm
+
     def load_cie(self):
 
         cie_file = self.cie_file
@@ -36,11 +38,24 @@ class database:
         data = []
 
         if self.verbose:
-            print("[CIEIonFractions] Reading CIE ion fraction table")
-            print(f"  File: {cie_file}")
+            print(" [Collision Ionization Equi] : Loading table")
 
+        # Count valid data lines for progress bar
+        total_lines = 0
         with open(cie_file, "r") as f:
-            for line in f:
+
+            lines = f.readlines()
+
+            iterator = tqdm(
+                lines,
+                desc=" Importing CIE grid",
+                unit=" lines",
+                ncols=90,
+                disable=not self.verbose
+            )
+
+            for line in iterator:
+
                 line = line.strip()
 
                 if not line or line.startswith("#"):
@@ -55,18 +70,18 @@ class database:
                 data.append([float(x) for x in parts])
 
         if header is None:
-            util.nebula_exit_with_error("CIE file header not found.")
+            util.nebula_exit_with_error(" CIE file header not found.")
 
         if not data:
-            util.nebula_exit_with_error("CIE file contains no data.")
+            util.nebula_exit_with_error(" CIE file contains no data.")
 
-        self.data = np.array(data, dtype=float)
+        self.data = np.array(data, dtype=np.float64)
         self.col_index = {name: i for i, name in enumerate(header)}
 
         if self.verbose:
-            print(f"  Loaded grid points : {self.data.shape[0]}")
-            print(f"  Loaded ion columns : {self.data.shape[1] - 1}")
-            print("  Status            : ready")
+            print(" CIE table summary")
+            print(f" Temperature grid points : {self.data.shape[0]}")
+            print(f" Ion fraction columns    : {self.data.shape[1] - 1}")
 
     ######################################################################################
     # Interpolate ion fraction for a given ion and temperature(s)
@@ -86,11 +101,6 @@ class database:
 
         Tgrid = self.data[:, self.col_index["log_T"]]
         fgrid = self.data[:, self.col_index[ion]]
-
-        if self.verbose:
-            print(f"[CIEIonFractions] Interpolating")
-            print(f"  Ion          : {ion}")
-            print(f"  N(Temperature): {Temperature.size}")
 
         logT = np.clip(logT, Tgrid[0], Tgrid[-1])
         frac = np.interp(logT, Tgrid, fgrid)

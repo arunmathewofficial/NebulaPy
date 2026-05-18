@@ -10,4 +10,4 @@ from .MultiProc import *
 from .Cooling import *
 #from .PION import pion
 from .PyNeb import pyneb
-from .Database import database
+from .CIE import cieMode
