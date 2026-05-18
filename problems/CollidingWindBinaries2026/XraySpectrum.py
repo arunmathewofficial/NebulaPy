@@ -76,7 +76,7 @@ N_grid = pion.geometry_container['Ngrid']
 cell_volume = pion.get_2D_cell_volumes()
 
 
-EM = nebula.emission_measure()
+
 
 
 runtime = 0.0
@@ -95,24 +95,24 @@ for step, silo_instant in enumerate(batched_silos):
     grid_mask = pion.geometry_container['mask']
 
 
-    temperature_bin = np.arange(2.0, 8.5, 0.02)
+    EM = nebula.emission_measure(temperature, Tmin=100, Tmax=1.e9, Nbins=100)
 
-    em = EM.DEM2D(density=density, temperature=temperature,
-                  ne=ne,
-                  mask=grid_mask,
-                  ngrid=N_grid,
-                  mesh_edges_min=mesh_edges_min,
-                  mesh_edges_max=mesh_edges_max,
-                  volume = cell_volume,
-                  temp_bin=temperature_bin,
-                  hw=0.05)
+    #em = EM.DEM2D(density=density, temperature=temperature,
+    #              ne=ne,
+    #              mask=grid_mask,
+    #              ngrid=N_grid,
+    #              mesh_edges_min=mesh_edges_min,
+    #              mesh_edges_max=mesh_edges_max,
+    #              volume = cell_volume,
+    #              temp_bin=temperature_bin,
+    #              hw=0.05)
 
-    dem = em['dem_bin']
+    #dem = em['dem_bin']
 
     # Plot the differential emission measure for the current time instant
     plt.figure()
     plt.title(f"Differential Emission Measure")
-    plt.plot(temperature_bin, np.log10(dem))
+    #plt.plot(temperature_bin, np.log10(dem))
     Filename = f"{Filebase}_DEM_{sim_time.value:.2e}kyr.png"
     OutImageFile = os.path.join(OutputDir, Filename)
     plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)

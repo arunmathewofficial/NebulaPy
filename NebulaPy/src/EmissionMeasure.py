@@ -16,50 +16,19 @@ class emission_measure():
     ######################################################################################
     # initializing
     ######################################################################################
-    def __init__(self, verbose=False):
-        pass
+    def __init__(self, temperature, Tmin, Tmax, Nbins, verbose=False):
+
+        self.generate_dem_indices(temperature, Tmin, Tmax, Nbins)
+
+
 
     ######################################################################################
-    # differential emission measure todo: not verified
-    ######################################################################################
-    def DEM(self, dem_indices, ne, shellvolume):
-        """
-        Calculate the differential emission measure (DEM) across temperature bins.
-
-        Parameters:
-        ----------
-        dem_indices : list of numpy.ndarray
-            List where each element is an array of indices corresponding to a temperature bin.
-        ne : numpy.ndarray
-            Array of electron densities corresponding to the temperature values.
-        shellvolume : numpy.ndarray
-            Array of shell volumes corresponding to the temperature values.
-
-        Returns:
-        -------
-        DEM : numpy.ndarray
-            Array of differential emission measure values for each temperature bin.
-        """
-
-        # Calculate ne * ne * dV for all elements
-        volume_ne_square = ne * ne * shellvolume
-
-        # Initialize an array for DEM with the same length as dem_indices
-        DEM = np.zeros(len(dem_indices))
-
-        # Use list comprehension and NumPy's array indexing to sum the values for each bin
-        for i, indices in enumerate(dem_indices):
-            if indices.size > 0:
-                DEM[i] = np.sum(volume_ne_square[indices])
-
-        # Remove zero values from DEM
-        DEM = DEM[DEM > 0]
-        return DEM
-
-    ######################################################################################
-    # generate differential emission measure indices todo: not verified
+    # generate differential emission measure indices
     ######################################################################################
     def generate_dem_indices(self, temperature, Tmin, Tmax, Nbins):
+
+        print(" [EMISSION MEASURE] : Generating DEM indices")
+
         # Calculate the logarithmic width of each bin
         bin_width = (np.log10(Tmax) - np.log10(Tmin)) / Nbins
         # Half the width of a bin for adjusting bin edges
@@ -97,6 +66,45 @@ class emission_measure():
         # Return the list of indices for further processing or analysis.
         return {'indices': dem_indices, 'Tb': Tb}
 
+
+
+
+    ######################################################################################
+    # differential emission measure todo: not verified
+    ######################################################################################
+    def DEM(self, dem_indices, ne, shellvolume):
+        """
+        Calculate the differential emission measure (DEM) across temperature bins.
+
+        Parameters:
+        ----------
+        dem_indices : list of numpy.ndarray
+            List where each element is an array of indices corresponding to a temperature bin.
+        ne : numpy.ndarray
+            Array of electron densities corresponding to the temperature values.
+        shellvolume : numpy.ndarray
+            Array of shell volumes corresponding to the temperature values.
+
+        Returns:
+        -------
+        DEM : numpy.ndarray
+            Array of differential emission measure values for each temperature bin.
+        """
+
+        # Calculate ne * ne * dV for all elements
+        volume_ne_square = ne * ne * shellvolume
+
+        # Initialize an array for DEM with the same length as dem_indices
+        DEM = np.zeros(len(dem_indices))
+
+        # Use list comprehension and NumPy's array indexing to sum the values for each bin
+        for i, indices in enumerate(dem_indices):
+            if indices.size > 0:
+                DEM[i] = np.sum(volume_ne_square[indices])
+
+        # Remove zero values from DEM
+        DEM = DEM[DEM > 0]
+        return DEM
 
     ###############################################################################
     def volume2D(self, xmax, xmin, ngrid):  # Calculates the volume of each cell in the image grid
