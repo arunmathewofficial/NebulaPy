@@ -77,7 +77,7 @@ cell_volume = pion.get_2D_cell_volumes()
 
 
 
-
+EM = nebula.emission_measure(Tmin=100, Tmax=1.e9, Nbins=100)
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files

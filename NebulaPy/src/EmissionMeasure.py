@@ -16,27 +16,29 @@ class emission_measure():
     ######################################################################################
     # initializing
     ######################################################################################
-    def __init__(self, temperature, Tmin, Tmax, Nbins, verbose=False):
+    def __init__(self, Tmin, Tmax, Nbins, verbose=False):
 
-        self.generate_dem_indices(temperature, Tmin, Tmax, Nbins)
-
+        self.verbose = verbose
+        self.Tmin = Tmin
+        self.Tmax = Tmax
+        self.Nbins = Nbins
 
 
     ######################################################################################
-    # generate differential emission measure indices
+    # generate differential emission measure indices todo: not verified
     ######################################################################################
-    def generate_dem_indices(self, temperature, Tmin, Tmax, Nbins):
+    def generate_dem_indices(self, temperature):
 
         print(" [EMISSION MEASURE] : Generating DEM indices")
 
         # Calculate the logarithmic width of each bin
-        bin_width = (np.log10(Tmax) - np.log10(Tmin)) / Nbins
+        bin_width = (np.log10(self.Tmax) - np.log10(self.Tmin)) / self.Nbins
         # Half the width of a bin for adjusting bin edges
         half_bin_width = bin_width / 2
 
         # Generate the logarithmically spaced temperature bin edges.
         # This will create Nbins+1 edges to define the boundaries of Nbins.
-        temperature_edges = np.linspace(np.log10(Tmin), np.log10(Tmax), Nbins + 1)
+        temperature_edges = np.linspace(np.log10(self.Tmin), np.log10(self.Tmax), Nbins + 1)
 
         # Create temperature bins by pairing adjacent edges.
         # Each bin is represented as [bin_min, bin_max].
@@ -50,7 +52,7 @@ class emission_measure():
         dem_indices = []
 
         # Loop through each bin to identify temperature values that fall within the bin's range.
-        for i in range(Nbins):
+        for i in range(self.Nbins):
             # Find the indices of temperature values that fall within the current bin.
             # The condition checks if the logarithm of the temperature is within the bin range,
             # slightly adjusted by half_bin_width to ensure proper capturing of boundary values.
@@ -61,7 +63,7 @@ class emission_measure():
             dem_indices.append(indices)
 
         # Filter Tb values for which dem_indices[i] is not empty
-        Tb = [Tb[i] for i in range(Nbins) if len(dem_indices[i]) > 0]
+        Tb = [Tb[i] for i in range(self.Nbins) if len(dem_indices[i]) > 0]
 
         # Return the list of indices for further processing or analysis.
         return {'indices': dem_indices, 'Tb': Tb}
@@ -72,7 +74,7 @@ class emission_measure():
     ######################################################################################
     # differential emission measure todo: not verified
     ######################################################################################
-    def DEM(self, dem_indices, ne, shellvolume):
+    def DEM(self, temperature, ne, species_density, shellvolume):
         """
         Calculate the differential emission measure (DEM) across temperature bins.
 
@@ -90,6 +92,12 @@ class emission_measure():
         DEM : numpy.ndarray
             Array of differential emission measure values for each temperature bin.
         """
+
+        self.generate_dem_indices(temperature)
+
+
+
+
 
         # Calculate ne * ne * dV for all elements
         volume_ne_square = ne * ne * shellvolume
