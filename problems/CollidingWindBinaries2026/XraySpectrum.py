@@ -2,7 +2,7 @@
 import NebulaPy.src as nebula
 from NebulaPy.tools import util
 import time
-#from pypion.ReadData import ReadData
+from pypion.ReadData import ReadData
 import matplotlib.pyplot as plt
 import numpy as np
 #import astropy.units as unit
@@ -22,14 +22,16 @@ cm2au = 6.68459e-14  # cm to au conversion factor
 
 # Macbook
 OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Output image directory
+# Razer Blade
+OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'
 
 
-'''
+
 #Razer Blade -> Set up paths and filenames
 OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
 SiloDir = '/home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
 Filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
-start_time = None #1.24e6  # in sec
+start_time = 1.24e6  # in sec
 finish_time = None
 time_unit = 'sec'
 out_frequency = None
@@ -44,6 +46,16 @@ batched_silos = util.batch_silos(
     time_unit=time_unit,
     out_frequency=out_frequency
 )
+
+key = input(" Press 'y' to continue, anything else to exit: ").strip().lower()
+
+if key == "y":
+    print(" Continuing execution...")
+else:
+    util.nebula_info("Resetting parameters before the next run")
+    exit(0)
+
+
 
 # Initialize the Pion class from NebulaPy, which handles the simulation data
 pion = nebula.pion(batched_silos, verbose=True)
@@ -112,9 +124,9 @@ for step, silo_instant in enumerate(batched_silos):
     runtime += dt
     print(f" runtime: {runtime:.4e} s | dt: {dt:.4e} s")
 
-'''
 
 
+# CIE TEST ####################################################################
 '''
 # fixing the following issues
 # info: CIE calculation match for Nebulapy.
@@ -142,63 +154,9 @@ plt.savefig(outfile, dpi=300)
 plt.close()
 '''
 
-#temperature = [1.e+7]
-#density = [1.e+9]
-#ne = [1.e+9, 1.e+9]
-#chianti_ion = 'fe_25'
-#em = 1.0
-
-
-# info: chianti calculation using sub modules in ChiantiPy.
-#########################################################################
 '''
-i = ch.ion(chianti_ion, temperature, density, em=em)
-c = ch.continuum(chianti_ion, temperature=temperature, em=em)
-wvl = np.arange(2.6e3, 2.9e3, 0.1)
-c.freeFree(wvl, includeAbund=False, includeIoneq=False)
-c.freeBound(wvl, includeAbund=False, includeIoneq=False)
-c.freeFree(wvl)
-c.freeBound(wvl)
-i.twoPhoton(wvl)
-i.spectrum(wvl, filter=(chfilters.gaussian, 0.1), allLines=True)
-ff_emission_chianti = c.FreeFree['intensity']
-fb_emission_chianti = c.FreeBound['intensity']
-#two_photon_emission_chianti = i.TwoPhoton['intensity']
-line_emission_chianti = i.Spectrum['intensity']
-continuum_emission_chianti = ff_emission_chianti + fb_emission_chianti
-#total_emission_chianti = fb_emission_chianti + ff_emission_chianti + two_photon_emission_chianti + line_emission_chianti
-total_emission_chianti = fb_emission_chianti + ff_emission_chianti + line_emission_chianti
+# initial conditions ##############################################################
 
-plt.figure()
-plt.title(f" {chianti_ion} Emission Spectrum at T = {temperature[0]:.2e} K")
-
-# chianti plots
-plt.plot(wvl, total_emission_chianti[0], linewidth=1, color='black', label='ChiantiPy Total')
-#plt.plot(wvl, two_photon_emission_chianti[0], linewidth=1, color='green', linestyle='dashed', label='ChiantiPy 2-Photon')
-plt.plot(wvl, ff_emission_chianti[0], linewidth=1, color='red', linestyle='dashed', label='ChiantiPy Free-Free')
-plt.plot(wvl, fb_emission_chianti[0], linewidth=1, color='darkorange', linestyle='dotted', label='ChiantiPy Free-Bound')
-plt.plot(wvl, line_emission_chianti[0], label=f'ChiantiPy Line')
-energy = 12.39841984 / wvl
-#print(energy)
-# sort in increasing energy
-idx = np.argsort(energy)
-energy_sorted = energy[idx]
-line_sorted = line_emission_chianti[0][idx]
-#plt.plot(energy_sorted, total_emission_chianti[0][idx], label=f'ChiantiPy Total')
-#plt.plot(energy_sorted, line_sorted, label=f'ChiantiPy Line')
-#plt.plot(energy_sorted, two_photon_emission_chianti[0][idx], linewidth=1, color='green', linestyle='dashed', label='ChiantiPy 2-Photon')
-#plt.plot(energy_sorted, ff_emission_chianti[0][idx], linewidth=1, color='red', linestyle='dashed', label='ChiantiPy Free-Free')
-#plt.plot(energy_sorted, fb_emission_chianti[0][idx], linewidth=1, color='darkorange', linestyle='dotted', label='ChiantiPy Free-Bound')
-#plt.ylim(1.e-4, 5)
-#plt.yscale('log')
-plt.legend()
-xy = plt.axis()
-outfile = OutputDir + "/Fe25_spectrum_chianti_SubModules.png"
-plt.savefig(outfile)
-#########################################################################
-'''
-
-print("\n")
 ionlist = ['fe_25']
 print(f" Testing for ion {ionlist[0]}")
 print(f" -------------------------------\n")
@@ -208,8 +166,6 @@ ne = np.array([1.e+9, 1.e+9])
 density = np.array([1.e+9, 1.e+9])
 species_density = np.array([1.0, 1.0])
 shell_volume = np.array([1.0, 1.0])
-
-
 
 print("NEBULAPY #########################################################################")
 
@@ -259,11 +215,7 @@ print(f"CIE {ionlist[0]} ion fraction: {ionfrac}")
 A_ion = A_Fe * ionfrac
 print(f"Ion Abuandance {ionlist[0]}: {A_ion}")
 
-
-
-
 # nebulapy calculation
-
 spectrum.compute_spectrum_1D(
     temperature=temperature,
     ne=ne,
@@ -343,9 +295,7 @@ plt.savefig(outfile)
 # todo: 4) the line emission is different between NebulaPy and ChiantiPy,
 #  which need to be rectified next.
 
-
-
-
+'''
 
 
 

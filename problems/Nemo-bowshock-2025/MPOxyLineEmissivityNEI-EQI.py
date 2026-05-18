@@ -55,20 +55,18 @@ def compute_emissivity(workerQ, doneQ, timeout=0.1):
                 #print("[Worker] Received stop signal, exiting.")
                 break  # Exit if None is received (stop signal)
 
-            ion_name, line_emission, lines, species_density, temperature, ne, cell_volume, mask = task
+            ion_name, line_emission, lines, temperature, ne = task
 
             print(f" Multiprocessing: computing the emissivity of {ion_name:<4} lines")
 
-            emissivity = line_emission.line_emissivity_2D_map(
-                lines=lines, temperature=temperature, ne=ne,
-                progress_bar=True)
+            emissivity = line_emission.line_emissivity_2D_map(lines=lines, temperature=temperature, ne=ne, progress_bar=True)
 
-            norm_line_emissivity = np.zeros_like(emissivity)
-            for l in range(N_level):
-                norm_line_emissivity[l] = emissivity[l] * species_density[l] * mask[l]
+            #emissivity['He II 303.78'] = np.where(
+            #    emissivity['He II 303.78'] < 1e-30, 1e-30, emissivity['He II 303.78'])
+
 
             print(f" Multiprocessing: finished computing emissivity for {ion_name:<4} lines")
-            doneQ.put({ion_name: norm_line_emissivity})  # Store result
+            doneQ.put({ion_name: emissivity})  # Store result
         except queue.Empty:  # Use correct exception for empty queue
             util.nebula_exit_with_error(f"Multiprocessing - no task in queue")
             break  # Queue is empty, exit loop
@@ -92,7 +90,7 @@ def print_spectral_lines(task_desc, ion_lines):
 
 
 def run_multiprocessing_task(
-    task_packet: Dict[str, Tuple[Any, Any, Any, Any, Any, Any, Any]],
+    task_packet: Dict[str, Tuple[Any, Any, Any, Any]],
     task,
     *,
     sleep_before_stop: float = 2.0,
@@ -128,13 +126,9 @@ def run_multiprocessing_task(
 
         # Enqueue tasks (expand tuple)
         for ion_name, payload in task_packet.items():
-            (line_emission, lines, species_density,
-             temperature, ne, cell_volume, grid_mask) = payload
+            (line_emission, lines, temperature, ne) = payload
 
-            workerQ.put(
-                (ion_name, line_emission, lines, species_density,
-                 temperature, ne, cell_volume, grid_mask)
-            )
+            workerQ.put((ion_name, line_emission, lines, temperature, ne))
 
         if verbose:
             print(" Multiprocessing: starting worker processes")
@@ -188,7 +182,10 @@ if __name__ == "__main__":
     outfile = os.path.join(output_dir, filename)
 
     # All input lines
-    ion_lines = {"O5+": [1031.912], }
+    ion_lines = {
+        #"He1+": [303.78],
+        "O5+": [1031.912]
+    }
 
     #####################################################
     # Batching silo files
@@ -227,7 +224,7 @@ if __name__ == "__main__":
         )
 
     print_spectral_lines(
-        "Multiprocessing computation of temporal evolution of spectral-line luminosities",
+        "Multiprocessing computation of spectral-line emissivity",
         ion_lines
     )
 
@@ -302,14 +299,8 @@ if __name__ == "__main__":
             ion: (
                 line_emission_objects[ion],  # line emission object
                 ion_lines[ion],  # list of wavelengths
-                neq_pion.get_ion_number_density(
-                    "H1+" if ion == "H" else ion,  # <-- remap only here
-                    neq_silo
-                ),
                 neq_temperature,
-                neq_ne,
-                cell_volume_neq,
-                grid_mask_neq
+                neq_ne
             )
             for ion in ion_lines
         }
@@ -332,14 +323,8 @@ if __name__ == "__main__":
             ion: (
                 line_emission_objects[ion],  # line emission object
                 ion_lines[ion],  # list of wavelengths
-                ieq_pion.get_ion_number_density(
-                    "H1+" if ion == "H" else ion,  # <-- remap only here
-                    ieq_silo
-                ),
                 ieq_temperature,
                 ieq_ne,
-                cell_volume_ieq,
-                grid_mask_ieq
             )
             for ion in ion_lines
         }
@@ -353,7 +338,7 @@ if __name__ == "__main__":
 
 
         # Create a new figure with specific size and two subplots arranged vertically
-        fig, (axs_neq, axs_ieq) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+        fig, (axs_neq, axs_ieq) = plt.subplots(2, 1, figsize=(8, 7), sharex=True)
 
         # Extract the data for the current time instance from the appropriate resolution
         time_instances = neq_silo
@@ -367,45 +352,60 @@ if __name__ == "__main__":
 
         # NEQ emissivity plot
         axs_neq.set_yticks([0.5, 1, 1.5, 2.0])  # Set specific tick positions
-        axs_neq.tick_params(axis='y', labelsize=10)  # Adjust font size of y-axis ticks
+        axs_neq.tick_params(axis='y', labelsize=12)  # Adjust font size of y-axis ticks
         axs_neq.set_xlim(dims_min[0][0].value, dims_max[0][0].value)
         axs_neq.set_ylim(dims_min[0][1].value, dims_max[0][1].value)
 
+        neq_nion = neq_pion.get_ion_number_density(ion, neq_silo)
+        neq_norm_emissivity = np.zeros_like(neq_temperature)
+
         for l in range(N_level):
             for line in sorted(neq_lines_emissivity_dict.keys()):
-                plot_data = np.log10(neq_lines_emissivity_dict[line][l])
+                neq_norm_emissivity[l] = neq_lines_emissivity_dict[line][l] * neq_nion[l] * grid_mask_neq[l]
+                neq_norm_emissivity[l] = np.where(neq_norm_emissivity[l] < 1e-30, 1e-30, neq_norm_emissivity[l])
+                plot_data = np.log10(neq_norm_emissivity[l])
             extents = [dims_min[l][0].value, dims_max[l][0].value,
                        dims_min[l][1].value, dims_max[l][1].value]
             image = axs_neq.imshow(plot_data, interpolation='nearest', cmap='viridis',
-                                       extent=extents, origin='lower', vmin=-27, vmax=-22.0)
+                                       extent=extents, origin='lower', vmin=-27, vmax=-24)
 
-        axs_neq.set_ylabel('R (' + distance_unit_str + ')', fontsize=12)
+        axs_neq.set_ylabel('R (' + distance_unit_str + ')', fontsize=13)
+        axs_neq.text(0.1, 0.8, r'O VI 1032 $\mathrm{\AA}$',
+                     transform=axs_neq.transAxes,
+                     fontsize=12, color='white')
         axs_neq.text(0.88, 0.8, 'NEQ', transform=axs_neq.transAxes,
                          fontsize=12, color='black', bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
-        axs_neq.tick_params(axis='both', which='major', labelsize=12)
+        axs_neq.tick_params(axis='both', which='major', labelsize=13)
         axs_neq.set_yticks([0.5, 1, 1.5, 2.0])  # Set specific tick positions
-        axs_neq.tick_params(axis='y', labelsize=10)  # Adjust font size of y-axis ticks
+        axs_neq.tick_params(axis='y', labelsize=12)  # Adjust font size of y-axis ticks
         axs_neq.axes.get_xaxis().set_visible(False)  # Remove x-axis
 
         # IEQ plot
         axs_ieq.set_xlim(dims_min[0][0].value, dims_max[0][0].value)
         axs_ieq.set_ylim(-dims_max[0][1].value, -dims_min[0][1].value)
+        axs_ieq.tick_params(axis='x', labelsize=12)  # Adjust font size of y-axis ticks
+
+
+        ieq_nion = ieq_pion.get_ion_number_density(ion, ieq_silo)
+        ieq_norm_emissivity = np.zeros_like(ieq_temperature)
 
         for l in range(N_level):
             for line in sorted(ieq_lines_emissivity_dict.keys()):
-                plot_data = np.log10(ieq_lines_emissivity_dict[line][l])
+                ieq_norm_emissivity[l] = ieq_lines_emissivity_dict[line][l] * ieq_nion[l] * grid_mask_ieq[l]
+                ieq_norm_emissivity[l] = np.where(ieq_norm_emissivity[l] < 1e-30, 1e-30, ieq_norm_emissivity[l])
+                plot_data = np.log10(ieq_norm_emissivity[l])
             extents = [dims_min[l][0].value, dims_max[l][0].value,
                        -dims_max[l][1].value, -dims_min[l][1].value]
             image = axs_ieq.imshow(plot_data, interpolation='nearest', cmap='viridis',
-                                    extent=extents, vmin=-27, vmax=-22)
+                                    extent=extents, vmin=-27, vmax=-24)
 
         axs_ieq.text(0.88, 0.1, 'IEQ', transform=axs_ieq.transAxes,
                      color='black', fontsize=12, bbox=dict(facecolor='white', edgecolor='black', boxstyle='round,pad=0.3'))
-        axs_ieq.set_xlabel('z (' + distance_unit_str + ')', fontsize=12)
-        axs_ieq.set_ylabel('R (' + distance_unit_str + ')', fontsize=12)
+        axs_ieq.set_xlabel('z (' + distance_unit_str + ')', fontsize=13)
+        axs_ieq.set_ylabel('R (' + distance_unit_str + ')', fontsize=13)
 
         # Add a color bar for the entire figure (to represent the cooling function intensity)
-        cbar_ax = fig.add_axes([0.22, 0.92, 0.58, 0.02])  # Position of colorbar
+        cbar_ax = fig.add_axes([0.18, 0.93, 0.66, 0.02])  # Position of colorbar
         fig.colorbar(image, cax=cbar_ax, orientation='horizontal', ticks=MultipleLocator(1.0))
 
         data.close()  # Close the data to free resources
