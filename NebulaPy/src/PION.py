@@ -71,7 +71,7 @@ class pion():
         col_width = 25
         ncols = 5
 
-        print(f"\n Found {header_info.nvar} variables")
+        print(f"\n [PION SILO HEADER INFO] : Number of variables {header_info.nvar}")
 
         # Define categories by prefix or known names
         categories = {
@@ -105,6 +105,8 @@ class pion():
                     row = items[i:i + ncols]
                     print("".join(f" {v:<{col_width}}" for v in row))
         header_data.close()
+
+        print("\n [PION SILO HEADER INFO] End of variable list\n")
 
     # ==================================================================================
     # LOAD GEOMETRY
@@ -424,6 +426,8 @@ class pion():
                 Ntracers = header_data.db.GetVar('num_tracer')
                 # elements in the tracer list
                 tracer_elements = []
+                # pion_chemical_tracers
+                pion_chemical_tracers = []
                 # mass_fraction
                 mass_fractions = {}
                 # list of element wise tracer list
@@ -462,8 +466,10 @@ class pion():
                         element = re.sub(r'\d{1,2}\+', '', chem_tracer)
                         # get the index of the element in the element_list
                         element_index = element_list.index(element)
-                        # gppend the tracer with the corresponding ion to the mpv10tracers list
+                        # ppend the tracer with the corresponding ion to the mpv10tracers list
                         elementWiseTracers[element_index].append(f'Tr{i:03}_' + chem_tracer.replace('+', 'p'))
+                        # append pion chemical tracers
+                        pion_chemical_tracers.append(chem_tracer)
 
                 # If verbose is enabled, print the number of chemical tracers
                 if self.verbose:
@@ -475,52 +481,107 @@ class pion():
                 # save mass fraction to chemistry_container dictionary
                 #self.chemistry_container['mass_fractions'] = mass_fractions
                 self.element_list = tracer_elements
+
                 self.chemistry_container['mass_fractions'] = mass_fractions
                 self.chemistry_container['tracer_elements'] = tracer_elements
+                self.chemistry_container['pion_tracers'] = pion_chemical_tracers
                 self.element_wise_tracer_list = elementWiseTracers
         header_data.close()
+        
+        #Upgrade pion_tracers to include top ion
+        # Add fully ionized ions
+        for element in tracer_elements:
+
+            Z = const.atomic_number[element]
+
+            top_ion = f"{element}{Z}+"
+
+            if top_ion not in pion_chemical_tracers:
+                pion_chemical_tracers.append(top_ion)
+
+        # -----------------------------------------
+        # Sort ions by element and ionization stage
+        # -----------------------------------------
+
+        def ion_sort_key(ion):
+
+            import re
+
+            match = re.match(r"([A-Za-z]+)(\d*)\+?$", ion)
+
+            element = match.group(1)
+            charge = match.group(2)
+
+            # Neutral species
+            if charge == "":
+                charge = 0
+            else:
+                charge = int(charge)
+
+            return (
+                tracer_elements.index(element),
+                charge
+            )
+
+        pion_chemical_tracers = sorted(
+            pion_chemical_tracers,
+            key=ion_sort_key
+        )
+
+        print(pion_chemical_tracers)
 
     ######################################################################################
     # show all tracer string
     ######################################################################################
     def show_all_tracers(self):
-        # Open the data for the first silo instant silo
+
         header_data = OpenData(self.silo_set[0])
-        # Set the directory to '/header'
         header_data.db.SetDir('/header')
-        # print(header_data.header_info())
 
         Ntracers = header_data.db.GetVar('num_tracer')
-        print(f"\n List of all available tracers (total: {Ntracers}):\n")
         tracers = {}
-        # Loop through each tracer index
+
         for i in range(Ntracers):
-            # create a tracer index string with leading zeros
             tracer_index = f'Tracer{i:03}'
-            # retrieve the tracer value
             tracer = header_data.db.GetVar(tracer_index)[0]
 
-            tracers[tracer] = f'Tr{i:03}_' + tracer
+            tracers[tracer] = f'Tr{i:03}_{tracer}'
 
         header_data.close()
 
-        tracer_items = [f" {k}: {v}" for k, v in tracers.items()]
-        n = len(tracer_items)
-        ncols = 5
-        nrows = (n + ncols - 1) // ncols  # ceiling division
+        tracer_items = [
+            f"{k}: {v}"
+            for k, v in tracers.items()
+        ]
 
-        # find max width for alignment
-        max_len = max(len(item) for item in tracer_items) + 4
+        ncols = 3
+        n = len(tracer_items)
+        nrows = (n + ncols - 1) // ncols
+
+        col_width = max(len(item) for item in tracer_items) + 2
+        box_width = ncols * (col_width + 1) + 1
+
+        print(f" [PION TRACER INFO] : Number of tracers {Ntracers}")
+        print(" ┌" + "─" * (box_width - 2) + "┐")
 
         for r in range(nrows):
-            row_items = []
+
+            print(" │", end='')
+
             for c in range(ncols):
+
                 idx = r + c * nrows
+
                 if idx < n:
-                    row_items.append(tracer_items[idx].ljust(max_len))
-            print("".join(row_items))
+                    item = tracer_items[idx]
+                else:
+                    item = ""
 
+                print(f"{item:<{col_width}}│", end='')
 
+            print()
+
+        print(" └" + "─" * (box_width - 2) + "┘")
 
     ######################################################################################
     # get elements
@@ -531,7 +592,7 @@ class pion():
     ######################################################################################
     # get chemical tracers
     ######################################################################################
-    def get_chemical_tracers(self):
+    def get_chemical_tracer_list(self):
         """
         Retrieve the list of chemical tracer strings for each tracer in the chemistry
         container dictionary, processed element by element. Each sublist starts with the
@@ -727,7 +788,7 @@ class pion():
     ######################################################################################
     # get tracer values
     ######################################################################################
-    def get_tracer_values(self, silo_instant):
+    def get_chemical_tracers(self, silo_instant):
         """
         Retrieves the chemical tracer values for the given time instant from the
         simulation silo data.
@@ -741,8 +802,10 @@ class pion():
             A 2D list containing the tracer values for each ion in the tracers array.
         """
 
+        print(self.chemistry_container)
+
         # Retrieve the 2D array of chemical tracers.
-        tracers = self.get_chemical_tracers()
+        tracers = self.get_chemical_tracer_list()
 
         # Initialize tracer_values using list comprehension for better efficiency.
         tracer_values = np.array([
@@ -751,6 +814,10 @@ class pion():
         ], dtype=object)
 
         return tracer_values
+
+
+
+
 
     ######################################################################################
     # get parameter //todo: this is not clear
@@ -1050,6 +1117,11 @@ class pion():
 
         return ion_num_density
 
+    ######################################################################################
+    # get all number density
+    ######################################################################################
+    def get_all_number_density(self, silo_instant, verbose=True):
+        pass
 
     ######################################################################################
     # get get total number density ion number density

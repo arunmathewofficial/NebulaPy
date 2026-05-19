@@ -10,7 +10,7 @@ k = 1.38064852e-16  # erg/K
 mu = 0.61  # mH
 
 
-class emission_measure():
+class emissionMeasure():
 
 
     ######################################################################################
@@ -23,11 +23,10 @@ class emission_measure():
         self.Tmax = Tmax
         self.Nbins = Nbins
 
-
     ######################################################################################
     # generate differential emission measure indices todo: not verified
     ######################################################################################
-    def generate_dem_indices(self, temperature):
+    def generate_DEM_indices(self, temperature):
 
         print(" [EMISSION MEASURE] : Generating DEM indices")
 
@@ -38,36 +37,33 @@ class emission_measure():
 
         # Generate the logarithmically spaced temperature bin edges.
         # This will create Nbins+1 edges to define the boundaries of Nbins.
-        temperature_edges = np.linspace(np.log10(self.Tmin), np.log10(self.Tmax), Nbins + 1)
+        temperature_edges = np.linspace(np.log10(self.Tmin), np.log10(self.Tmax), self.Nbins + 1)
 
         # Create temperature bins by pairing adjacent edges.
         # Each bin is represented as [bin_min, bin_max].
-        temperature_bins = [[temperature_edges[i], temperature_edges[i + 1]] for i in range(Nbins)]
+        temperature_bins = [[temperature_edges[i], temperature_edges[i + 1]] for i in range(self.Nbins)]
 
         # Calculate the midpoints of each bin for potential further use.
         # These midpoints are the average of the logarithmic bin edges.
         Tb = np.array([(bin[0] + bin[1]) / 2 for bin in temperature_bins])
 
-        # Initialize an empty list to store indices of temperatures within each bin.
-        dem_indices = []
 
-        # Loop through each bin to identify temperature values that fall within the bin's range.
-        for i in range(self.Nbins):
-            # Find the indices of temperature values that fall within the current bin.
-            # The condition checks if the logarithm of the temperature is within the bin range,
-            # slightly adjusted by half_bin_width to ensure proper capturing of boundary values.
-            indices = np.where((np.log10(temperature) >= temperature_bins[i][0] - half_bin_width) &
-                               (np.log10(temperature) < temperature_bins[i][1] + half_bin_width))[0]
+        DEM_indices = np.zeros_like(temperature, dtype=np.float64)
 
-            # Append the array of indices to the dem_indices list.
-            dem_indices.append(indices)
+        # Find corresponding DEM bin for each temperature
+        log_temperature = np.log10(temperature)
 
-        # Filter Tb values for which dem_indices[i] is not empty
-        Tb = [Tb[i] for i in range(self.Nbins) if len(dem_indices[i]) > 0]
+        # Assign DEM bin indices
+        for bin_idx in range(self.Nbins):
+            bin_min = temperature_edges[bin_idx]
+            bin_max = temperature_edges[bin_idx + 1]
 
-        # Return the list of indices for further processing or analysis.
-        return {'indices': dem_indices, 'Tb': Tb}
+            mask = (log_temperature >= bin_min) & (log_temperature < bin_max)
 
+            DEM_indices[mask] = bin_idx
+
+        self.bin_temperature = Tb
+        self.DEM_indices = DEM_indices
 
 
 
@@ -93,26 +89,10 @@ class emission_measure():
             Array of differential emission measure values for each temperature bin.
         """
 
-        self.generate_dem_indices(temperature)
+        self.generate_DEM_indices(temperature)
 
 
 
-
-
-        # Calculate ne * ne * dV for all elements
-        volume_ne_square = ne * ne * shellvolume
-
-        # Initialize an array for DEM with the same length as dem_indices
-        DEM = np.zeros(len(dem_indices))
-
-        # Use list comprehension and NumPy's array indexing to sum the values for each bin
-        for i, indices in enumerate(dem_indices):
-            if indices.size > 0:
-                DEM[i] = np.sum(volume_ne_square[indices])
-
-        # Remove zero values from DEM
-        DEM = DEM[DEM > 0]
-        return DEM
 
     ###############################################################################
     def volume2D(self, xmax, xmin, ngrid):  # Calculates the volume of each cell in the image grid
