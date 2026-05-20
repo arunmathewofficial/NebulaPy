@@ -5,6 +5,7 @@ from pypion.SiloHeader_data import OpenData
 from NebulaPy.tools import util as util
 from NebulaPy.tools import constants as const
 import astropy.units as unit
+from tqdm import tqdm
 
 class pion():
     '''
@@ -487,48 +488,32 @@ class pion():
                 self.chemistry_container['pion_tracers'] = pion_chemical_tracers
                 self.element_wise_tracer_list = elementWiseTracers
         header_data.close()
-        
-        #Upgrade pion_tracers to include top ion
-        # Add fully ionized ions
+
+
+        nebulapy_all_species = pion_chemical_tracers
+        # Upgrade pion_tracers to include top ion
         for element in tracer_elements:
-
             Z = const.atomic_number[element]
-
             top_ion = f"{element}{Z}+"
-
             if top_ion not in pion_chemical_tracers:
-                pion_chemical_tracers.append(top_ion)
-
-        # -----------------------------------------
+                nebulapy_all_species.append(top_ion)
         # Sort ions by element and ionization stage
-        # -----------------------------------------
-
         def ion_sort_key(ion):
-
             import re
-
             match = re.match(r"([A-Za-z]+)(\d*)\+?$", ion)
-
             element = match.group(1)
             charge = match.group(2)
-
             # Neutral species
             if charge == "":
                 charge = 0
             else:
                 charge = int(charge)
-
             return (
                 tracer_elements.index(element),
                 charge
             )
-
-        pion_chemical_tracers = sorted(
-            pion_chemical_tracers,
-            key=ion_sort_key
-        )
-
-        print(pion_chemical_tracers)
+        nebulapy_all_species = sorted(nebulapy_all_species, key=ion_sort_key)
+        self.chemistry_container['nebulapy_all_species'] = nebulapy_all_species
 
     ######################################################################################
     # show all tracer string
@@ -887,7 +872,7 @@ class pion():
     ######################################################################################
     # get ion mass fraction values
     ######################################################################################
-    def get_ion_values(self, ion, silo_instant):
+    def get_ion_values(self, ion, silo_instant, verbose=True):
         '''
         This methods will return the ion mass fraction value set
 
@@ -905,7 +890,8 @@ class pion():
         ion_tracer = None
         if ion not in self.chemistry_container:
             if ion in const.top_level_ions and element in self.chemistry_container['mass_fractions']:
-                util.nebula_info(f"ion '{ion}' is a top-level ion, not a recognized species in NEMO")
+                if verbose:
+                    util.nebula_info(f"ion '{ion}' is a top-level ion, not a recognized species in NEMO")
                 return None
             else:
                 util.nebula_exit_with_error(f"ion {ion} is not in silo file")
@@ -914,29 +900,25 @@ class pion():
 
         return self.get_parameter(ion_tracer, silo_instant)
 
-
     ######################################################################################
     # get electron number density
     ######################################################################################
     def get_ne(self, silo_instant, verbose=True):
-        '''
+        """
+        Return electron number density for a specific silo file.
+        """
 
-        Parameters
-        ----------
-        silo_instant
-
-        Returns
-        -------
-        electron number density in each cell for a specific silo file
-        '''
-        # 1 dimensional (spherical) ######################################################
+        # 1D spherical grid
         if self.geometry_container['coordinate_sys'] == 'spherical':
 
             density = self.get_parameter("Density", silo_instant)
             ne = np.zeros(len(density))
+
             for e, element in enumerate(self.element_wise_tracer_list):
-                if not element:  # Check if the element is empty
+
+                if not element:
                     continue
+
                 massfrac_sum = np.zeros(len(density))
                 element_name = self.element_list[e]
                 atomic_number = len(element) - 1
@@ -945,83 +927,73 @@ class pion():
                 for i, ion in enumerate(element[1:], start=1):
                     charge = i - 1
                     ion_density = self.get_parameter(ion, silo_instant)
+
                     top_ion -= ion_density
                     massfrac_sum += charge * ion_density
 
                 massfrac_sum += atomic_number * np.maximum(top_ion, 0.0)
-
                 ne += massfrac_sum / const.mass[element_name]
 
             return ne * density
 
-        # 2 dimensional (cylindrical) ####################################################
+        # 2D cylindrical grid
         if self.geometry_container['coordinate_sys'] == 'cylindrical':
 
-            # Get the number of nested grid levels in the geometry container.
             Nlevel = self.geometry_container['Nlevel']
 
-            if verbose:
-                # Determine the number of grid levels for electron density calculation.
-                if Nlevel == 1:
-                    print(" Calculating electron number density for uniform grid")
-                elif Nlevel > 1:
-                    print(" Calculating electron number density for each grid level(s)")
+            if Nlevel == 1:
+                grid = " uniform grid"
+            else:
+                grid = " grid level"
 
-
-            # Retrieve the density data from the input file at the current simulation instant.
             density = self.get_parameter("Density", silo_instant)
 
-            # Identify the shape of each density array to ensure compatibility with other parameters.
             shape_list = [arr.shape for arr in density]
 
-            # Initialize arrays for electron number density (ne) and mass fraction sum,
-            # with zeroes matching the shape of the density data.
             ne = [np.zeros(shape) for shape in shape_list]
-            massfrac_sum = [np.zeros(shape) for shape in shape_list]
 
-            # Loop through each element in the tracer list to calculate contributions from individual ions.
-            for e, element in enumerate(self.element_wise_tracer_list):
+            level_iterator = tqdm(
+                range(Nlevel),
+                total=Nlevel,
+                desc=" Calculating electron density",
+                unit=grid,
+                ncols=100,
+                disable=not verbose
+            )
 
-                # If the current element has no associated tracers, skip to the next element.
-                if not element:
-                    continue
+            for level in level_iterator:
 
-                # Get the element name and compute its atomic number (total ions minus one).
-                element_name = self.element_list[e]
-                atomic_number = len(element) - 1
+                for e, element in enumerate(self.element_wise_tracer_list):
 
-                # Get the top ion density data (for the element's highest ionization state).
-                top_ion = self.get_parameter(element[0], silo_instant)
+                    if not element:
+                        continue
 
-                # For each subsequent ion (starting from the next lowest ionization state), calculate contributions:
-                for i, ion in enumerate(element[1:], start=1):
-                    charge = i - 1  # Charge is one less than ionization state index.
-                    ion_density = self.get_parameter(ion, silo_instant)
+                    element_name = self.element_list[e]
+                    atomic_number = len(element) - 1
 
-                    # Update the top ion and mass fraction sum for each grid level.
-                    for level in range(Nlevel):
-                        top_ion[level] -= ion_density[
-                            level]  # Adjust top ion density to reflect current ion's contribution.
-                        massfrac_sum[level] += charge * ion_density[level]  # Update mass fraction sum by ion charge.
+                    massfrac_sum = np.zeros(shape_list[level])
 
-                # Finalize mass fraction sum and update electron density for each grid level.
-                for level in range(Nlevel):
-                    # Add contribution of the top ion with atomic number, ensuring non-negative values.
-                    massfrac_sum[level] += atomic_number * np.maximum(top_ion[level], 0.0)
-                    # Calculate electron number density using mass fraction sum and atomic mass.
-                    ne[level] += massfrac_sum[level] / const.mass[element_name]
+                    top_ion = self.get_parameter(element[0], silo_instant)
 
-            # Scale the electron number density by the density for each grid level.
+                    for i, ion in enumerate(element[1:], start=1):
+                        charge = i - 1
+                        ion_density = self.get_parameter(ion, silo_instant)
+
+                        top_ion[level] -= ion_density[level]
+                        massfrac_sum += charge * ion_density[level]
+
+                    massfrac_sum += atomic_number * np.maximum(top_ion[level], 0.0)
+
+                    ne[level] += massfrac_sum / const.mass[element_name]
+
             ne = [density[level] * ne[level] for level in range(Nlevel)]
 
-            # Return the calculated electron number density array for each grid level.
-            print(" Returning electron number density array")
             return ne
 
     ######################################################################################
     # get top ion mass fraction
     ######################################################################################
-    def get_top_ion_massfrac(self, ion, silo_instant):
+    def get_top_ion_massfrac(self, ion, silo_instant, verbose=True):
 
         # Extract the element string from ion string
         element = util.get_element_symbol(ion)
@@ -1037,12 +1009,12 @@ class pion():
             for charge in range(atomic_number):
                 if charge == 0:
                     ion = f"{element}"
-                    ion_value = self.get_ion_values(ion, silo_instant)
+                    ion_value = self.get_ion_values(ion, silo_instant, verbose=verbose)
                     top_ion_mass_frac = [top_ion_mass_frac[level] - ion_value[level] for level in range(Nlevel)]
 
                 else:
                     ion = f"{element}{charge}+"  # Adding + for positive ions
-                    ion_value = self.get_ion_values(ion, silo_instant)
+                    ion_value = self.get_ion_values(ion, silo_instant, verbose=verbose)
                     top_ion_mass_frac = [top_ion_mass_frac[level] - ion_value[level] for level in range(Nlevel)]
 
         top_ion_mass_frac = [np.maximum(top_ion_mass_frac[level], 0.0) for level in range(Nlevel)]
@@ -1053,7 +1025,7 @@ class pion():
     ######################################################################################
     # get get ion number density
     ######################################################################################
-    def get_ion_number_density(self, ion, silo_instant):
+    def get_ion_number_density(self, ion, silo_instant, verbose=True):
         """
         Calculates the number density of a given ion across different nested grid levels.
 
@@ -1094,17 +1066,18 @@ class pion():
             Nlevel = self.geometry_container['Nlevel']
 
             # Check if the ion is a top-level ion (no sub-ion values available)
-            if self.get_ion_values(ion, silo_instant) is None:
-                print(f" proceeding to compute the number density for the top-level ion: {ion}")
+            if self.get_ion_values(ion, silo_instant, verbose=verbose) is None:
+                if verbose:
+                    print(f" proceeding to compute the number density for the top-level ion: {ion}")
                 # Retrieve the mass fraction for the top-level ion
-                ion_mass_frac = self.get_top_ion_massfrac(ion, silo_instant)
+                ion_mass_frac = self.get_top_ion_massfrac(ion, silo_instant, verbose=verbose)
 
                 # Calculate the ion number density for each grid level
                 for level in range(Nlevel):
                     ion_num_density[level] = density[level] * ion_mass_frac[level] / element_mass
             else:
                 # Retrieve the mass fraction for sub-level ions
-                ion_mass_frac = self.get_ion_values(ion, silo_instant)
+                ion_mass_frac = self.get_ion_values(ion, silo_instant, verbose=verbose)
 
                 # Calculate the ion number density for each grid level
                 for level in range(Nlevel):
@@ -1118,10 +1091,28 @@ class pion():
         return ion_num_density
 
     ######################################################################################
-    # get all number density
+    # GET ALL ION NUMBER DENSITIES
     ######################################################################################
-    def get_all_number_density(self, silo_instant, verbose=True):
-        pass
+    def get_species_number_densities(self, silo_instant):
+        species_number_densities = {}
+
+        species_list = self.chemistry_container['nebulapy_all_species']
+
+        for ion in tqdm(
+                species_list,
+                desc=" Calculating number densities",
+                unit=" species",
+                ncols=100,
+                disable=not self.verbose
+        ):
+            species_number_densities[ion] = self.get_ion_number_density(
+                ion=ion,
+                silo_instant=silo_instant,
+                verbose=False
+            )
+
+        return species_number_densities
+
 
     ######################################################################################
     # get get total number density ion number density

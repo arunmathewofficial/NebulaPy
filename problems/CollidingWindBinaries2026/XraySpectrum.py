@@ -77,6 +77,7 @@ mesh_edges_max = pion.geometry_container['edges_max']
 N_grid = pion.geometry_container['Ngrid']
 cell_volume = pion.get_2D_cell_volumes()
 
+
 EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=100, verbose=True)
 
 runtime = 0.0
@@ -85,57 +86,60 @@ for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()
 
     print(f" ---------------------------")
-    sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
+    sim_time = pion.get_simulation_time(silo_instant, time_unit='sec')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
     # Extract temperature and electron number density
-    #temperature = pion.get_parameter('Temperature', silo_instant)
-    #density = pion.get_parameter('Density', silo_instant)
-    #ne = pion.get_ne(silo_instant)
-    #grid_mask = pion.geometry_container['mask']
-
-
-    pion.get_chemical_tracers(silo_instant)
+    temperature = pion.get_parameter('Temperature', silo_instant)
+    density = pion.get_parameter('Density', silo_instant)
+    ne = pion.get_ne(silo_instant)
+    grid_mask = pion.geometry_container['mask']
+    number_densities = pion.get_species_number_densities(silo_instant)
 
 
     '''
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.text(0.05, 0.9, f'time = {sim_time.value:5.2f} kyr', transform=ax.transAxes, fontsize=12, color='white')
+    for species in number_densities:
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.text(0.05, 0.9, f'time = {sim_time:5.2f} ', transform=ax.transAxes, fontsize=12, color='white')
 
-    ax.set_xlim(mesh_edges_min[0][0].value, mesh_edges_max[0][0].value)
-    ax.set_ylim(mesh_edges_min[0][1].value, mesh_edges_max[0][1].value)
-    
+        ax.set_xlim(mesh_edges_min[0][0].value, mesh_edges_max[0][0].value)
+        ax.set_ylim(mesh_edges_min[0][1].value, mesh_edges_max[0][1].value)
 
-    for level in range(N_grid_level):
-        plot_data = dem_indices[level]
-        extents = [
-            mesh_edges_min[level][0].value, mesh_edges_max[level][0].value,
-            mesh_edges_min[level][1].value, mesh_edges_max[level][1].value
-        ]
-        image = ax.imshow(plot_data, interpolation='nearest', cmap='inferno',
-                          extent=extents, origin='lower',
-                          vmin=0, vmax=100
-                          )
+        for level in range(N_grid_level):
+            plot_data = np.log10(number_densities[species][level] * grid_mask[level])
+            extents = [
+                mesh_edges_min[level][0].value, mesh_edges_max[level][0].value,
+                mesh_edges_min[level][1].value, mesh_edges_max[level][1].value
+            ]
+            image = ax.imshow(plot_data, interpolation='nearest', cmap='inferno',
+                              extent=extents, origin='lower',
+                              #vmin=0, vmax=100
+                              )
 
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes("right", size="5%", pad=0.05)
-    colorbar = plt.colorbar(image, cax=cax, ticks=MultipleLocator(10))
-    colorbar.ax.yaxis.set_major_formatter(ScalarFormatter())
-    colorbar.ax.yaxis.get_major_formatter().set_scientific(False)
-    colorbar.ax.yaxis.get_major_formatter().set_useOffset(False)
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        colorbar = plt.colorbar(image, cax=cax,
+                                #ticks=MultipleLocator(10)
+                                )
+        colorbar.ax.yaxis.set_major_formatter(ScalarFormatter())
+        colorbar.ax.yaxis.get_major_formatter().set_scientific(False)
+        colorbar.ax.yaxis.get_major_formatter().set_useOffset(False)
 
-    ax.set_xlabel('z (pc)', fontsize=12)
-    ax.set_ylabel('R (pc)', fontsize=12)
-    #ax.text(0.65, 0.9, line, transform=ax.transAxes, fontsize=12, color='white')
-    ax.tick_params(axis='both', which='major', labelsize=13)
+        ax.set_xlabel('z (pc)', fontsize=12)
+        ax.set_ylabel('R (pc)', fontsize=12)
+        ax.text(0.65, 0.9, species, transform=ax.transAxes, fontsize=12, color='white')
+        ax.tick_params(axis='both', which='major', labelsize=13)
 
-    filename = f"DEMindices_{sim_time.value:.2f}kyr.png"
-    filepath = os.path.join(OutputDir, filename)
-    plt.savefig(filepath, bbox_inches="tight", dpi=300)
-    plt.close(fig)
-    
+        Filename = f"{species}_{sim_time.value:.2f}kyr.png"
+        Filepath = os.path.join(OutputDir, Filename)
+        plt.savefig(Filepath, bbox_inches="tight", dpi=300)
+        print(f"Saved snapshot: {Filename}")
+
+        plt.close(fig)
+
     '''
 
+    '''
     #em = EM.DEM2D(density=density, temperature=temperature,
     #              ne=ne,
     #              mask=grid_mask,
@@ -156,6 +160,7 @@ for step, silo_instant in enumerate(batched_silos):
     OutImageFile = os.path.join(OutputDir, Filename)
     plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)
     plt.close()
+    '''
 
     print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
 
