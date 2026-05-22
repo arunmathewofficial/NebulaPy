@@ -18,6 +18,7 @@ from matplotlib.ticker import MultipleLocator, ScalarFormatter  # For controllin
 import ChiantiPy.core as ch
 import ChiantiPy.tools.data as chdata
 
+import NebulaPy.src.Chianti as nebula_chainti
 
 # constants
 cm2au = 6.68459e-14  # cm to au conversion factor
@@ -78,7 +79,7 @@ N_grid = pion.geometry_container['Ngrid']
 cell_volume = pion.get_2D_cell_volumes()
 
 
-EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=100, verbose=True)
+EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=300, verbose=True)
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files
@@ -96,6 +97,36 @@ for step, silo_instant in enumerate(batched_silos):
     grid_mask = pion.geometry_container['mask']
     number_densities = pion.get_species_number_densities(silo_instant)
 
+    EM.DEM2D(temperature=temperature, ne=ne, species_densities=number_densities, shellvolume=cell_volume)
+    Bin_temperature = EM.Tb
+    hw = EM.half_bin_width
+
+    SAMDEM = EM.SAM_DEM(density=density, temperature=temperature, ne=ne, mask=grid_mask,
+                        ngrid=N_grid, mesh_edges_min=mesh_edges_min, volume=cell_volume,
+                        mesh_edges_max=mesh_edges_max, temp_bin=Bin_temperature, hw=hw)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.text(0.05, 0.90, f"time = {sim_time:5.2f}", fontsize=12, color='black')
+    # Total DEM
+    total_DEM = np.zeros_like(EM.Tb, dtype=np.float64)
+
+    for species in number_densities:
+        total_DEM += EM.DEM[species]
+    # Avoid log10(0)
+    ax.set_title("       Total DEM of the Colliding-Wind Binary WR140")
+    ax.plot(EM.Tb, np.log10(total_DEM), linewidth=1.5, color='black',
+            label=r'$\sum_i \, \mathrm{DEM}_{X_i}$')
+
+    ax.plot(EM.Tb, np.log10(SAMDEM), linewidth=1.5, color='red', label="SAM's DEM")
+
+    ax.set_xlabel(r'$\log(T/\mathrm{K})$', fontsize=12)
+    ax.set_ylabel(r'$\log(\mathrm{DEM})$', fontsize=12)
+    ax.legend()
+    Filename = f"Total_DEM_{sim_time.value:.2f}kyr.png"
+    Filepath = os.path.join(OutputDir, Filename)
+    plt.savefig(Filepath, bbox_inches="tight", dpi=300)
+    print(f" Saved snapshot: {Filename}")
+    plt.close(fig)
 
     '''
     for species in number_densities:
@@ -106,7 +137,7 @@ for step, silo_instant in enumerate(batched_silos):
         ax.set_ylim(mesh_edges_min[0][1].value, mesh_edges_max[0][1].value)
 
         for level in range(N_grid_level):
-            plot_data = np.log10(number_densities[species][level] * grid_mask[level])
+            plot_data = np.log10(EM.DEM[species][level] * grid_mask[level])
             extents = [
                 mesh_edges_min[level][0].value, mesh_edges_max[level][0].value,
                 mesh_edges_min[level][1].value, mesh_edges_max[level][1].value
@@ -162,7 +193,7 @@ for step, silo_instant in enumerate(batched_silos):
     plt.close()
     '''
 
-    print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
+    #print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
 
     dt = time.time() - silo_instant_start_time
     runtime += dt

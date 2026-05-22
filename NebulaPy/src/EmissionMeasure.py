@@ -2,7 +2,8 @@ import numpy as np
 import math
 from astropy import units as u
 import time
-
+from NebulaPy.tools import util as util
+from tqdm import tqdm
 
 pi = math.pi
 m_p = 1.6726219e-24  # g
@@ -23,104 +24,121 @@ class emissionMeasure():
         self.Tmax = Tmax
         self.Nbins = Nbins
 
+        print(" [EMISSION MEASURE] : Generating DEM temperature bins")
+
+        # Calculate the logarithmic width of each bin
+        bin_width = (np.log10(self.Tmax) - np.log10(self.Tmin)) / self.Nbins
+        # Half the width of a bin for adjusting bin edges
+        self.half_bin_width = bin_width / 2
+
+        # Generate the logarithmically spaced temperature bin edges.
+        # This will create Nbins+1 edges to define the boundaries of Nbins.
+        self.temperature_edges = np.linspace(np.log10(self.Tmin), np.log10(self.Tmax), self.Nbins + 1)
+
+        # Create temperature bins by pairing adjacent edges.
+        # Each bin is represented as [bin_min, bin_max].
+        self.temperature_bins = [[self.temperature_edges[i], self.temperature_edges[i + 1]] for i in range(self.Nbins)]
+
+        # Calculate the midpoints of each bin for potential further use.
+        # These midpoints are the average of the logarithmic bin edges.
+        self.Tb = np.array([(bin[0] + bin[1]) / 2 for bin in self.temperature_bins])
+
     ######################################################################################
     # generate differential emission measure indices todo: not verified
     ######################################################################################
     def generate_DEM_indices(self, temperature):
 
-        print(" [EMISSION MEASURE] : Generating DEM indices")
+        print(" [EMISSION MEASURE] : Mapping cells to DEM temperature bins")
 
-        # Calculate the logarithmic width of each bin
-        bin_width = (np.log10(self.Tmax) - np.log10(self.Tmin)) / self.Nbins
-        # Half the width of a bin for adjusting bin edges
-        half_bin_width = bin_width / 2
+        DEM_indices = np.full_like(temperature, fill_value=-1, dtype=np.int64)
 
-        # Generate the logarithmically spaced temperature bin edges.
-        # This will create Nbins+1 edges to define the boundaries of Nbins.
-        temperature_edges = np.linspace(np.log10(self.Tmin), np.log10(self.Tmax), self.Nbins + 1)
-
-        # Create temperature bins by pairing adjacent edges.
-        # Each bin is represented as [bin_min, bin_max].
-        temperature_bins = [[temperature_edges[i], temperature_edges[i + 1]] for i in range(self.Nbins)]
-
-        # Calculate the midpoints of each bin for potential further use.
-        # These midpoints are the average of the logarithmic bin edges.
-        Tb = np.array([(bin[0] + bin[1]) / 2 for bin in temperature_bins])
-
-
-        DEM_indices = np.zeros_like(temperature, dtype=np.float64)
-
-        # Find corresponding DEM bin for each temperature
         log_temperature = np.log10(temperature)
 
-        # Assign DEM bin indices
         for bin_idx in range(self.Nbins):
-            bin_min = temperature_edges[bin_idx]
-            bin_max = temperature_edges[bin_idx + 1]
 
-            mask = (log_temperature >= bin_min) & (log_temperature < bin_max)
+            bin_min = self.temperature_edges[bin_idx]
+            bin_max = self.temperature_edges[bin_idx + 1]
+
+            if bin_idx == self.Nbins - 1:
+                mask = (log_temperature >= bin_min) & (log_temperature <= bin_max)
+            else:
+                mask = (log_temperature >= bin_min) & (log_temperature < bin_max)
 
             DEM_indices[mask] = bin_idx
 
-        self.bin_temperature = Tb
+        print(" [EMISSION MEASURE] : DEM temperature-bin indexing completed")
+
         self.DEM_indices = DEM_indices
 
-
-
     ######################################################################################
-    # differential emission measure todo: not verified
+    # differential emission measure for 2D grid
     ######################################################################################
-    def DEM(self, temperature, ne, species_density, shellvolume):
-        """
-        Calculate the differential emission measure (DEM) across temperature bins.
+    def DEM2D(self, temperature, ne, species_densities, shellvolume):
 
-        Parameters:
-        ----------
-        dem_indices : list of numpy.ndarray
-            List where each element is an array of indices corresponding to a temperature bin.
-        ne : numpy.ndarray
-            Array of electron densities corresponding to the temperature values.
-        shellvolume : numpy.ndarray
-            Array of shell volumes corresponding to the temperature values.
-
-        Returns:
-        -------
-        DEM : numpy.ndarray
-            Array of differential emission measure values for each temperature bin.
-        """
-
+        # Generate temperature-bin index grid
         self.generate_DEM_indices(temperature)
 
+        temperature = np.asarray(temperature, dtype=np.float64)
+        ne = np.asarray(ne, dtype=np.float64)
+        shellvolume = np.asarray(shellvolume, dtype=np.float64)
+
+        # Safety check
+        if (
+                temperature.shape != ne.shape or
+                temperature.shape != shellvolume.shape
+        ):
+            util.nebula_exit_with_error(
+                " DEM-2D input arrays have inconsistent shapes."
+            )
+
+        DEM = {}
+
+        species_list = list(species_densities.items())
+
+        for species, species_density in tqdm(
+                species_list,
+                desc=" Computing species DEM",
+                unit=" species",
+                ncols=100,
+                disable=not self.verbose
+        ):
+
+            species_density = np.asarray(species_density, dtype=np.float64)
+
+            # Safety check
+            if temperature.shape != species_density.shape:
+                util.nebula_exit_with_error(
+                    f" DEM-2D input arrays have inconsistent shapes for species {species}."
+                )
+
+            species_DEM = np.zeros(self.Nbins, dtype=np.float64)
+
+            for bin_idx in range(self.Nbins):
+                # Cells belonging to this temperature bin
+                bin_mask = self.DEM_indices == bin_idx
+
+                # Only include cells where species exists
+                species_mask = species_density > 0.0
+
+                mask = bin_mask & species_mask
+
+                species_DEM[bin_idx] = np.sum(
+                    ne[mask]
+                    * species_density[mask]
+                    * shellvolume[mask]
+                )
+
+            DEM[species] = species_DEM
+
+        self.DEM = DEM
+
+
+
 
 
 
     ###############################################################################
-    def volume2D(self, xmax, xmin, ngrid):  # Calculates the volume of each cell in the image grid
-        xmax = xmax
-        xmin = xmin
-        ngrid = ngrid
-
-        # Calculate the size of each cell in the x, y, and z-direction:
-        delta_z = (xmax[0] - xmin[0]) / ngrid[0]
-        delta_R = (xmax[1] - xmin[1]) / ngrid[1]
-        # Create a 2D array of zeros with the same dimensions as ngrid:
-        v = np.zeros((ngrid[1], ngrid[0]))
-        # Loop through each element in the Volume array:
-        for ycells in range(ngrid[1]):
-            rmin = ycells * delta_R
-            rmax = (ycells + 1) * delta_R
-            for xcells in range(ngrid[0]):
-                v[ycells, xcells] = delta_z * np.pi * (rmax ** 2 - rmin ** 2)
-        del delta_z
-        del delta_R
-        del xmax
-        del xmin
-        del ngrid
-        return v
-
-
-    ###############################################################################
-    def DEM2D(self, density, temperature, ne, mask, ngrid, volume, mesh_edges_min, mesh_edges_max, temp_bin, hw):
+    def SAM_DEM(self, density, temperature, ne, mask, ngrid, volume, mesh_edges_min, mesh_edges_max, temp_bin, hw):
         # Function to calculate the differential emission measure of the nebula
         # See Green et al. (2019) - Bubble Nebula - paper for details.
         # temp_bin: array of temperature bins in logspace
@@ -158,5 +176,5 @@ class emissionMeasure():
               pick[(log_masktemp>=(temp_bin[w]-hw))&(log_masktemp<(temp_bin[w]+hw))] = 1
               dem_bin_all[w] += np.sum(vol_den * pick)
 
-        return {'dem_bin': dem_bin_all}
+        return dem_bin_all
 

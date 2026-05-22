@@ -401,6 +401,8 @@ class spectrum:
         # info: 1) looping over species to calculate the emission rate from each process.
         for species in self.chianti_species_attributes:
 
+            #chianti_species = self.get_chianti_symbol(pion_species, make=False)
+
             Z = self.chianti_species_attributes[species]['Z']
             ionstage = self.chianti_species_attributes[species]['Ion']
             dielectronic = self.chianti_species_attributes[species]['Dielectronic']
