@@ -2,7 +2,7 @@
 import NebulaPy.src as nebula
 from NebulaPy.tools import util
 import time
-from pypion.ReadData import ReadData
+#from pypion.ReadData import ReadData
 import matplotlib.pyplot as plt
 import numpy as np
 #import astropy.units as unit
@@ -13,6 +13,7 @@ import ChiantiPy.tools.filters as chfilters
 import matplotlib.pyplot as plt  # Plotting
 from mpl_toolkits.axes_grid1 import make_axes_locatable  # For attaching colorbars to axes
 from matplotlib.ticker import MultipleLocator, ScalarFormatter  # For controlling tick formatting
+from NebulaPy.src.CIE import cieMode
 
 # info: code to test emission measure calculation.
 import ChiantiPy.core as ch
@@ -26,9 +27,9 @@ cm2au = 6.68459e-14  # cm to au conversion factor
 # Macbook
 OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Output image directory
 # Razer Blade
-OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'
+#OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'
 
-
+'''
 
 #Razer Blade -> Set up paths and filenames
 OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
@@ -79,13 +80,14 @@ N_grid = pion.geometry_container['Ngrid']
 cell_volume = pion.get_2D_cell_volumes()
 
 
+
 EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=300, verbose=True)
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files
 for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()
-
+    
     print(f" ---------------------------")
     sim_time = pion.get_simulation_time(silo_instant, time_unit='sec')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
@@ -128,7 +130,7 @@ for step, silo_instant in enumerate(batched_silos):
     print(f" Saved snapshot: {Filename}")
     plt.close(fig)
 
-    '''
+    
     for species in number_densities:
         fig, ax = plt.subplots(figsize=(8, 6))
         ax.text(0.05, 0.9, f'time = {sim_time:5.2f} ', transform=ax.transAxes, fontsize=12, color='white')
@@ -168,9 +170,7 @@ for step, silo_instant in enumerate(batched_silos):
 
         plt.close(fig)
 
-    '''
 
-    '''
     #em = EM.DEM2D(density=density, temperature=temperature,
     #              ne=ne,
     #              mask=grid_mask,
@@ -191,52 +191,25 @@ for step, silo_instant in enumerate(batched_silos):
     OutImageFile = os.path.join(OutputDir, Filename)
     plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)
     plt.close()
-    '''
+    
 
-    #print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
+    print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
 
     dt = time.time() - silo_instant_start_time
     runtime += dt
     print(f" runtime: {runtime:.4e} s | dt: {dt:.4e} s")
 
-
-
-# CIE TEST ####################################################################
-'''
-# fixing the following issues
-# info: CIE calculation match for Nebulapy.
-database = nebula.database(verbose=True)
-database.load_cie()
-Temperature = np.logspace(np.log10(200), np.log10(1e9), 100)
-plt.figure()
-plt.title("Fe Ionisation Fractions (CIE)")
-# Loop over all Fe ions (Fe I to Fe XXVI → 1 to 26)
-for i in range(1, 28):
-    chianti_ion = f'fe_{i}'
-
-    CIE_data = database.get_cie_fraction(chianti_ion, Temperature)
-
-    plt.plot(np.log10(Temperature), np.log10(CIE_data),
-             linewidth=2,
-             label=chianti_ion.upper())
-plt.ylim(-2, 0)  # Adjust y-axis limits for better visibility
-plt.xlabel("log10(Temperature [K])")
-plt.ylabel("Ion Fraction")
-plt.legend(ncol=2, fontsize=8)  # better layout for many ions
-
-outfile = OutputDir + "/cie_fe_all.png"
-plt.savefig(outfile, dpi=300)
-plt.close()
 '''
 
-'''
+
+
 # initial conditions ##############################################################
 
 ionlist = ['fe_25']
 print(f" Testing for ion {ionlist[0]}")
 print(f" -------------------------------\n")
 
-temperature = np.array([10**7.0, 10**7.0])
+temperature = np.array([10**7, 10**7.0])
 ne = np.array([1.e+9, 1.e+9])
 density = np.array([1.e+9, 1.e+9])
 species_density = np.array([1.0, 1.0])
@@ -370,7 +343,7 @@ plt.savefig(outfile)
 # todo: 4) the line emission is different between NebulaPy and ChiantiPy,
 #  which need to be rectified next.
 
-'''
+
 
 
 
