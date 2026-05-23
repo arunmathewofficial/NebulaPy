@@ -1,36 +1,30 @@
-#import numpy as np
 import NebulaPy.src as nebula
 from NebulaPy.tools import util
 import time
-#from pypion.ReadData import ReadData
+# from pypion.ReadData import ReadData
 import matplotlib.pyplot as plt
 import numpy as np
-#import astropy.units as unit
+# import astropy.units as unit
 import os
-#from NebulaPy.tools import constants as const
-#import pandas as pd
+# from NebulaPy.tools import constants as const
+# import pandas as pd
 import ChiantiPy.tools.filters as chfilters
-
-
-# info: code to test emission measure calculation.
-import ChiantiPy.core as ch
-import ChiantiPy.tools.data as chdata
+import matplotlib.pyplot as plt  # Plotting
+from mpl_toolkits.axes_grid1 import make_axes_locatable  # For attaching colorbars to axes
+from matplotlib.ticker import MultipleLocator, ScalarFormatter  # For controlling tick formatting
 
 
 # constants
 cm2au = 6.68459e-14  # cm to au conversion factor
 
 # Macbook
-OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Output image directory
-
+#OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Output image directory
 
 #Razer Blade -> Set up paths and filenames
 OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
 SiloDir = '/home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
-SiloDir = "/home/tony/Desktop/multi-ion-bowshock/high-res-silo-200kyr"
 Filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
-Filebase = 'Ostar_mhd-nemo-dep_d2n0384l3'
-start_time = None #1.24e6  # in sec
+start_time = 1.24e6  # in sec
 finish_time = None
 time_unit = 'sec'
 out_frequency = None
@@ -45,6 +39,15 @@ batched_silos = util.batch_silos(
     time_unit=time_unit,
     out_frequency=out_frequency
 )
+
+key = input(" Press 'y' to continue, anything else to exit: ").strip().lower()
+
+if key == "y":
+    print(" Continuing execution...")
+else:
+    util.nebula_info("Resetting parameters before the next run")
+    exit(0)
+
 
 # Initialize the Pion class from NebulaPy, which handles the simulation data
 pion = nebula.pion(batched_silos, verbose=True)
@@ -65,8 +68,8 @@ N_grid = pion.geometry_container['Ngrid']
 cell_volume = pion.get_2D_cell_volumes()
 
 
-EM = nebula.emission_measure()
 
+EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=100, verbose=True)
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files
@@ -74,7 +77,7 @@ for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()
 
     print(f" ---------------------------")
-    sim_time = pion.get_simulation_time(silo_instant, time_unit='kyr')
+    sim_time = pion.get_simulation_time(silo_instant, time_unit='sec')
     print(f" step: {step} | simulation time: {sim_time:.6e}")
 
     # Extract temperature and electron number density
@@ -82,30 +85,78 @@ for step, silo_instant in enumerate(batched_silos):
     density = pion.get_parameter('Density', silo_instant)
     ne = pion.get_ne(silo_instant)
     grid_mask = pion.geometry_container['mask']
+    number_densities = pion.get_species_number_densities(silo_instant)
+
+    EM.DEM2D(temperature=temperature, ne=ne, species_densities=number_densities, shell_volume=cell_volume)
+    Bin_temperature = EM.Tb
+    half_width = EM.half_bin_width
+
+    SAMDEM = EM.SAM_DEM(density=density, temperature=temperature, ne=ne,
+                        mask=grid_mask, ngrid=N_grid,
+                        mesh_edges_min=mesh_edges_min, mesh_edges_max=mesh_edges_max,
+                        volume=cell_volume, temp_bin=Bin_temperature,
+                        hw=half_width)
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.text(0.05, 0.90, f"time = {sim_time:5.2f}", fontsize=12, color='black')
+    # Total DEM
+    total_DEM = np.zeros_like(EM.Tb, dtype=np.float64)
+
+    from scipy.ndimage import gaussian_filter1d
+
+    # Plot DEM for each species separately
+    for species in number_densities:
+        fig_species, ax_species = plt.subplots(figsize=(8, 6))
+
+        fig_species.text(0.05, 0.90, f"time = {sim_time:5.2f}",
+                         fontsize=12, color='black')
+
+        species_dem = np.asarray(EM.DEM[species], dtype=np.float64)
+
+        # Add unsmoothed DEM to total DEM
+        total_DEM += species_dem
+
+        # Smooth only for plotting
+        species_dem_smooth = gaussian_filter1d(species_dem, sigma=1.0)
+
+        valid = species_dem_smooth > 0.0
+
+        ax_species.plot(
+            EM.Tb[valid],
+            np.log10(species_dem_smooth[valid]),
+            linewidth=1.5,
+            color='black',
+            label=rf'$\mathrm{{DEM}}_{{{species}}}$'
+        )
+
+        ax_species.set_title(f"{species} Differential Emission Measure")
+        ax_species.set_xlabel(r'$\log(T/\mathrm{K})$', fontsize=12)
+        ax_species.set_ylabel(r'$\log(\mathrm{DEM})$', fontsize=12)
+        ax_species.legend(fontsize=10)
+
+        Filename = f"DEM_{species}_{sim_time.value:.2f}kyr.png"
+        Filepath = os.path.join(OutputDir, Filename)
+
+        plt.savefig(Filepath, bbox_inches="tight", dpi=300)
+
+        print(f" Saving {species} DEM to {Filename}")
+
+        plt.close(fig_species)
 
 
-    temperature_bin = np.arange(2.0, 8.5, 0.02)
+    ax.set_title("       Total DEM of the Colliding-Wind Binary WR140")
+    ax.plot(EM.Tb, np.log10(total_DEM), linewidth=1.5, color='black',
+            label=r'$\sum_i \, \mathrm{DEM}_{X_i}$')
+    ax.plot(EM.Tb, np.log10(SAMDEM), linewidth=1.5, color='red', label="SAM's DEM")
+    ax.set_xlabel(r'$\log(T/\mathrm{K})$', fontsize=12)
+    ax.set_ylabel(r'$\log(\mathrm{DEM})$', fontsize=12)
+    ax.legend()
+    Filename = f"Total_DEM_{sim_time.value:.2f}kyr.png"
+    Filepath = os.path.join(OutputDir, Filename)
+    plt.savefig(Filepath, bbox_inches="tight", dpi=300)
+    print(f" Saving total DEM into {Filename}")
+    plt.close(fig)
 
-    em = EM.DEM2D(density=density, temperature=temperature,
-                  ne=ne,
-                  mask=grid_mask,
-                  ngrid=N_grid,
-                  mesh_edges_min=mesh_edges_min,
-                  mesh_edges_max=mesh_edges_max,
-                  volume = cell_volume,
-                  temp_bin=temperature_bin,
-                  hw=0.05)
-
-    dem = em['dem_bin']
-
-    # Plot the differential emission measure for the current time instant
-    plt.figure()
-    plt.title(f"Differential Emission Measure")
-    plt.plot(temperature_bin, np.log10(dem))
-    Filename = f"{Filebase}_DEM_{sim_time.value:.2e}kyr.png"
-    OutImageFile = os.path.join(OutputDir, Filename)
-    plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)
-    plt.close()
 
     print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
 

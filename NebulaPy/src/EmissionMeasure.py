@@ -73,14 +73,14 @@ class emissionMeasure():
     ######################################################################################
     # differential emission measure for 2D grid
     ######################################################################################
-    def DEM2D(self, temperature, ne, species_densities, shellvolume):
+    def DEM2D(self, temperature, ne, species_densities, shell_volume):
 
         # Generate temperature-bin index grid
         self.generate_DEM_indices(temperature)
 
         temperature = np.asarray(temperature, dtype=np.float64)
         ne = np.asarray(ne, dtype=np.float64)
-        shellvolume = np.asarray(shellvolume, dtype=np.float64)
+        shellvolume = np.asarray(shell_volume, dtype=np.float64)
 
         # Safety check
         if (
@@ -133,10 +133,6 @@ class emissionMeasure():
         self.DEM = DEM
 
 
-
-
-
-
     ###############################################################################
     def SAM_DEM(self, density, temperature, ne, mask, ngrid, volume, mesh_edges_min, mesh_edges_max, temp_bin, hw):
         # Function to calculate the differential emission measure of the nebula
@@ -162,7 +158,7 @@ class emissionMeasure():
             tempj = temp[j]
             maskj = mask[j]
             # info: replaced with my code to calculate the cell volume and ne
-            #volj = self.volume2D(lim_max[j], lim_min[j], ngrid)
+            #volj = self.SAMvolume2D(lim_max[j], lim_min[j], ngrid)
             volj = vol[j]
             #nei = denj * maskj
             #nei = nei * 1.2 * 0.715 / m_p  # assume 1.2 electrons per H ion
