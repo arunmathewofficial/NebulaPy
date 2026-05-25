@@ -160,7 +160,7 @@ class chianti:
 
         # Loop through the sorted keys in the dictionary of species
         if self.verbose:
-            print(" [SPECIES ATTRIBUTES] : Retrieving attributes for the following species")
+            print(" [ SPECIES ATTRIBUTES ] : Retrieving attributes for the following species")
 
         # First pass: compute width
         names_tmp = [

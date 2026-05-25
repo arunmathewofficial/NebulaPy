@@ -37,7 +37,6 @@ class spectrum:
             line=False,
             twophoton=False,
             elements=None,
-            elemental_abundances=None,
             CIE=False,
             filtername=None,
             filterfactor=None,
@@ -58,7 +57,7 @@ class spectrum:
         self.verbose = verbose
 
         if self.verbose:
-            print(" [SPECTRUM MODULE] : Initializing spectrum calculation")
+            print(" [ SPECTRUM MODULE ] : Initializing spectrum calculation")
 
         # Setting up spectrum dictionary to hold results
         self.spectrum_container = {}
@@ -97,14 +96,13 @@ class spectrum:
 
         # Initialize empty attributes for species and elemental abundances
         self.chianti_species_attributes = {}
-        self.build_species_attributes(elements, elemental_abundances)
+        self.build_species_attributes(elements)
 
         # setup wavelength grid #####################################
         self.wavelength_grid = []
         self.setup_wavelength_grid(self.min_wvl, self.max_wvl,
                                    user_grid=user_grid,
                                    grid_size=grid_size)
-
 
         self.CIE = CIE
         self.NEQ = not CIE
@@ -116,45 +114,15 @@ class spectrum:
     ######################################################################################
     # Build Species Attributes
     ######################################################################################
-    def build_species_attributes(self, elements, elemental_abundances):
+    def build_species_attributes(self, elements):
         """
-        Build species attributes and validate elemental abundances.
+        Build species attributes.
 
         Parameters
         ----------
         elements : list
             Elements used in the spectral calculation.
-        elemental_abundances : dict
-            Elemental abundances given as mass fractions. Must sum to unity.
         """
-
-        # Validate abundance input
-        if not isinstance(elemental_abundances, dict):
-            util.nebula_exit_with_error(
-                "Provide elemental abundances (mass fractions)"
-            )
-
-        total_abundance = sum(elemental_abundances.values())
-
-        # Check all elements exist
-        missing = set(elements) - set(elemental_abundances.keys())
-        if missing:
-            util.nebula_exit_with_error(
-                f"Missing abundances for elements {', '.join(missing)}"
-            )
-
-        if not np.isclose(total_abundance, 1.0, rtol=1e-8):
-            util.nebula_exit_with_error(
-                f"Elemental abundances must sum to unity (sum = {total_abundance:.8f})"
-            )
-
-        # Check for negative abundances
-        for elem, val in elemental_abundances.items():
-            if val < 0.0:
-                util.nebula_exit_with_error(
-                    f"Negative abundance detected for element '{elem}'"
-                )
-
         # Initialize CHIANTI object (dummy plasma state)
         chianti_spec = chianti(
             pion_elements=elements,
@@ -164,8 +132,6 @@ class spectrum:
         )
         # Return chianti ion attributes for the species
         self.chianti_species_attributes = chianti_spec.species_attributes_container
-        self.elemental_abundances = elemental_abundances
-
         # do not terminate rather del
         del chianti_spec
 
@@ -176,9 +142,9 @@ class spectrum:
 
         if self.verbose:
             if not user_grid:
-                print(" [WAVELENGTH GRID] : Setting up default CHIANTI grid")
+                print(" [ WAVELENGTH GRID ] : Setting up default CHIANTI grid")
             else:
-                print(" [WAVELENGTH GRID] : Setting up uniform grid")
+                print(" [ WAVELENGTH GRID ] : Setting up uniform grid")
 
         if min_wvl >= max_wvl:
             util.nebula_exit_with_error(
@@ -301,22 +267,11 @@ class spectrum:
             print(f" Total spectral points: {self.N_wvl}")
 
 
-    ######################################################################################
-    # Compute DEM
-    ######################################################################################
-    def compute_DEM_1D(self, temperature, species_density, shell_volume):
-
-        print(" [DEM] : Computing DEM for 1D data, not implemented yet")
 
     ######################################################################################
-    # Compute spectrum for 1D data
+    # Compute spectrum for 2D data
     ######################################################################################
-    def compute_spectrum_1D(self,
-                       temperature,
-                       ne,
-                       species_density,
-                       shell_volume,
-                       ):
+    def generate_spectrum(self, temperature, ne, species_densities, grid_volume, grid_mask):
         """
         # todo:
         compute for a set of cells. the parameters should be arrays of the same length,
@@ -346,36 +301,33 @@ class spectrum:
         if not self.chianti_species_attributes:
             util.nebula_exit_with_error(" Species Attributes Container is not initialized or is empty.")
 
-        # Ensure all arrays have identical shape and size
-        required_arrays = {
-            "temperature": temperature,
-            "ne": ne,
-            "species_density": species_density,
-            "shell_volume": shell_volume,
-        }
-        reference_name, reference_array = next(iter(required_arrays.items()))
-        reference_shape = np.shape(reference_array)
-        reference_size = np.size(reference_array)
-
-        for name, array in required_arrays.items():
-
-            if np.shape(array) != reference_shape:
-                util.nebula_exit_with_error(
-                    f" Shape mismatch detected: '{name}' has shape {np.shape(array)}, "
-                    f"expected {reference_shape}."
-                )
-
-            if np.size(array) != reference_size:
-                util.nebula_exit_with_error(
-                    f" Size mismatch detected: '{name}' has size {np.size(array)}, "
-                    f"expected {reference_size}."
-                )
-
 
 
         # Convert the temperature list to a NumPy array for efficient numerical operations.
         temperature = np.array(temperature, dtype=np.float64)
         ne = np.asarray(ne, dtype=np.float64)
+
+        temperature = np.asarray(temperature, dtype=np.float64)
+        ne = np.asarray(ne, dtype=np.float64)
+        grid_volume = np.asarray(grid_volume, dtype=np.float64)
+        grid_mask = np.asarray(grid_mask, dtype=np.float64)
+
+        # Safety check ##################################################
+        if (
+                temperature.shape != ne.shape or
+                temperature.shape != grid_volume.shape or
+                temperature.shape != grid_mask.shape
+        ):
+            util.nebula_exit_with_error(
+                " DEM-2D input arrays have inconsistent shapes."
+            )
+
+        for species, species_density in species_densities.items():
+            species_density = np.asarray(species_density, dtype=np.float64)
+            if temperature.shape != species_density.shape:
+                util.nebula_exit_with_error(
+                    f" DEM-2D input arrays have inconsistent shapes for species {species}."
+                )
 
         # Determine the number of temperature values
         N_temp = len(temperature)
@@ -409,7 +361,7 @@ class spectrum:
 
 
 
-            if species != 'fe_25':
+            if species != 'h_1':
                 util.nebula_warning(f"Skipping {species} ...")
                 continue
             util.nebula_info(f"Only {species} is calculated in this test...")

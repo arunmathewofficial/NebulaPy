@@ -20,13 +20,9 @@ class cieMode:
 
         self.cie_file = os.path.join(database, "IonBalance", "CIE.txt")
 
-
-
     ######################################################################################
     # Load CIE ion fraction table from the database directory
     ######################################################################################
-    from tqdm import tqdm
-
     def load_cie(self):
 
         cie_file = self.cie_file
@@ -38,7 +34,7 @@ class cieMode:
         data = []
 
         if self.verbose:
-            print(" [Collision Ionization Equi] : Loading table")
+            print(" [CIE] : Loading collision ionization equilibrium table")
 
         # Count valid data lines for progress bar
         total_lines = 0

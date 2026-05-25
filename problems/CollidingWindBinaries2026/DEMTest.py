@@ -12,7 +12,7 @@ import ChiantiPy.tools.filters as chfilters
 import matplotlib.pyplot as plt  # Plotting
 from mpl_toolkits.axes_grid1 import make_axes_locatable  # For attaching colorbars to axes
 from matplotlib.ticker import MultipleLocator, ScalarFormatter  # For controlling tick formatting
-
+from scipy.ndimage import gaussian_filter1d
 
 # constants
 cm2au = 6.68459e-14  # cm to au conversion factor
@@ -69,7 +69,7 @@ cell_volume = pion.get_2D_cell_volumes()
 
 
 
-EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=100, verbose=True)
+EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=200, verbose=True)
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files
@@ -87,7 +87,11 @@ for step, silo_instant in enumerate(batched_silos):
     grid_mask = pion.geometry_container['mask']
     number_densities = pion.get_species_number_densities(silo_instant)
 
-    EM.DEM2D(temperature=temperature, ne=ne, species_densities=number_densities, shell_volume=cell_volume)
+    EM.DEM2D(temperature=temperature, ne=ne,
+             species_densities=number_densities,
+             volume=cell_volume,
+             grid_mask=grid_mask
+             )
     Bin_temperature = EM.Tb
     half_width = EM.half_bin_width
 
@@ -95,14 +99,14 @@ for step, silo_instant in enumerate(batched_silos):
                         mask=grid_mask, ngrid=N_grid,
                         mesh_edges_min=mesh_edges_min, mesh_edges_max=mesh_edges_max,
                         volume=cell_volume, temp_bin=Bin_temperature,
-                        hw=half_width)
+                        hw=half_width
+                        )
 
     fig, ax = plt.subplots(figsize=(8, 6))
     fig.text(0.05, 0.90, f"time = {sim_time:5.2f}", fontsize=12, color='black')
     # Total DEM
     total_DEM = np.zeros_like(EM.Tb, dtype=np.float64)
 
-    from scipy.ndimage import gaussian_filter1d
 
     # Plot DEM for each species separately
     for species in number_densities:
@@ -117,13 +121,13 @@ for step, silo_instant in enumerate(batched_silos):
         total_DEM += species_dem
 
         # Smooth only for plotting
-        species_dem_smooth = gaussian_filter1d(species_dem, sigma=1.0)
+        #species_dem_smooth = gaussian_filter1d(species_dem, sigma=1.0)
 
-        valid = species_dem_smooth > 0.0
+        #valid = species_dem > 0.0
 
         ax_species.plot(
-            EM.Tb[valid],
-            np.log10(species_dem_smooth[valid]),
+            EM.Tb,
+            np.log10(species_dem),
             linewidth=1.5,
             color='black',
             label=rf'$\mathrm{{DEM}}_{{{species}}}$'

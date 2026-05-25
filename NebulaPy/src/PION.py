@@ -310,7 +310,7 @@ class pion():
     ######################################################################################
     # cylindrical grid 2D volume
     ######################################################################################
-    def get_2D_cell_volumes(self):
+    def get_grid_volumes_2D(self):
         """
         Computes the volume of grid cells in a cylindrical coordinate system.
 

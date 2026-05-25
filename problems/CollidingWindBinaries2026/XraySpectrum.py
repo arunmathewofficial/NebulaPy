@@ -26,10 +26,7 @@ cm2au = 6.68459e-14  # cm to au conversion factor
 
 # Macbook
 OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Output image directory
-# Razer Blade
-#OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'
 
-'''
 
 #Razer Blade -> Set up paths and filenames
 OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
@@ -60,45 +57,68 @@ else:
     exit(0)
 
 
-
 # Initialize the Pion class from NebulaPy, which handles the simulation data
 pion = nebula.pion(batched_silos, verbose=True)
 
-# load chemistry
-pion.load_chemistry()
-
-# Calculates and stores geometric grid parameters.
-# For example, in a spherical geometry, it extracts radius and shell volumes
-# from the first silo file in the batch and saves them into a geometry container.
+# loading geometry attributes from the first silo file in the batch
+# and saves them into a geometry container.
 pion.load_geometry(scale='pc')
 N_grid_level = pion.geometry_container['Nlevel']
-#mesh_edges_min = pion.geometry_container['edges_min'] * cm2au
-#mesh_edges_max = pion.geometry_container['edges_max'] * cm2au
 mesh_edges_min = pion.geometry_container['edges_min']
 mesh_edges_max = pion.geometry_container['edges_max']
 N_grid = pion.geometry_container['Ngrid']
-cell_volume = pion.get_2D_cell_volumes()
+grid_volume = pion.get_grid_volumes_2D()
+grid_mask = pion.geometry_container['mask']
+
+# loading chemistry container for pion simulation data
+pion.load_chemistry()
+elements = pion.get_elements()
+
+# initializing spectrum class
+spectrum = nebula.spectrum(
+    min_wavelength=1.0,  # Minimum wavelength in Angstroms
+    max_wavelength=13,  # Maximum wavelength in Angstroms
+    min_photon_energy=None,  # Minimum photon energy in keV
+    max_photon_energy=None,  # Maximum photon energy in keV
+    elements=elements,
+    CIE=True,
+    bremsstrahlung=True,
+    freebound=True,
+    line=True,
+    twophoton=True,
+    filtername=None,
+    filterfactor=None,
+    user_grid=True,
+    grid_size=4000,
+    allLines=True,
+    verbose=True
+)
 
 
 
+''''
 EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=300, verbose=True)
+'''
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files
 for step, silo_instant in enumerate(batched_silos):
     silo_instant_start_time = time.time()
-    
-    print(f" ---------------------------")
+
+    print(" [ SIMULATION SNAPSHOT ] " + "─" * 70)
     sim_time = pion.get_simulation_time(silo_instant, time_unit='sec')
-    print(f" step: {step} | simulation time: {sim_time:.6e}")
+    print(f" Step: {step}  |  Simulation time: {sim_time:.6e} s")
 
     # Extract temperature and electron number density
     temperature = pion.get_parameter('Temperature', silo_instant)
     density = pion.get_parameter('Density', silo_instant)
     ne = pion.get_ne(silo_instant)
-    grid_mask = pion.geometry_container['mask']
-    number_densities = pion.get_species_number_densities(silo_instant)
+    species_densities = pion.get_species_number_densities(silo_instant)
 
+    spectrum.generate_spectrum(temperature=temperature, ne=ne,
+                               species_densities=species_densities,
+                               grid_volume=grid_volume, grid_mask=grid_mask)
+    '''
     EM.DEM2D(temperature=temperature, ne=ne, species_densities=number_densities, shellvolume=cell_volume)
     Bin_temperature = EM.Tb
     hw = EM.half_bin_width
@@ -191,13 +211,17 @@ for step, silo_instant in enumerate(batched_silos):
     OutImageFile = os.path.join(OutputDir, Filename)
     plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)
     plt.close()
-    
+    '''
 
-    print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
+    #print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
 
     dt = time.time() - silo_instant_start_time
     runtime += dt
     print(f" runtime: {runtime:.4e} s | dt: {dt:.4e} s")
+
+
+
+
 
 '''
 
@@ -343,91 +367,7 @@ plt.savefig(outfile)
 # todo: 4) the line emission is different between NebulaPy and ChiantiPy,
 #  which need to be rectified next.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-#info: Using differential emission measures (DEM)
-#################################################################################
-#flare.dem → strong high-ionization X-ray/EUV lines (Fe XXIII–XXV)
-#coronal_hole.dem → cooler low-density plasma
-#active_region.dem → enhanced Fe XII–Fe XVI emission
-#prominence.dem → cooler chromospheric/transition-region plasma
-
-import ChiantiPy.tools.io as chio
-demDir = os.path.join(os.environ['XUVTOP'], 'dem')
-demList = os.listdir(demDir)
-
-for idx, demFile in enumerate(demList):
-    print('%i  %s'%(idx, demFile))
-
-demFile_no = 0
-flDict = chio.demRead(demList[demFile_no])
-flTemp = flDict['temperature'][15:]
-flDens = flDict['density'][15:]
-flDem = flDict['dem'][15:]
-flEm = flDict['em'][15:]
-plt.figure()
-plt.title(f" DEM {demList[demFile_no]}")
-plt.plot(flTemp, flDem, linewidth=1, color='black', label='DEM')
-plt.legend()
-xy = plt.axis()
-outfile = OutputDir + f"/dem.png"
-plt.savefig(outfile)
-
 '''
 
 
-# sun_photospheric_2015_scottabundances from chianti database
-''' 
- 1  12.00  H
- 2  10.93  He
- 3   1.05  Li
- 4   1.38  Be
- 5   2.70  B
- 6   8.43  C
- 7   7.83  N
- 8   8.69  O
- 9   4.40  F
-10   7.93  Ne
-11   6.21  Na
-12   7.59  Mg
-13   6.43  Al
-14   7.51  Si
-15   5.41  P
-16   7.12  S
-17   5.50  Cl
-18   6.40  Ar
-19   5.04  K
-20   6.32  Ca
-21   3.16  Sc
-22   4.93  Ti
-23   3.89  V
-24   5.62  Cr
-25   5.42  Mn
-26   7.47  Fe
-27   4.93  Co
-28   6.20  Ni
-29   4.18  Cu
-30   4.56  Zn
 
-
-Convert log abundance to number abundance
-Fe: 7.47
-A(Fe)=10^{7.47−12}=10^{−4.53} = 2.95×10^{-5}
-'''

@@ -10,6 +10,9 @@ m_p = 1.6726219e-24  # g
 k = 1.38064852e-16  # erg/K
 mu = 0.61  # mH
 
+import warnings
+# Suppress specific warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning, message="divide by zero encountered in log10")
 
 class emissionMeasure():
 
@@ -73,27 +76,23 @@ class emissionMeasure():
     ######################################################################################
     # differential emission measure for 2D grid
     ######################################################################################
-    def DEM2D(self, temperature, ne, species_densities, shell_volume):
+    def DEM2D(self, temperature, ne, species_densities, volume, grid_mask):
 
         # Generate temperature-bin index grid
         self.generate_DEM_indices(temperature)
 
         temperature = np.asarray(temperature, dtype=np.float64)
         ne = np.asarray(ne, dtype=np.float64)
-        shellvolume = np.asarray(shell_volume, dtype=np.float64)
-
-        # Safety check
-        if (
-                temperature.shape != ne.shape or
-                temperature.shape != shellvolume.shape
-        ):
-            util.nebula_exit_with_error(
-                " DEM-2D input arrays have inconsistent shapes."
-            )
+        volume = np.asarray(volume, dtype=np.float64)
+        grid_mask = np.asarray(grid_mask, dtype=np.float64)
 
         DEM = {}
 
         species_list = list(species_densities.items())
+
+        # Grid masking is performed to avoid double counting.
+        # This can also be applied to common quantities such as electron density.
+        grid_masked_ne = ne * grid_mask
 
         for species, species_density in tqdm(
                 species_list,
@@ -123,9 +122,9 @@ class emissionMeasure():
                 mask = bin_mask & species_mask
 
                 species_DEM[bin_idx] = np.sum(
-                    ne[mask]
+                    grid_masked_ne[mask]
                     * species_density[mask]
-                    * shellvolume[mask]
+                    * volume[mask]
                 )
 
             DEM[species] = species_DEM
