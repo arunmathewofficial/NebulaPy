@@ -1,4 +1,3 @@
-from NebulaPy.tools import constants as const
 #import multiprocessing as mp
 #import copy
 #from datetime import datetime
@@ -7,11 +6,12 @@ from .Chianti import chianti
 import numpy as np
 from .CIE import cieMode
 #from ChiantiPy.core import mspectrum
-from NebulaPy.tools import util as util
+from NebulaPy.src import Utils as utils
 #import ChiantiPy.tools.mputil as mputil
 #import ChiantiPy.tools.util as chianti_util
 import ChiantiPy.core as ch
 import NebulaPy.src.Chianti as nebula_chianti
+import NebulaPy.src.Constants as const
 from tqdm import tqdm
 #from .ChiantiMultiProc import *
 
@@ -71,15 +71,15 @@ class spectrum:
             self.max_wvl = const.kev2Ang / min_photon_energy
 
         else:
-            util.nebula_exit_with_error(
+            utils.nebula_exit_with_error(
                 "Provide either wavelength range or photon energy range."
             )
 
         if self.min_wvl <= 0.0 or self.max_wvl <= 0.0:
-            util.nebula_exit_with_error("Wavelength bounds must be positive.")
+            utils.nebula_exit_with_error("Wavelength bounds must be positive.")
 
         if self.min_wvl >= self.max_wvl:
-            util.nebula_exit_with_error(
+            utils.nebula_exit_with_error(
                 "Minimum wavelength must be smaller than maximum wavelength."
             )
 
@@ -142,17 +142,17 @@ class spectrum:
 
         if self.verbose:
             if not user_grid:
-                print(" [ WAVELENGTH GRID ] : Setting up default CHIANTI grid")
+                print(" [ WAVELENGTH GRID ] : Setting up default CHIANTI wavelength grid")
             else:
-                print(" [ WAVELENGTH GRID ] : Setting up uniform grid")
+                print(" [ WAVELENGTH GRID ] : Setting up uniform wavelength grid")
 
         if min_wvl >= max_wvl:
-            util.nebula_exit_with_error(
+            utils.nebula_exit_with_error(
                 " Minimum wavelength must be smaller than maximum wavelength."
             )
 
         if not self.chianti_species_attributes:
-            util.nebula_exit_with_error(
+            utils.nebula_exit_with_error(
                 " Species Attributes Container is not initialized or is empty."
             )
 
@@ -225,7 +225,7 @@ class spectrum:
         elif grid_size is not None:
 
             if grid_size < 2:
-                util.nebula_exit_with_error(
+                utils.nebula_exit_with_error(
                     " grid_size must be at least 2."
                 )
 
@@ -247,7 +247,7 @@ class spectrum:
         wavelength_grid.sort()
 
         if wavelength_grid.size == 0:
-            util.nebula_exit_with_error(
+            utils.nebula_exit_with_error(
                 " No wavelength points found in the requested wavelength range."
             )
 
@@ -266,7 +266,200 @@ class spectrum:
             print(f" Maximum wavelength   : {self.wavelength_grid[-1]:.6f} Å")
             print(f" Total spectral points: {self.N_wvl}")
 
+    ######################################################################################
+    # Compute species spectra
+    ######################################################################################
+    from tqdm import tqdm
 
+    ######################################################################################
+    # COMPUTE SPECIES SPECTRA
+    ######################################################################################
+    from tqdm import tqdm
+
+    ######################################################################################
+    # COMPUTE SPECIES SPECTRA
+    ######################################################################################
+    def compute_species_spectra(self, row_temperature, row_ne, progress_bar=False):
+
+        # Determine the number of temperature values
+        N_temp = len(row_temperature)
+
+        species_spectra = {}
+
+        #species_iterator = tqdm(
+        #    self.chianti_species_attributes,
+        #    desc=" Computing species spectra",
+        #    #unit=" species",
+        #    ncols=90,
+        #    disable=not progress_bar
+        #)
+
+        # info: looping over species to calculate the emission rate from each process
+        for species in species_iterator:
+
+            Z = self.chianti_species_attributes[species]['Z']
+            ionstage = self.chianti_species_attributes[species]['Ion']
+            dielectronic = self.chianti_species_attributes[species]['Dielectronic']
+
+            # reset process arrays for each species
+            bremsstrahlung_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+            freebound_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+            line_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+            twophoton_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+
+
+            #if species != 'c_5':
+            #    util.nebula_warning(f"Skipping {species} ...")
+            #    continue
+
+            #util.nebula_info(f"Only {species} is calculated in this test...")
+
+
+            # show current species name in progress bar
+            #species_iterator.set_postfix_str(species)
+
+            species_processes = self.chianti_species_attributes[species]['keys']
+
+            CHIANTI = chianti(
+                chianti_ion=species,
+                temperature=row_temperature,
+                ne=row_ne,
+                verbose=False
+            )
+
+            # Bremsstrahlung/free-free emission
+            if self.bremsstrahlung and 'ff' in species_processes:
+                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate(
+                    wavelength=self.wavelength_grid
+                )
+
+            # Free-bound emission
+            if self.freebound and 'fb' in species_processes:
+                freebound_emission = CHIANTI.get_freebound_emission_rate(
+                    wavelength=self.wavelength_grid
+                )
+
+            # Line emission
+            if self.line and 'line' in species_processes:
+                line_emission = CHIANTI.get_line_emission_rate(
+                    wavelength=self.wavelength_grid
+                )
+
+                # dividing by ne to obtain the same value returned by CHIANTI
+                line_emission = line_emission / row_ne[:, None]
+
+            # Two-photon emission
+            if self.twophoton and 'line' in species_processes:
+                if (Z - ionstage) in [0, 1] and not dielectronic:
+                    twophoton_emission = CHIANTI.get_twophoton_emission_rate(
+                        wavelength=self.wavelength_grid
+                    )
+
+            CHIANTI.terminate()
+
+            # sum over all processes for this species
+            species_emission = (
+                    bremsstrahlung_emission
+                    + freebound_emission
+                    + line_emission
+                    + twophoton_emission
+            )
+
+            species_spectra[species] = species_emission
+
+        return species_spectra
+
+
+
+    def compute_species_spectra_test(self, row_temperature, row_ne, progress_bar=False):
+
+        # Determine the number of temperature values
+        N_temp = len(row_temperature)
+
+        species_spectra = {}
+
+        #species_iterator = tqdm(
+        #    self.chianti_species_attributes,
+        #    desc=" Computing species spectra",
+        #    #unit=" species",
+        #    ncols=90,
+        #    disable=not progress_bar
+        #)
+
+        # info: looping over species to calculate the emission rate from each process
+        for species in self.chianti_species_attributes.keys():
+
+            Z = self.chianti_species_attributes[species]['Z']
+            ionstage = self.chianti_species_attributes[species]['Ion']
+            dielectronic = self.chianti_species_attributes[species]['Dielectronic']
+
+            # reset process arrays for each species
+            bremsstrahlung_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+            freebound_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+            line_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+            twophoton_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
+
+
+            #if species != 'c_5':
+            #    util.nebula_warning(f"Skipping {species} ...")
+            #    continue
+
+            #util.nebula_info(f"Only {species} is calculated in this test...")
+
+
+            # show current species name in progress bar
+            #species_iterator.set_postfix_str(species)
+
+            species_processes = self.chianti_species_attributes[species]['keys']
+
+            CHIANTI = chianti(
+                chianti_ion=species,
+                temperature=row_temperature,
+                ne=row_ne,
+                verbose=True
+            )
+
+            # Bremsstrahlung/free-free emission
+            if self.bremsstrahlung and 'ff' in species_processes:
+                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate(
+                    wavelength=self.wavelength_grid
+                )
+
+            # Free-bound emission
+            if self.freebound and 'fb' in species_processes:
+                freebound_emission = CHIANTI.get_freebound_emission_rate(
+                    wavelength=self.wavelength_grid
+                )
+
+            # Line emission
+            if self.line and 'line' in species_processes:
+                line_emission = CHIANTI.get_line_emission_rate(
+                    wavelength=self.wavelength_grid
+                )
+
+                # dividing by ne to obtain the same value returned by CHIANTI
+                line_emission = line_emission / row_ne[:, None]
+
+            # Two-photon emission
+            if self.twophoton and 'line' in species_processes:
+                if (Z - ionstage) in [0, 1] and not dielectronic:
+                    twophoton_emission = CHIANTI.get_twophoton_emission_rate(
+                        wavelength=self.wavelength_grid
+                    )
+
+            CHIANTI.terminate()
+
+            # sum over all processes for this species
+            species_emission = (
+                    bremsstrahlung_emission
+                    + freebound_emission
+                    + line_emission
+                    + twophoton_emission
+            )
+
+            species_spectra[species] = species_emission
+
+        return species_spectra
 
     ######################################################################################
     # Compute spectrum for 2D data
@@ -299,15 +492,10 @@ class spectrum:
         #  use multiprocessing to parallelize over cells.
 
         if not self.chianti_species_attributes:
-            util.nebula_exit_with_error(" Species Attributes Container is not initialized or is empty.")
-
-
+            utils.nebula_exit_with_error(" Species Attributes Container is not initialized or is empty.")
 
         # Convert the temperature list to a NumPy array for efficient numerical operations.
         temperature = np.array(temperature, dtype=np.float64)
-        ne = np.asarray(ne, dtype=np.float64)
-
-        temperature = np.asarray(temperature, dtype=np.float64)
         ne = np.asarray(ne, dtype=np.float64)
         grid_volume = np.asarray(grid_volume, dtype=np.float64)
         grid_mask = np.asarray(grid_mask, dtype=np.float64)
@@ -318,7 +506,7 @@ class spectrum:
                 temperature.shape != grid_volume.shape or
                 temperature.shape != grid_mask.shape
         ):
-            util.nebula_exit_with_error(
+            utils.nebula_exit_with_error(
                 " DEM-2D input arrays have inconsistent shapes."
             )
 
@@ -329,87 +517,41 @@ class spectrum:
                     f" DEM-2D input arrays have inconsistent shapes for species {species}."
                 )
 
-        # Determine the number of temperature values
-        N_temp = len(temperature)
-
-        # Initialize empty arrays for ???.
-        bremsstrahlung_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
-        freebound_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
-        line_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
-        twophoton_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
-        total_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
-
+        # which ionisation fraction
         if self.NEQ:
-            util.nebula_warning(
+            utils.nebula_warning(
                 " NEI mode is not implemented yet; using CIE instead."
             )
 
         elif self.CIE:
-            util.nebula_warning(
+            utils.nebula_warning(
                 " Using collisional ionization equilibrium (CIE)."
             )
+        N_grid_level = len(temperature)
+
+        # uniform grid
+        if N_grid_level == 1:
+            utils.nebula_warning("Not implemented")
+
+        # for multiple level grid
+        else:
+            for level in range(N_grid_level):
+                N_row = len(temperature[level])
+                for row in range(N_row):
+                    row_temperature = temperature[level][row]
+                    row_ne = ne[level][row]
+
+                    species_spectra = self.compute_species_spectra_test(row_temperature, row_ne, progress_bar=True)
+
+                    print(species_spectra)
+                    exit(1)
 
 
-        # info: 1) looping over species to calculate the emission rate from each process.
-        for species in self.chianti_species_attributes:
-
-            #chianti_species = self.get_chianti_symbol(pion_species, make=False)
-
-            Z = self.chianti_species_attributes[species]['Z']
-            ionstage = self.chianti_species_attributes[species]['Ion']
-            dielectronic = self.chianti_species_attributes[species]['Dielectronic']
-
-
-
-            if species != 'h_1':
-                util.nebula_warning(f"Skipping {species} ...")
-                continue
-            util.nebula_info(f"Only {species} is calculated in this test...")
 
 
 
 
-            # todo: should supply the right ion fraction for the species
 
-            # todo: need to create object for each species and call the corresponding method to calculate
-            #  the emission for the species, then sum over all species to get the total emission.
-            #  This is because the line emission is calculated for each species separately in CHIANTI,
-            #  while the bremsstrahlung and free-bound emissions are calculated for the plasma as a whole.
 
-            species_processes = self.chianti_species_attributes[species]['keys']
 
-            CHIANTI = chianti(
-                chianti_ion=species,
-                temperature=temperature,
-                ne=ne,
-                verbose=self.verbose
-            )
 
-            # Bremsstrahlung (free-free)
-            if self.bremsstrahlung and 'ff' in species_processes:
-                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate(
-                    wavelength=self.wavelength_grid
-                )
-
-            # bound-free
-            if self.freebound and 'fb' in species_processes:
-                freebound_emission = CHIANTI.get_freebound_emission_rate(wavelength=self.wavelength_grid)
-
-            # bound-free
-            if self.line and 'line' in species_processes:
-                # get_line_emission_rate returns emissivity of each lines
-                line_emission = CHIANTI.get_line_emission_rate(wavelength=self.wavelength_grid)
-                # dividing by ne to obtain the vale same as chianti returns.
-                line_emission = line_emission / ne[:, None]
-
-            # two-photon
-            if self.twophoton and 'line' in species_processes:
-                if (Z - ionstage) in [0, 1] and not dielectronic:
-                    twophoton_emission = CHIANTI.get_twophoton_emission_rate(wavelength=self.wavelength_grid)
-
-            CHIANTI.terminate()
-
-            # info: 2) sum all processes
-            species_emission = bremsstrahlung_emission + freebound_emission + line_emission + twophoton_emission
-
-        self.spectrum_container['spectrum'] = species_emission

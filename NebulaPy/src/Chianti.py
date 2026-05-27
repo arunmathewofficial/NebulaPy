@@ -9,7 +9,7 @@ from ChiantiPy.base import specTrails
 import numpy as np
 import ChiantiPy.tools.util as chianti_util
 from NebulaPy.tools import constants as const
-from NebulaPy.tools import util as util
+from NebulaPy.src import Utils as utils
 from ChiantiPy.core.Continuum import continuum
 import ChiantiPy.tools.io as io
 from scipy.interpolate import splev, splrep
@@ -40,7 +40,7 @@ class chianti:
 
         # If more than one argument is not None, raise a ValueError
         if non_none_count > 1:
-            util.nebula_exit_with_error("invalid arguments: set only one of 'chianti_ion', 'pion_ion', or 'pion_elements")
+            utils.nebula_exit_with_error("invalid arguments: set only one of 'chianti_ion', 'pion_ion', or 'pion_elements")
 
         if pion_ion is not None:
             self.chianti_ion_name = self.get_chianti_symbol(pion_ion, make=False)
@@ -313,7 +313,7 @@ class chianti:
                # wvl(angstrom), emissivity (ergs s^-1 str^-1), pretty1, pretty2.
                """
         if 'line' not in self.species_attributes_container[self.chianti_ion_name]['keys']:
-            util.nebula_warning(f'no line emission associate with {self.chianti_ion.Spectroscopic}')
+            utils.nebula_warning(f'no line emission associate with {self.chianti_ion.Spectroscopic}')
             return None
 
         else:
@@ -370,7 +370,7 @@ class chianti:
 
             suggestion_str = "\n".join(suggestion_lines)
 
-            util.nebula_exit_with_error(
+            utils.nebula_exit_with_error(
                 f"Following {self.chianti_ion.Spectroscopic} line(s) were not found in Chianti: {missing_lines}\n"
                 f" Note: Chianti spectral line data are based on theoretical models\n"
                 f"{suggestion_str}"
@@ -379,7 +379,7 @@ class chianti:
 
         # If any requested lines are missing, terminate execution with an error message.
         if missing_lines:
-            util.nebula_exit_with_error(f"following {self.chianti_ion.Spectroscopic} line(s) are not found in chianti: {missing_lines}")
+            utils.nebula_exit_with_error(f"following {self.chianti_ion.Spectroscopic} line(s) are not found in chianti: {missing_lines}")
 
         # Retrieve the indices of the requested lines within the all_lines array.
         # np.where(all_lines == line) returns an array of indices where the condition is met.
@@ -463,7 +463,7 @@ class chianti:
         )
 
         if self.verbose:
-            print(f"Computing bremsstrahlung emission rate for {self.chianti_ion.Spectroscopic}")
+            utils.nebula_computing_comment(f"Bremsstrahlung emission rate for {self.chianti_ion.Spectroscopic}")
 
 
         prefactor_const = ((const.light * 1e8) / 3. / const.emass
@@ -510,7 +510,7 @@ class chianti:
         ).squeeze()
 
         if self.verbose:
-            print(f"[DONE] {self.chianti_ion.Spectroscopic}: bremsstrahlung emission computed")
+            utils.nebula_done_comment(f"{self.chianti_ion.Spectroscopic}: Bremsstrahlung emission computed")
 
         return bremsstrahlung_emission_rate
     ######################################################################################
@@ -544,6 +544,8 @@ class chianti:
         - Uses the photoionization cross-sections to develop the free-bound cross-section.
         - Revised to calculate the free-bound cross-section and Maxwell energy distribution.
         """
+        if self.verbose:
+            utils.nebula_computing_comment(f"Free-bound emission rate for {self.chianti_ion.Spectroscopic}")
 
         # Create a continuum object
         continuum_fb = continuum(
@@ -562,7 +564,7 @@ class chianti:
         # Clean up the continuum object to free memory
         del continuum_fb
         if self.verbose:
-            print(f' {self.chianti_ion.Spectroscopic} free-bound emission calculation completed')
+            utils.nebula_done_comment(f'{self.chianti_ion.Spectroscopic} free-bound emission calculation completed')
 
         return freebound_emission
 
@@ -574,7 +576,8 @@ class chianti:
     def get_line_emission_rate(self, wavelength, allLines=True, filtername=None, filterfactor=None):
 
         if self.verbose:
-            print(f" Retrieving emissivity values for all spectral lines of {self.chianti_ion.Spectroscopic}")
+            utils.nebula_computing_comment(f" Retrieving emissivity values "
+                                           f"for all spectral lines of {self.chianti_ion.Spectroscopic}")
 
         wavelength = np.asarray(wavelength, dtype=np.float64)
 
@@ -601,7 +604,7 @@ class chianti:
         if len(selected_idx) == 0:
             if self.verbose:
                 print(
-                    f" no lines found for {self.chianti_ion.Spectroscopic} "
+                    f" No lines found for {self.chianti_ion.Spectroscopic} "
                     f"in the wavelength range {min_wvl:.2e} - {max_wvl:.2e} Å"
                 )
                 print(" skipping ...")
@@ -638,9 +641,12 @@ class chianti:
         :param wavelength:
         :return:
         '''
-
+        if self.verbose:
+            utils.nebula_computing_comment(f"Two-photon emission rate for {self.chianti_ion.Spectroscopic}")
         self.chianti_ion.twoPhotonEmiss(wavelength)
         twophoton_emission_rate = self.chianti_ion.TwoPhotonEmiss['emiss']
+        if self.verbose:
+            utils.nebula_done_comment(f'{self.chianti_ion.Spectroscopic} two-photon emission computed')
         return twophoton_emission_rate
 
 
