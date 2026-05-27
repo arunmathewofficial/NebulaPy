@@ -27,7 +27,7 @@ cm2au = 6.68459e-14  # cm to au conversion factor
 # Macbook
 OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Output image directory
 
-
+'''
 #Razer Blade -> Set up paths and filenames
 OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
 SiloDir = '/home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
@@ -82,9 +82,9 @@ spectrum = nebula.spectrum(
     max_photon_energy=None,  # Maximum photon energy in keV
     elements=elements,
     CIE=True,
-    bremsstrahlung=True,
-    freebound=True,
-    line=True,
+    bremsstrahlung=False,
+    freebound=False,
+    line=False,
     twophoton=False,
     filtername=None,
     filterfactor=None,
@@ -94,11 +94,44 @@ spectrum = nebula.spectrum(
     verbose=True
 )
 
+temperature = [1.e7, 1.e7]
+ne = [1.e9, 1.e9]
+ne = np.asarray(ne, dtype=np.float64)
+emission = spectrum.compute_species_spectra_test(row_temperature=temperature, row_ne=ne)
+wavelength = spectrum.spectrum_container['wavelength_grid']
+# sun_photospheric_2015_scott abundance.
+A_Fe = 2.96e-5
+print(f" Fe Abundance: {A_Fe:.2e} cm^-3")
+# get the CIE ion fraction for the given
+# ion and temperature
+cie = nebula.cieMode(verbose=True)
+cie.load_cie()
+ion = 'fe_25'
+ionfrac = cie.get_cie_fraction(ion, temperature)
+A_ion = A_Fe * ionfrac
+A_ion = np.asarray(A_ion, dtype=np.float64)
+print(f"Ion Abuandance {A_ion}")
 
+total_emission = emission[ion] * A_ion[:, np.newaxis]
+
+energy = 12.39841984 / wavelength
+# sort in increasing energy
+idx = np.argsort(energy)
+energy = energy[idx]
+
+total_emission = total_emission[:, idx]
+
+plt.figure()
+plt.title(f" NebulaPy {ion} spectrum at T = {temperature[0]:.2e} K")
+plt.plot(energy, total_emission[0], linewidth=1, color='black', label='NebulaPy Spectrum')
+plt.legend()
+xy = plt.axis()
+outfile = OutputDir + f"/spectrum_nebulapy.png"
+plt.savefig(outfile)
 
 ''''
 EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=300, verbose=True)
-'''
+
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files
@@ -115,50 +148,11 @@ for step, silo_instant in enumerate(batched_silos):
     #ne = pion.get_ne(silo_instant)
     #species_densities = pion.get_species_number_densities(silo_instant)
 
-    temperature = [1.e7, 1.e7]
-    ne = [1.e9, 1.e9]
-    ne = np.asarray(ne, dtype=np.float64)
-    emission = spectrum.compute_species_spectra_test(row_temperature=temperature, row_ne=ne)
-
-    print(emission)
-
-    wavelength = spectrum.spectrum_container['wavelength_grid']
-
-    # sun_photospheric_2015_scott abundance.
-    A_Fe = 2.96e-5
-    print(f" Fe Abundance: {A_Fe:.2e} cm^-3")
-    # get the CIE ion fraction for the given
-    # ion and temperature
-    cie = nebula.cieMode(verbose=True)
-    cie.load_cie()
-    ion = 'fe_25'
-    ionfrac = cie.get_cie_fraction(ion, temperature)
-    A_ion = A_Fe * ionfrac
-    A_ion = np.asarray(A_ion, dtype=np.float64)
-    print(f"Ion Abuandance {A_ion}")
-
-    total_emission = emission[ion] * A_ion[:, np.newaxis]
-
-    energy = 12.39841984 / wavelength
-    # sort in increasing energy
-    idx = np.argsort(energy)
-    energy = energy[idx]
-
-    total_emission = total_emission[:, idx]
-
-    plt.figure()
-    plt.title(f" NebulaPy {ion} spectrum at T = {temperature[0]:.2e} K")
-    plt.plot(energy, total_emission[0], linewidth=1, color='black', label='NebulaPy Spectrum')
-    plt.legend()
-    xy = plt.axis()
-    outfile = OutputDir + f"/spectrum_nebulapy.png"
-    plt.savefig(outfile)
-
 
     #spectrum.generate_spectrum(temperature=temperature, ne=ne,
     #                           species_densities=species_densities,
     #                           grid_volume=grid_volume, grid_mask=grid_mask)
-    '''
+
     EM.DEM2D(temperature=temperature, ne=ne, species_densities=number_densities, shellvolume=cell_volume)
     Bin_temperature = EM.Tb
     hw = EM.half_bin_width
@@ -251,7 +245,7 @@ for step, silo_instant in enumerate(batched_silos):
     OutImageFile = os.path.join(OutputDir, Filename)
     plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)
     plt.close()
-    '''
+
 
     #print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
 
