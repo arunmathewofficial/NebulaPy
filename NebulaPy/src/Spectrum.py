@@ -84,7 +84,7 @@ class spectrum:
             )
 
         if not (bremsstrahlung or freebound or line or twophoton):
-            util.nebula_exit_with_error("No emission processes specified")
+            utils.nebula_exit_with_error("No emission processes specified")
 
         # Verbose output
         if self.verbose:
@@ -200,7 +200,7 @@ class spectrum:
             lines = np.asarray(lines, dtype=np.float64)
 
             if lines.size == 0:
-                util.nebula_exit_with_error(
+                utils.nebula_exit_with_error(
                     " No CHIANTI lines found for the selected species."
                 )
 
@@ -240,7 +240,7 @@ class spectrum:
         # No valid grid option
         # ------------------------------------------------------------------
         else:
-            util.nebula_exit_with_error(
+            utils.nebula_exit_with_error(
                 " Either use_chianti_grid=True or grid_size must be specified."
             )
 
@@ -400,9 +400,10 @@ class spectrum:
             twophoton_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
 
 
-            #if species != 'c_5':
-            #    util.nebula_warning(f"Skipping {species} ...")
-            #    continue
+            if species != 'fe_25':
+                utils.nebula_warning(f"Skipping {species} ...")
+
+                continue
 
             #util.nebula_info(f"Only {species} is calculated in this test...")
 
@@ -411,7 +412,7 @@ class spectrum:
             #species_iterator.set_postfix_str(species)
 
             species_processes = self.chianti_species_attributes[species]['keys']
-
+            print(species_processes)
             CHIANTI = chianti(
                 chianti_ion=species,
                 temperature=row_temperature,
@@ -513,7 +514,7 @@ class spectrum:
         for species, species_density in species_densities.items():
             species_density = np.asarray(species_density, dtype=np.float64)
             if temperature.shape != species_density.shape:
-                util.nebula_exit_with_error(
+                utils.nebula_exit_with_error(
                     f" DEM-2D input arrays have inconsistent shapes for species {species}."
                 )
 

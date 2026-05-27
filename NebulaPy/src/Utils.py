@@ -54,9 +54,9 @@ def nebula_computing_comment(comment):
     Custom computing status display function.
     :param comment: Optional status message.
     """
-    GRAY = "\033[90m"
+    GRAY = "\033[97m"
     RESET = "\033[0m"
-    print(f"{GRAY}[ COMPUTING ]:{RESET} {comment}")
+    print(f"{GRAY} [ COMPUTING ]:{RESET} {comment}")
 
 ######################################################################################
 # Nebula done comment
@@ -68,8 +68,7 @@ def nebula_done_comment(comment):
     """
     GRAY = "\033[90m"
     RESET = "\033[0m"
-
-    print(f"{GRAY}[ DONE ]:{RESET} {comment}")
+    print(f"{GRAY} [ DONE ]:{RESET} {comment}")
 ######################################################################################
 # Nebula version
 ######################################################################################

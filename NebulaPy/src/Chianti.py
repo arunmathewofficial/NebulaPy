@@ -510,7 +510,7 @@ class chianti:
         ).squeeze()
 
         if self.verbose:
-            utils.nebula_done_comment(f"{self.chianti_ion.Spectroscopic}: Bremsstrahlung emission computed")
+            utils.nebula_done_comment(f"{self.chianti_ion.Spectroscopic} Bremsstrahlung emission computed")
 
         return bremsstrahlung_emission_rate
     ######################################################################################
@@ -555,12 +555,17 @@ class chianti:
             em=None,
             verbose=self.verbose
         )
+        N_temp = len(self.temperature)
+        N_wvl = len(wavelength)
         # Note: em=None is used to avoid scaling the emissivity by emission measure.
-        continuum_fb.freeBound(wavelength, includeAbund=False, includeIoneq=False)
+        continuum_fb.freeBound(wavelength, includeAbund=False, includeIoneq=False, verner=verner)
         # Note: By setting includeAbund=False and includeIoneq=False, we ensure that
         # the returned emissivity is purely for the ion of interest, without scaling
         # by abundance or ionization fraction.
-        freebound_emission = continuum_fb.FreeBound['intensity']
+        if 'intensity' in continuum_fb.FreeBound:
+            freebound_emission = continuum_fb.FreeBound['intensity']
+        else:
+            freebound_emission = np.zeros((N_temp, N_wvl), dtype=np.float64)
         # Clean up the continuum object to free memory
         del continuum_fb
         if self.verbose:
@@ -626,7 +631,8 @@ class chianti:
                 )
 
         if self.verbose:
-            print(f" {self.chianti_ion.Spectroscopic} line calculation completed")
+            utils.nebula_done_comment(
+                f" {self.chianti_ion.Spectroscopic} line calculation completed")
 
         return line_emission_rate
 
