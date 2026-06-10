@@ -59,6 +59,7 @@ class pion():
             if self.verbose:
                 util.nebula_exit_with_error(f"{const.coordinate_system[coord_sys]} coordinates not defined, todo list")
 
+
     ######################################################################################
     # show all parameters in silo file
     ######################################################################################
@@ -942,9 +943,9 @@ class pion():
             Nlevel = self.geometry_container['Nlevel']
 
             if Nlevel == 1:
-                grid = " uniform grid"
+                grid = "uniform grid"
             else:
-                grid = " grid level"
+                grid = "grid level"
 
             density = self.get_parameter("Density", silo_instant)
 

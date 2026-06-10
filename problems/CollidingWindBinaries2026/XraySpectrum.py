@@ -18,6 +18,7 @@ from NebulaPy.src.CIE import cieMode
 # info: code to test emission measure calculation.
 import ChiantiPy.core as ch
 import ChiantiPy.tools.data as chdata
+from NebulaPy.src.EmissionMeasure import emissionMeasure
 
 import NebulaPy.src.Chianti as nebula_chainti
 
@@ -27,7 +28,7 @@ cm2au = 6.68459e-14  # cm to au conversion factor
 # Macbook
 OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Output image directory
 
-'''
+# Colliding wind binaries
 #Razer Blade -> Set up paths and filenames
 OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
 SiloDir = '/home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
@@ -36,7 +37,19 @@ start_time = 1.24e6  # in sec
 finish_time = None
 time_unit = 'sec'
 out_frequency = None
+SimulationName = "CWB"
 
+
+# Bowshock
+#Razer Blade -> Set up paths and filenames
+#OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
+#SiloDir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/silo'  # Directory containing silo files
+#Filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+#start_time = 161  # in kyr
+#finish_time = 161.5
+#time_unit = 'kyr'
+#out_frequency = None
+#SimulationName = "Bowshock"
 
 # Batch the silo files according to the time instant
 batched_silos = util.batch_silos(
@@ -48,6 +61,7 @@ batched_silos = util.batch_silos(
     out_frequency=out_frequency
 )
 
+'''
 key = input(" Press 'y' to continue, anything else to exit: ").strip().lower()
 
 if key == "y":
@@ -55,14 +69,14 @@ if key == "y":
 else:
     util.nebula_info("Resetting parameters before the next run")
     exit(0)
-
+'''
 
 # Initialize the Pion class from NebulaPy, which handles the simulation data
 pion = nebula.pion(batched_silos, verbose=True)
 
 # loading geometry attributes from the first silo file in the batch
 # and saves them into a geometry container.
-pion.load_geometry(scale='pc')
+pion.load_geometry(scale='cm')
 N_grid_level = pion.geometry_container['Nlevel']
 mesh_edges_min = pion.geometry_container['edges_min']
 mesh_edges_max = pion.geometry_container['edges_max']
@@ -75,17 +89,17 @@ pion.load_chemistry()
 elements = pion.get_elements()
 
 # initializing spectrum class
-spectrum = nebula.spectrum(
+NebulaSpectrum = nebula.spectrum(
     min_wavelength=1.0,  # Minimum wavelength in Angstroms
-    max_wavelength=13,  # Maximum wavelength in Angstroms
+    max_wavelength=20,  # Maximum wavelength in Angstroms
     min_photon_energy=None,  # Minimum photon energy in keV
     max_photon_energy=None,  # Maximum photon energy in keV
     elements=elements,
     CIE=True,
-    bremsstrahlung=False,
-    freebound=False,
-    line=False,
-    twophoton=False,
+    doBremsstrahlung=True,
+    doFreebound=True,
+    doLine=True,
+    doTwophoton=True,
     filtername=None,
     filterfactor=None,
     user_grid=True,
@@ -94,44 +108,7 @@ spectrum = nebula.spectrum(
     verbose=True
 )
 
-temperature = [1.e7, 1.e7]
-ne = [1.e9, 1.e9]
-ne = np.asarray(ne, dtype=np.float64)
-emission = spectrum.compute_species_spectra_test(row_temperature=temperature, row_ne=ne)
-wavelength = spectrum.spectrum_container['wavelength_grid']
-# sun_photospheric_2015_scott abundance.
-A_Fe = 2.96e-5
-print(f" Fe Abundance: {A_Fe:.2e} cm^-3")
-# get the CIE ion fraction for the given
-# ion and temperature
-cie = nebula.cieMode(verbose=True)
-cie.load_cie()
-ion = 'fe_25'
-ionfrac = cie.get_cie_fraction(ion, temperature)
-A_ion = A_Fe * ionfrac
-A_ion = np.asarray(A_ion, dtype=np.float64)
-print(f"Ion Abuandance {A_ion}")
-
-total_emission = emission[ion] * A_ion[:, np.newaxis]
-
-energy = 12.39841984 / wavelength
-# sort in increasing energy
-idx = np.argsort(energy)
-energy = energy[idx]
-
-total_emission = total_emission[:, idx]
-
-plt.figure()
-plt.title(f" NebulaPy {ion} spectrum at T = {temperature[0]:.2e} K")
-plt.plot(energy, total_emission[0], linewidth=1, color='black', label='NebulaPy Spectrum')
-plt.legend()
-xy = plt.axis()
-outfile = OutputDir + f"/spectrum_nebulapy.png"
-plt.savefig(outfile)
-
-''''
-EM = nebula.emissionMeasure(Tmin=100, Tmax=1.e9, Nbins=300, verbose=True)
-
+wavelength = NebulaSpectrum.spectrum_container['wavelength_grid']
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files
@@ -143,127 +120,143 @@ for step, silo_instant in enumerate(batched_silos):
     print(f" Step: {step}  |  Simulation time: {sim_time:.6e} s")
 
     # Extract temperature and electron number density
-    #temperature = pion.get_parameter('Temperature', silo_instant)
+    temperature = pion.get_parameter('Temperature', silo_instant)
+
+    temperature = np.asarray(temperature, dtype=np.float64)
+
     #density = pion.get_parameter('Density', silo_instant)
-    #ne = pion.get_ne(silo_instant)
-    #species_densities = pion.get_species_number_densities(silo_instant)
+    ne = pion.get_ne(silo_instant)
+    species_densities = pion.get_species_number_densities(silo_instant)
+
+    NebulaSpectrum.generateSpectrum(temperature=temperature, ne=ne,
+                               species_densities=species_densities,
+                               grid_volume=grid_volume, grid_mask=grid_mask)
 
 
-    #spectrum.generate_spectrum(temperature=temperature, ne=ne,
-    #                           species_densities=species_densities,
-    #                           grid_volume=grid_volume, grid_mask=grid_mask)
+    NebulaSpectrum = NebulaSpectrum.spectrum_container['spectrum']
 
-    EM.DEM2D(temperature=temperature, ne=ne, species_densities=number_densities, shellvolume=cell_volume)
-    Bin_temperature = EM.Tb
-    hw = EM.half_bin_width
+    energy = 12.39841984 / wavelength
+    # sort in increasing energy
+    idx = np.argsort(energy)
+    energy = energy[idx]
 
-    SAMDEM = EM.SAM_DEM(density=density, temperature=temperature, ne=ne, mask=grid_mask,
-                        ngrid=N_grid, mesh_edges_min=mesh_edges_min, volume=cell_volume,
-                        mesh_edges_max=mesh_edges_max, temp_bin=Bin_temperature, hw=hw)
+    import matplotlib.pyplot as plt
 
-    fig, ax = plt.subplots(figsize=(8, 6))
-    fig.text(0.05, 0.90, f"time = {sim_time:5.2f}", fontsize=12, color='black')
-    # Total DEM
-    total_DEM = np.zeros_like(EM.Tb, dtype=np.float64)
+    fig, ax = plt.subplots(figsize=(10, 5))
 
-    for species in number_densities:
-        total_DEM += EM.DEM[species]
-    # Avoid log10(0)
-    ax.set_title("       Total DEM of the Colliding-Wind Binary WR140")
-    ax.plot(EM.Tb, np.log10(total_DEM), linewidth=1.5, color='black',
-            label=r'$\sum_i \, \mathrm{DEM}_{X_i}$')
+    ax.set_xlabel(r"Wavelength [$\AA$]", fontsize=12)
+    ax.set_ylabel(r"$L_\lambda$ [erg s$^{-1}$ $\AA^{-1}$]", fontsize=12)
 
-    ax.plot(EM.Tb, np.log10(SAMDEM), linewidth=1.5, color='red', label="SAM's DEM")
+    ax.plot(
+        wavelength,
+        NebulaSpectrum,
+        color="blue",
+        linewidth=1.4,
+        label="NEQ Spectrum"
+    )
 
-    ax.set_xlabel(r'$\log(T/\mathrm{K})$', fontsize=12)
-    ax.set_ylabel(r'$\log(\mathrm{DEM})$', fontsize=12)
-    ax.legend()
-    Filename = f"Total_DEM_{sim_time.value:.2f}kyr.png"
-    Filepath = os.path.join(OutputDir, Filename)
-    plt.savefig(Filepath, bbox_inches="tight", dpi=300)
-    print(f" Saved snapshot: {Filename}")
+    # Logarithmic luminosity axis
+    ax.set_yscale("log")
+
+    # Publication-style ticks
+    ax.minorticks_on()
+
+    ax.tick_params(
+        axis='both',
+        which='major',
+        direction='in',
+        top=True,
+        right=True,
+        length=6,
+        width=1.2,
+        labelsize=11
+    )
+
+    ax.tick_params(
+        axis='both',
+        which='minor',
+        direction='in',
+        top=True,
+        right=True,
+        length=3,
+        width=1.0
+    )
+
+    # Slightly thicker frame
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.2)
+
+    ax.legend(
+        loc='best',
+        frameon=False,
+        fontsize=10
+    )
+
+    fig.tight_layout()
+
+    outfile = f"{OutputDir}/spectrum_final.png"
+    fig.savefig(
+        outfile,
+        dpi=300,
+        bbox_inches="tight"
+    )
+
     plt.close(fig)
 
-    
-    for species in number_densities:
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.text(0.05, 0.9, f'time = {sim_time:5.2f} ', transform=ax.transAxes, fontsize=12, color='white')
+    print(f"time: {sim_time:.6e}, saved snapshot {step} to {outfile}")
 
-        ax.set_xlim(mesh_edges_min[0][0].value, mesh_edges_max[0][0].value)
-        ax.set_ylim(mesh_edges_min[0][1].value, mesh_edges_max[0][1].value)
+    '''
+    #####################################################################################
+    print(" ChiantiPy Calculation ############################")
+    temperature = np.array([10 ** 7, 10 ** 7.0])
+    ne = np.array([1.e+9, 1.e+9])
+    density = np.array([1.e+9, 1.e+9])
+    species_density = np.array([1.0, 1.0])
+    shell_volume = np.array([1.0, 1.0])
+    min_abund = 2.e-5
+    ionList = ['h_2']
+    spec = ch.spectrum(
+        temperature,
+        density[0],
+        wavelength,
+        ionList=ionList,
+        doLines=False,
+        doContinuum=True,
+        # minAbund=min_abund,
+        em=None,  # None will set EM =1.0 for every temperature element.
+        verbose=True,
+    )
+    energy = 12.39841984 / wavelength
+    # sort in increasing energy
+    idx = np.argsort(energy)
+    energy = energy[idx]
+    xray_spectrum = spec.Spectrum['intensity'][0][idx]
 
-        for level in range(N_grid_level):
-            plot_data = np.log10(EM.DEM[species][level] * grid_mask[level])
-            extents = [
-                mesh_edges_min[level][0].value, mesh_edges_max[level][0].value,
-                mesh_edges_min[level][1].value, mesh_edges_max[level][1].value
-            ]
-            image = ax.imshow(plot_data, interpolation='nearest', cmap='inferno',
-                              extent=extents, origin='lower',
-                              #vmin=0, vmax=100
-                              )
-
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        colorbar = plt.colorbar(image, cax=cax,
-                                #ticks=MultipleLocator(10)
-                                )
-        colorbar.ax.yaxis.set_major_formatter(ScalarFormatter())
-        colorbar.ax.yaxis.get_major_formatter().set_scientific(False)
-        colorbar.ax.yaxis.get_major_formatter().set_useOffset(False)
-
-        ax.set_xlabel('z (pc)', fontsize=12)
-        ax.set_ylabel('R (pc)', fontsize=12)
-        ax.text(0.65, 0.9, species, transform=ax.transAxes, fontsize=12, color='white')
-        ax.tick_params(axis='both', which='major', labelsize=13)
-
-        Filename = f"{species}_{sim_time.value:.2f}kyr.png"
-        Filepath = os.path.join(OutputDir, Filename)
-        plt.savefig(Filepath, bbox_inches="tight", dpi=300)
-        print(f"Saved snapshot: {Filename}")
-
-        plt.close(fig)
-
-
-    #em = EM.DEM2D(density=density, temperature=temperature,
-    #              ne=ne,
-    #              mask=grid_mask,
-    #              ngrid=N_grid,
-    #              mesh_edges_min=mesh_edges_min,
-    #              mesh_edges_max=mesh_edges_max,
-    #              volume = cell_volume,
-    #              temp_bin=temperature_bin,
-    #              hw=0.05)
-
-    #dem = em['dem_bin']
-
-    # Plot the differential emission measure for the current time instant
     plt.figure()
-    plt.title(f"Differential Emission Measure")
-    #plt.plot(temperature_bin, np.log10(dem))
-    Filename = f"{Filebase}_DEM_{sim_time.value:.2e}kyr.png"
-    OutImageFile = os.path.join(OutputDir, Filename)
-    plt.savefig(OutImageFile, bbox_inches="tight", dpi=300)
-    plt.close()
-
-
-    #print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
-
-    dt = time.time() - silo_instant_start_time
-    runtime += dt
-    print(f" runtime: {runtime:.4e} s | dt: {dt:.4e} s")
+    plt.title(f" ChiantiPy {ionList[0]} Spectrum at T = {temperature[0]:.2e} K")
+    plt.plot(energy, xray_spectrum, linewidth=1, color='black', label='ChiantiPy Spectrum')
+    plt.legend()
+    xy = plt.axis()
+    outfile = OutputDir + f"/SpectrumChiantipy{SimulationName}{ionList[0]}.png"
+    plt.savefig(outfile)
+    ##############################################################################################
+    '''
 
 
 
 
 
-'''
+
+
+
+
+
 
 
 
 # initial conditions ##############################################################
-
-ionlist = ['fe_25']
+'''
+ionlist = ['c_5']
 print(f" Testing for ion {ionlist[0]}")
 print(f" -------------------------------\n")
 
@@ -272,6 +265,7 @@ ne = np.array([1.e+9, 1.e+9])
 density = np.array([1.e+9, 1.e+9])
 species_density = np.array([1.0, 1.0])
 shell_volume = np.array([1.0, 1.0])
+
 
 print("NEBULAPY #########################################################################")
 
@@ -287,7 +281,6 @@ spectrum = nebula.spectrum(
     min_photon_energy=None,  # Minimum photon energy in keV
     max_photon_energy=None,  # Maximum photon energy in keV
     elements=elements,
-    elemental_abundances=elemental_abundances,
     CIE=True,
     bremsstrahlung=True,
     freebound=True,
@@ -304,6 +297,7 @@ spectrum = nebula.spectrum(
 print("\n")
 print(spectrum.spectrum_container.keys())
 wavelength = spectrum.spectrum_container['wavelength_grid']
+
 
 # Calculate number density
 # info: number denisty calculation is just for testing the module
@@ -354,41 +348,13 @@ xy = plt.axis()
 outfile = OutputDir + f"/spectrum_nebulapy.png"
 plt.savefig(outfile)
 
+
 print("\n")
 print("CHIANTIPY#########################################################################")
-
 
 # info: original chianti calculation using spectrum method.
 #################################################################################
 # this calculation use sun_photospheric_2015_scott abundance
-
-
-min_abund = 2.e-5
-spec = ch.spectrum(
-    temperature,
-    density[0],
-    wavelength,
-    ionList=ionlist,
-    doLines=True,
-    doContinuum=True,
-    #minAbund=min_abund,
-    em=None,# None will set EM =1.0 for every temperature element.
-    verbose=True,
-)
-
-energy = 12.39841984 / wavelength
-# sort in increasing energy
-idx = np.argsort(energy)
-energy = energy[idx]
-xray_spectrum = spec.Spectrum['intensity'][0][idx]
-plt.figure()
-plt.title(f" ChiantiPy {ionlist[0]} Spectrum at T = {temperature[0]:.2e} K")
-plt.plot(energy, xray_spectrum, linewidth=1, color='black', label='ChiantiPy Spectrum')
-plt.legend()
-xy = plt.axis()
-outfile = OutputDir + f"/spectrum_chiantipy.png"
-plt.savefig(outfile)
-#################################################################################
 
 # info: So far what is acheived
 # info: 1)  the cie ionisation fraction PION obtain is slightly different

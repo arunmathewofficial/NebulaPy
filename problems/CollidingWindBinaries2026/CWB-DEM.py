@@ -65,7 +65,7 @@ N_grid_level = pion.geometry_container['Nlevel']
 mesh_edges_min = pion.geometry_container['edges_min']
 mesh_edges_max = pion.geometry_container['edges_max']
 N_grid = pion.geometry_container['Ngrid']
-cell_volume = pion.get_2D_cell_volumes()
+cell_volume = pion.get_grid_volumes_2D()
 
 
 
@@ -88,10 +88,10 @@ for step, silo_instant in enumerate(batched_silos):
     number_densities = pion.get_species_number_densities(silo_instant)
 
     EM.DEM2D(temperature=temperature, ne=ne,
-             species_densities=number_densities,
+             speciesDensities=number_densities,
              volume=cell_volume,
-             grid_mask=grid_mask
-             )
+             gridMask=grid_mask)
+
     Bin_temperature = EM.Tb
     half_width = EM.half_bin_width
 
@@ -117,6 +117,7 @@ for step, silo_instant in enumerate(batched_silos):
 
         species_dem = np.asarray(EM.DEM[species], dtype=np.float64)
 
+
         # Add unsmoothed DEM to total DEM
         total_DEM += species_dem
 
@@ -138,13 +139,12 @@ for step, silo_instant in enumerate(batched_silos):
         ax_species.set_ylabel(r'$\log(\mathrm{DEM})$', fontsize=12)
         ax_species.legend(fontsize=10)
 
-        Filename = f"DEM_{species}_{sim_time.value:.2f}kyr.png"
+
+        species_label = species.replace('+', 'p')
+        Filename = f"DEM_{species_label}_{sim_time.value:.2f}kyr.png"
         Filepath = os.path.join(OutputDir, Filename)
-
         plt.savefig(Filepath, bbox_inches="tight", dpi=300)
-
-        print(f" Saving {species} DEM to {Filename}")
-
+        print(f" Saving {species:<6} differential emission measure to {Filename}")
         plt.close(fig_species)
 
 
@@ -158,7 +158,7 @@ for step, silo_instant in enumerate(batched_silos):
     Filename = f"Total_DEM_{sim_time.value:.2f}kyr.png"
     Filepath = os.path.join(OutputDir, Filename)
     plt.savefig(Filepath, bbox_inches="tight", dpi=300)
-    print(f" Saving total DEM into {Filename}")
+    print(f" Saving DEM comparison: SAM calculation vs. sum of all species DEMs to {Filename}")
     plt.close(fig)
 
 

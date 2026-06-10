@@ -54,7 +54,7 @@ def nebula_computing_comment(comment):
     Custom computing status display function.
     :param comment: Optional status message.
     """
-    GRAY = "\033[97m"
+    GRAY = "\033[90m"
     RESET = "\033[0m"
     print(f"{GRAY} [ COMPUTING ]:{RESET} {comment}")
 
@@ -349,6 +349,40 @@ def get_spectroscopic_symbol(ion):
 
     return f"{element} {roman_numerals[level - 1]}"
 
+######################################################################################
+# get pion ion symbol from chianti symbol
+######################################################################################
+def getPionSymbol(chianti_symbol):
+    """
+    Convert a CHIANTI ion symbol to the corresponding PION symbol.
+    Examples
+    --------
+    h_1  -> H
+    h_2  -> H1+
+    he_1 -> He
+    he_2 -> He1+
+    he_3 -> He2+
+    fe_26 -> Fe25+
+    """
+
+    chianti_symbol = chianti_symbol.lower()
+
+    try:
+        element, stage = chianti_symbol.split('_')
+        stage = int(stage)
+    except ValueError:
+        raise ValueError(
+            f"Invalid CHIANTI symbol '{chianti_symbol}'. "
+            f"Expected format like 'fe_25'."
+        )
+
+    # Neutral species
+    if stage == 1:
+        return element.capitalize()
+
+    # Ionized species
+    ion_level = stage - 1
+    return f"{element.capitalize()}{ion_level}+"
 
 
 ######################################################################################

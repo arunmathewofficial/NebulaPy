@@ -16,10 +16,64 @@ from tqdm import tqdm
 #from .ChiantiMultiProc import *
 
 from NebulaPy.src.LineEmission import line_emission
-
+from NebulaPy.src.EmissionMeasure import emissionMeasure
 
 from ChiantiPy.core import mspectrum
 import ChiantiPy.tools.filters as chfilters
+
+import multiprocessing as mp
+import numpy as np
+from tqdm import tqdm
+
+import multiprocessing as mp
+import queue
+import numpy as np
+from tqdm import tqdm
+
+##############################################################################
+# Worker function
+# Keep this outside the class
+##############################################################################
+
+def compute_row_spectrum(workerQ, doneQ, spectrum_obj, timeout):
+    """Worker function to compute spectra for each grid row."""
+
+    while True:
+        try:
+            task = workerQ.get(timeout=timeout)
+
+            if task is None:
+                break
+
+            level, row, row_temperature, row_ne = task
+
+            row_species_spectra_rate = spectrum_obj.computeSpeciesSpectraRate(
+                row_temperature=row_temperature,
+                row_ne=row_ne,
+                progress_bar=False
+            )
+
+            doneQ.put(
+                (
+                    level,
+                    row,
+                    row_species_spectra_rate
+                )
+            )
+
+        except queue.Empty:
+            break
+
+        except Exception as e:
+            doneQ.put(
+                (
+                    "ERROR",
+                    None,
+                    f"multiprocessing worker failed: {e}"
+                )
+            )
+            break
+
 
 class spectrum:
 
@@ -32,10 +86,10 @@ class spectrum:
             max_wavelength=None,
             min_photon_energy=None,
             max_photon_energy=None,
-            bremsstrahlung=False,
-            freebound=False,
-            line=False,
-            twophoton=False,
+            doBremsstrahlung=False,
+            doFreebound=False,
+            doLine=False,
+            doTwophoton=False,
             elements=None,
             CIE=False,
             filtername=None,
@@ -47,10 +101,10 @@ class spectrum:
     ):
 
         # flags and parameters
-        self.bremsstrahlung = bremsstrahlung
-        self.freebound = freebound
-        self.line = line
-        self.twophoton = twophoton
+        self.bremsstrahlung = doBremsstrahlung
+        self.freebound = doFreebound
+        self.line = doLine
+        self.twophoton = doTwophoton
         self.filtername = filtername
         self.filterfactor = filterfactor
         self.allLines = allLines
@@ -83,16 +137,16 @@ class spectrum:
                 "Minimum wavelength must be smaller than maximum wavelength."
             )
 
-        if not (bremsstrahlung or freebound or line or twophoton):
+        if not (doBremsstrahlung or doFreebound or doLine or doTwophoton):
             utils.nebula_exit_with_error("No emission processes specified")
 
         # Verbose output
         if self.verbose:
             print(" Active radiative processes :")
-            print(f" a) Bremsstrahlung continuum : {'ON' if bremsstrahlung else 'OFF'}")
-            print(f" b) Free-bound continuum     : {'ON' if freebound else 'OFF'}")
-            print(f" c) Spectral line emission   : {'ON' if line else 'OFF'}")
-            print(f" d) Two-photon emission      : {'ON' if twophoton else 'OFF'}")
+            print(f" a) Bremsstrahlung continuum : {'ON' if doBremsstrahlung else 'OFF'}")
+            print(f" b) Free-bound continuum     : {'ON' if doFreebound else 'OFF'}")
+            print(f" c) Spectral line emission   : {'ON' if doLine else 'OFF'}")
+            print(f" d) Two-photon emission      : {'ON' if doTwophoton else 'OFF'}")
 
         # Initialize empty attributes for species and elemental abundances
         self.chianti_species_attributes = {}
@@ -266,25 +320,16 @@ class spectrum:
             print(f" Maximum wavelength   : {self.wavelength_grid[-1]:.6f} Å")
             print(f" Total spectral points: {self.N_wvl}")
 
-    ######################################################################################
-    # Compute species spectra
-    ######################################################################################
-    from tqdm import tqdm
 
     ######################################################################################
-    # COMPUTE SPECIES SPECTRA
+    # COMPUTE SPECIES SPECTRA RATE
     ######################################################################################
-    from tqdm import tqdm
-
-    ######################################################################################
-    # COMPUTE SPECIES SPECTRA
-    ######################################################################################
-    def compute_species_spectra(self, row_temperature, row_ne, progress_bar=False):
+    def computeSpeciesSpectraRate(self, row_temperature, row_ne, progress_bar=False):
 
         # Determine the number of temperature values
         N_temp = len(row_temperature)
 
-        species_spectra = {}
+        species_spectra_rate = {}
 
         #species_iterator = tqdm(
         #    self.chianti_species_attributes,
@@ -295,7 +340,7 @@ class spectrum:
         #)
 
         # info: looping over species to calculate the emission rate from each process
-        for species in species_iterator:
+        for species in self.chianti_species_attributes.keys():
 
             Z = self.chianti_species_attributes[species]['Z']
             ionstage = self.chianti_species_attributes[species]['Ion']
@@ -308,18 +353,15 @@ class spectrum:
             twophoton_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
 
 
-            #if species != 'c_5':
-            #    util.nebula_warning(f"Skipping {species} ...")
+            #if species not in ['fe_25', 'fe_26', 'si_14', 'si_13', 's_16']:
+            #if species not in ['fe_25']:
+            #    #utils.nebula_warning(f"{count} Skipping {species} ...")
             #    continue
-
-            #util.nebula_info(f"Only {species} is calculated in this test...")
-
 
             # show current species name in progress bar
             #species_iterator.set_postfix_str(species)
 
             species_processes = self.chianti_species_attributes[species]['keys']
-
             CHIANTI = chianti(
                 chianti_ion=species,
                 temperature=row_temperature,
@@ -350,6 +392,7 @@ class spectrum:
 
             # Two-photon emission
             if self.twophoton and 'line' in species_processes:
+
                 if (Z - ionstage) in [0, 1] and not dielectronic:
                     twophoton_emission = CHIANTI.get_twophoton_emission_rate(
                         wavelength=self.wavelength_grid
@@ -365,194 +408,233 @@ class spectrum:
                     + twophoton_emission
             )
 
-            species_spectra[species] = species_emission
+            species_spectra_rate[species] = species_emission
 
-        return species_spectra
-
-
-
-    def compute_species_spectra_test(self, row_temperature, row_ne, progress_bar=False):
-
-        # Determine the number of temperature values
-        N_temp = len(row_temperature)
-
-        species_spectra = {}
-
-        #species_iterator = tqdm(
-        #    self.chianti_species_attributes,
-        #    desc=" Computing species spectra",
-        #    #unit=" species",
-        #    ncols=90,
-        #    disable=not progress_bar
-        #)
-
-        # info: looping over species to calculate the emission rate from each process
-        for species in self.chianti_species_attributes.keys():
-
-            Z = self.chianti_species_attributes[species]['Z']
-            ionstage = self.chianti_species_attributes[species]['Ion']
-            dielectronic = self.chianti_species_attributes[species]['Dielectronic']
-
-            # reset process arrays for each species
-            bremsstrahlung_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
-            freebound_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
-            line_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
-            twophoton_emission = np.zeros((N_temp, self.N_wvl), dtype=np.float64)
-
-
-            if species != 'fe_25':
-                utils.nebula_warning(f"Skipping {species} ...")
-
-                continue
-
-            #util.nebula_info(f"Only {species} is calculated in this test...")
-
-
-            # show current species name in progress bar
-            #species_iterator.set_postfix_str(species)
-
-            species_processes = self.chianti_species_attributes[species]['keys']
-            print(species_processes)
-            CHIANTI = chianti(
-                chianti_ion=species,
-                temperature=row_temperature,
-                ne=row_ne,
-                verbose=True
-            )
-
-            # Bremsstrahlung/free-free emission
-            if self.bremsstrahlung and 'ff' in species_processes:
-                bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate(
-                    wavelength=self.wavelength_grid
-                )
-
-            # Free-bound emission
-            if self.freebound and 'fb' in species_processes:
-                freebound_emission = CHIANTI.get_freebound_emission_rate(
-                    wavelength=self.wavelength_grid
-                )
-
-            # Line emission
-            if self.line and 'line' in species_processes:
-                line_emission = CHIANTI.get_line_emission_rate(
-                    wavelength=self.wavelength_grid
-                )
-
-                # dividing by ne to obtain the same value returned by CHIANTI
-                line_emission = line_emission / row_ne[:, None]
-
-            # Two-photon emission
-            if self.twophoton and 'line' in species_processes:
-                if (Z - ionstage) in [0, 1] and not dielectronic:
-                    twophoton_emission = CHIANTI.get_twophoton_emission_rate(
-                        wavelength=self.wavelength_grid
-                    )
-
-            CHIANTI.terminate()
-
-            # sum over all processes for this species
-            species_emission = (
-                    bremsstrahlung_emission
-                    + freebound_emission
-                    + line_emission
-                    + twophoton_emission
-            )
-
-            species_spectra[species] = species_emission
-
-        return species_spectra
+        return species_spectra_rate
 
     ######################################################################################
     # Compute spectrum for 2D data
     ######################################################################################
-    def generate_spectrum(self, temperature, ne, species_densities, grid_volume, grid_mask):
-        """
-        # todo:
-        compute for a set of cells. the parameters should be arrays of the same length,
-         each element corresponds to a cell. the output is also an array of the same length,
-          each element is the spectrum of the corresponding cell.
 
-        Parameters:
-        - temperature: List or array of temperatures (in K) for the calculation.
-        - ne: Electron density (in cm^-3).
-        - freefree: Calculate free-free emission if True.
-        - freebound: Calculate free-bound emission if True.
-        - lines: Calculate line emission if True.
-        - twophoton: Calculate two-photon emission if True.
-        - multiprocessing: Use multiprocessing for the calculation if True.
-        - ncores: Number of processor cores to use in multiprocessing (default is 3).
 
-        Returns:
-        # todo: return what?
-        """
+    ##############################################################################
+    # Main method
+    # Keep this inside your Spectrum class
+    ##############################################################################
 
-        # 👉 Numba for inner loops
-        # 👉 Multiprocessing for outer cell chunks
-
-        # info: there is no multiprocessing calculation for this method, rather make use of Numba. Will
-        #  use multiprocessing to parallelize over cells.
+    def generateSpectrum(
+            self,
+            temperature,
+            ne,
+            species_densities,
+            grid_volume,
+            grid_mask
+    ):
 
         if not self.chianti_species_attributes:
-            utils.nebula_exit_with_error(" Species Attributes Container is not initialized or is empty.")
+            utils.nebula_exit_with_error(
+                "Species Attributes Container is not initialized or is empty."
+            )
 
-        # Convert the temperature list to a NumPy array for efficient numerical operations.
-        temperature = np.array(temperature, dtype=np.float64)
+        temperature = np.asarray(temperature, dtype=np.float64)
         ne = np.asarray(ne, dtype=np.float64)
         grid_volume = np.asarray(grid_volume, dtype=np.float64)
         grid_mask = np.asarray(grid_mask, dtype=np.float64)
 
-        # Safety check ##################################################
-        if (
-                temperature.shape != ne.shape or
-                temperature.shape != grid_volume.shape or
-                temperature.shape != grid_mask.shape
+        if not (
+                temperature.shape == ne.shape ==
+                grid_volume.shape == grid_mask.shape
         ):
             utils.nebula_exit_with_error(
-                " DEM-2D input arrays have inconsistent shapes."
+                "Input arrays have inconsistent shapes."
             )
 
-        for species, species_density in species_densities.items():
-            species_density = np.asarray(species_density, dtype=np.float64)
-            if temperature.shape != species_density.shape:
+        species_densities = {
+            species: np.asarray(density, dtype=np.float64)
+            for species, density in species_densities.items()
+        }
+
+        for species, density in species_densities.items():
+
+            if density.shape != temperature.shape:
                 utils.nebula_exit_with_error(
-                    f" DEM-2D input arrays have inconsistent shapes for species {species}."
+                    f"Species density input arrays have inconsistent "
+                    f"shapes for species {species}."
                 )
 
-        # which ionisation fraction
         if self.NEQ:
             utils.nebula_warning(
-                " NEI mode is not implemented yet; using CIE instead."
+                "NEI mode is not implemented yet; using CIE instead."
             )
 
         elif self.CIE:
             utils.nebula_warning(
-                " Using collisional ionization equilibrium (CIE)."
+                "Using collisional ionization equilibrium (CIE)."
             )
+
+        ##########################################################################
+        # DEM calculation first
+        ##########################################################################
+
+        EM = emissionMeasure(
+            Tmin=100,
+            Tmax=1.0e9,
+            Nbins=300,
+            verbose=self.verbose
+        )
+
+        EM.DEM2D(
+            temperature=temperature,
+            ne=ne,
+            speciesDensities=species_densities,
+            volume=grid_volume
+        )
+
+        ##########################################################################
+        # Allocate only binned spectra
+        ##########################################################################
+
+        SpeciesSpectrum = {
+            species: np.zeros(
+                (EM.Nbins, self.N_wvl),
+                dtype=np.float64
+            )
+            for species in species_densities
+        }
+
+        ##########################################################################
+        # Multiprocessing row spectra calculation
+        ##########################################################################
+
         N_grid_level = len(temperature)
 
-        # uniform grid
         if N_grid_level == 1:
-            utils.nebula_warning("Not implemented")
 
-        # for multiple level grid
+            utils.nebula_warning("Uniform grid not implemented.")
+
         else:
+
+            timeout = 0.1
+            row_tasks = []
+
             for level in range(N_grid_level):
-                N_row = len(temperature[level])
-                for row in range(N_row):
-                    row_temperature = temperature[level][row]
-                    row_ne = ne[level][row]
+                for row in range(len(temperature[level])):
+                    row_tasks.append(
+                        (
+                            level,
+                            row,
+                            temperature[level, row],
+                            ne[level, row]
+                        )
+                    )
 
-                    species_spectra = self.compute_species_spectra_test(row_temperature, row_ne, progress_bar=True)
+            Ntasks = len(row_tasks)
 
-                    print(species_spectra)
-                    exit(1)
+            # Start small. Increase to 4 only if memory is okay.
+            proc = min(11, mp.cpu_count(), Ntasks)
 
+            print(
+                f" [ MULTIPROCESSING ]: Utilizing {proc} cores | "
+                f"{N_grid_level} grid level | "
+                f"rows {[len(temperature[level]) for level in range(N_grid_level)]} | "
+                f"total tasks {Ntasks}"
+            )
 
+            workerQ = mp.Queue()
+            doneQ = mp.Queue()
 
+            for task in row_tasks:
+                workerQ.put(task)
 
+            for _ in range(proc):
+                workerQ.put(None)
 
+            processes = []
 
+            for _ in range(proc):
+                p = mp.Process(
+                    target=compute_row_spectrum,
+                    args=(
+                        workerQ,
+                        doneQ,
+                        self,
+                        timeout
+                    )
+                )
 
+                p.start()
+                processes.append(p)
 
+            completed = 0
 
+            with tqdm(
+                    total=Ntasks,
+                    desc=f" Computing species spectra",
+                    unit="task",
+                    ncols=90,
+                    disable=not self.verbose
+            ) as pbar:
+
+                while completed < Ntasks:
+
+                    level, row, row_species_spectra_rate = doneQ.get()
+
+                    if level == "ERROR":
+                        for p in processes:
+                            p.terminate()
+
+                        utils.nebula_exit_with_error(row_species_spectra_rate)
+
+                    row_bins = EM.DEM_indices[level, row]
+
+                    for chianti_species, spectra in row_species_spectra_rate.items():
+
+                        pion_species = utils.getPionSymbol(chianti_species)
+
+                        if pion_species not in SpeciesSpectrum:
+                            continue
+
+                        for bin_idx in range(EM.Nbins):
+
+                            mask = row_bins == bin_idx
+
+                            if not np.any(mask):
+                                continue
+
+                            SpeciesSpectrum[pion_species][bin_idx, :] += np.sum(
+                                spectra[mask, :],
+                                axis=0
+                            )
+
+                    completed += 1
+                    pbar.update(1)
+
+            for p in processes:
+                p.join()
+
+        ##########################################################################
+        # Multiply by DEM and sum over temperature bins
+        ##########################################################################
+
+        Spectrum = {}
+
+        for species, binned_spectra in SpeciesSpectrum.items():
+            weighted_binned_spectra = (
+                    binned_spectra * EM.DEM[species][:, None]
+            )
+
+            Spectrum[species] = np.sum(
+                weighted_binned_spectra,
+                axis=0
+            )
+
+        integrated_spectrum = np.sum(
+            list(Spectrum.values()),
+            axis=0
+        )
+
+        self.spectrum_container["species_spectrum"] = Spectrum
+        self.spectrum_container["spectrum"] = integrated_spectrum
+
+        return integrated_spectrum
 

@@ -27,7 +27,7 @@ class emissionMeasure():
         self.Tmax = Tmax
         self.Nbins = Nbins
 
-        print(" [EMISSION MEASURE] : Generating DEM temperature bins")
+        print(" [ EMISSION MEASURE ]: Generating DEM temperature bins")
 
         # Calculate the logarithmic width of each bin
         bin_width = (np.log10(self.Tmax) - np.log10(self.Tmin)) / self.Nbins
@@ -51,7 +51,7 @@ class emissionMeasure():
     ######################################################################################
     def generate_DEM_indices(self, temperature):
 
-        print(" [EMISSION MEASURE] : Mapping cells to DEM temperature bins")
+        print(" [ EMISSION MEASURE ]: Mapping cells to DEM temperature bins")
 
         DEM_indices = np.full_like(temperature, fill_value=-1, dtype=np.int64)
 
@@ -69,14 +69,14 @@ class emissionMeasure():
 
             DEM_indices[mask] = bin_idx
 
-        print(" [EMISSION MEASURE] : DEM temperature-bin indexing completed")
+        print(" [ EMISSION MEASURE ]: DEM temperature-bin indexing completed")
 
         self.DEM_indices = DEM_indices
 
     ######################################################################################
     # differential emission measure for 2D grid
     ######################################################################################
-    def DEM2D(self, temperature, ne, species_densities, volume, grid_mask):
+    def DEM2D(self, temperature, ne, speciesDensities, volume, gridMask):
 
         # Generate temperature-bin index grid
         self.generate_DEM_indices(temperature)
@@ -84,21 +84,17 @@ class emissionMeasure():
         temperature = np.asarray(temperature, dtype=np.float64)
         ne = np.asarray(ne, dtype=np.float64)
         volume = np.asarray(volume, dtype=np.float64)
-        grid_mask = np.asarray(grid_mask, dtype=np.float64)
+        gridMask = np.asarray(gridMask, dtype=np.float64)
 
         DEM = {}
 
-        species_list = list(species_densities.items())
-
-        # Grid masking is performed to avoid double counting.
-        # This can also be applied to common quantities such as electron density.
-        grid_masked_ne = ne * grid_mask
+        species_list = list(speciesDensities.items())
 
         for species, species_density in tqdm(
                 species_list,
                 desc=" Computing species DEM",
                 unit=" species",
-                ncols=100,
+                ncols=90,
                 disable=not self.verbose
         ):
 
@@ -122,7 +118,8 @@ class emissionMeasure():
                 mask = bin_mask & species_mask
 
                 species_DEM[bin_idx] = np.sum(
-                    grid_masked_ne[mask]
+                    ne[mask]
+                    * gridMask[mask]
                     * species_density[mask]
                     * volume[mask]
                 )

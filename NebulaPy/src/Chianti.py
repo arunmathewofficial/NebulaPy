@@ -647,12 +647,44 @@ class chianti:
         :param wavelength:
         :return:
         '''
-        if self.verbose:
-            utils.nebula_computing_comment(f"Two-photon emission rate for {self.chianti_ion.Spectroscopic}")
-        self.chianti_ion.twoPhotonEmiss(wavelength)
-        twophoton_emission_rate = self.chianti_ion.TwoPhotonEmiss['emiss']
-        if self.verbose:
-            utils.nebula_done_comment(f'{self.chianti_ion.Spectroscopic} two-photon emission computed')
+
+        #  upper level of two photon transitions for helium-like ions
+        heseqLvl2 = [-1, 3, -1, -1, -1, 3, 6, 6, -1, 6, 6, 6, 6, 6, 3,
+                     5, 3, 5, 3, 5, -1, 5, -1, 5, -1, 5, -1, 5, -1, 5]
+
+        N_temp = len(self.temperature)
+        N_wvl = len(wavelength)
+
+        twophoton_emission_rate = np.zeros((N_temp, N_wvl), dtype=np.float64)
+
+        # for hydrogen sequence
+        if self.chianti_ion.Z == self.chianti_ion.Ion:
+            l1 = 1 - 1
+            l2 = 2 - 1
+            wvl0 = 1.e+8 / (self.chianti_ion.Elvlc['ecm'][l2] - self.chianti_ion.Elvlc['ecm'][l1])
+            has_valid_wavelength = np.any(wavelength > wvl0)
+        # for Helium sequence
+        else:
+            l1 = 1 - 1
+            l2 = heseqLvl2[self.chianti_ion.Z - 1] - 1
+            wvl0 = 1.e+8 / (self.chianti_ion.Elvlc['ecm'][l2] - self.chianti_ion.Elvlc['ecm'][l1])
+            has_valid_wavelength = np.any(wavelength > wvl0)
+
+        if has_valid_wavelength:
+            if self.verbose:
+                utils.nebula_computing_comment(f"Two-photon emission rate for {self.chianti_ion.Spectroscopic}")
+            self.chianti_ion.twoPhotonEmiss(wavelength)
+            twophoton_emission_rate = self.chianti_ion.TwoPhotonEmiss['emiss']
+
+            if self.verbose:
+                utils.nebula_done_comment(f'{self.chianti_ion.Spectroscopic} two-photon emission computed')
+
+        if not has_valid_wavelength:
+            if self.verbose:
+                utils.nebula_info(
+                    f"Skipping two-photon emission for {self.chianti_ion.Spectroscopic}: "
+                    f"no wavelengths > {wvl0:.3f} Å.")
+
         return twophoton_emission_rate
 
 
