@@ -144,7 +144,7 @@ for step, silo_instant in enumerate(batched_silos):
         Filename = f"DEM_{species_label}_{sim_time.value:.2f}kyr.png"
         Filepath = os.path.join(OutputDir, Filename)
         plt.savefig(Filepath, bbox_inches="tight", dpi=300)
-        print(f" Saving {species:<6} differential emission measure to {Filename}")
+        print(f" Saving {species} differential emission measure to {Filename}")
         plt.close(fig_species)
 
 
@@ -155,14 +155,11 @@ for step, silo_instant in enumerate(batched_silos):
     ax.set_xlabel(r'$\log(T/\mathrm{K})$', fontsize=12)
     ax.set_ylabel(r'$\log(\mathrm{DEM})$', fontsize=12)
     ax.legend()
-    Filename = f"Total_DEM_{sim_time.value:.2f}kyr.png"
+    Filename = f"{Filebase}_DEM_{sim_time.value:.2f}kyr.png"
     Filepath = os.path.join(OutputDir, Filename)
     plt.savefig(Filepath, bbox_inches="tight", dpi=300)
     print(f" Saving DEM comparison: SAM calculation vs. sum of all species DEMs to {Filename}")
     plt.close(fig)
-
-
-    print(f" time: {sim_time:.6e}, Saved snapshot {step} to {Filename}")
 
     dt = time.time() - silo_instant_start_time
     runtime += dt

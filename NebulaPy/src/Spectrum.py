@@ -45,11 +45,12 @@ def compute_row_spectrum(workerQ, doneQ, spectrum_obj, timeout):
             if task is None:
                 break
 
-            level, row, row_temperature, row_ne = task
+            level, row, row_temperature, row_ne, row_grid_mask = task
 
             row_species_spectra_rate = spectrum_obj.computeSpeciesSpectraRate(
                 row_temperature=row_temperature,
                 row_ne=row_ne,
+                row_grid_mask=row_grid_mask,
                 progress_bar=False
             )
 
@@ -95,12 +96,13 @@ class spectrum:
             filtername=None,
             filterfactor=None,
             allLines=True,
-            user_grid=False,
-            grid_size=1000,
+            userGrid=False,
+            gridSize=1000,
             verbose=True
     ):
 
         # flags and parameters
+        self.N_wvl = None
         self.bremsstrahlung = doBremsstrahlung
         self.freebound = doFreebound
         self.line = doLine
@@ -112,9 +114,6 @@ class spectrum:
 
         if self.verbose:
             print(" [ SPECTRUM MODULE ] : Initializing spectrum calculation")
-
-        # Setting up spectrum dictionary to hold results
-        self.spectrum_container = {}
 
         # wavelength and photon energy inputs
         if min_wavelength is not None and max_wavelength is not None:
@@ -153,10 +152,11 @@ class spectrum:
         self.build_species_attributes(elements)
 
         # setup wavelength grid #####################################
-        self.wavelength_grid = []
-        self.setup_wavelength_grid(self.min_wvl, self.max_wvl,
-                                   user_grid=user_grid,
-                                   grid_size=grid_size)
+        self.WavelengthGrid = []
+        self.setup_wavelength_grid(self.min_wvl,
+                                   self.max_wvl,
+                                   user_grid=userGrid,
+                                   grid_size=gridSize)
 
         self.CIE = CIE
         self.NEQ = not CIE
@@ -236,7 +236,7 @@ class spectrum:
             )
 
             try:
-                ion_lines = chianti_nebula_object.get_allLineTransitions()['wvl']
+                ion_lines = chianti_nebula_object.get_allLines()
 
                 if ion_lines is not None:
                     lines.extend(
@@ -305,26 +305,57 @@ class spectrum:
                 " No wavelength points found in the requested wavelength range."
             )
 
-        self.wavelength_grid = wavelength_grid
+        self.WavelengthGrid = wavelength_grid
         self.N_wvl = wavelength_grid.size
-
-        # store wavelength grid in the container
-        if not hasattr(self, 'spectrum_container'):
-            self.spectrum_container = {}
-
-        self.spectrum_container['wavelength_grid'] = wavelength_grid
 
         if self.verbose:
             print(" Wavelength grid summary")
-            print(f" Minimum wavelength   : {self.wavelength_grid[0]:.6f} Å")
-            print(f" Maximum wavelength   : {self.wavelength_grid[-1]:.6f} Å")
+            print(f" Minimum wavelength   : {self.WavelengthGrid[0]:.6f} Å")
+            print(f" Maximum wavelength   : {self.WavelengthGrid[-1]:.6f} Å")
             print(f" Total spectral points: {self.N_wvl}")
 
+    ######################################################################################
+    # Print Line Cataloger
+    ######################################################################################
+    def PrintLineCataloger(self):
+
+        LineCatalog = {}
+
+        dummy_temperature = [2.0e6]
+        dummy_ne = [1.0e9]
+
+        species_list = list(self.chianti_species_attributes.items())
+        for species, attributes in tqdm(
+                species_list,
+                desc=" Retrieving CHIANTI wavelength grid",
+                unit=" species",
+                ncols=100,
+                leave=True,
+                disable=not self.verbose
+        ):
+
+            if 'line' not in attributes['keys']:
+                continue
+
+            chianti_nebula_object = nebula_chianti.chianti(
+                chianti_ion=species,
+                temperature=dummy_temperature,
+                ne=dummy_ne,
+                verbose=False
+            )
+
+            try:
+                ion_transitions = chianti_nebula_object.get_allLineTransitions()
+                spectroscopic_name = chianti_nebula_object.chianti_ion.Spectroscopic
+                LineCatalog[spectroscopic_name] = ion_transitions
+
+            finally:
+                del chianti_nebula_object
 
     ######################################################################################
     # COMPUTE SPECIES SPECTRA RATE
     ######################################################################################
-    def computeSpeciesSpectraRate(self, row_temperature, row_ne, progress_bar=False):
+    def computeSpeciesSpectraRate(self, row_temperature, row_ne, row_grid_mask, progress_bar=False):
 
         # Determine the number of temperature values
         N_temp = len(row_temperature)
@@ -354,9 +385,9 @@ class spectrum:
 
 
             #if species not in ['fe_25', 'fe_26', 'si_14', 'si_13', 's_16']:
-            #if species not in ['fe_25']:
+            if species not in ['fe_25']:
             #    #utils.nebula_warning(f"{count} Skipping {species} ...")
-            #    continue
+                continue
 
             # show current species name in progress bar
             #species_iterator.set_postfix_str(species)
@@ -372,19 +403,19 @@ class spectrum:
             # Bremsstrahlung/free-free emission
             if self.bremsstrahlung and 'ff' in species_processes:
                 bremsstrahlung_emission = CHIANTI.get_bremsstrahlung_emission_rate(
-                    wavelength=self.wavelength_grid
+                    wavelength=self.WavelengthGrid
                 )
 
             # Free-bound emission
             if self.freebound and 'fb' in species_processes:
                 freebound_emission = CHIANTI.get_freebound_emission_rate(
-                    wavelength=self.wavelength_grid
+                    wavelength=self.WavelengthGrid
                 )
 
             # Line emission
             if self.line and 'line' in species_processes:
                 line_emission = CHIANTI.get_line_emission_rate(
-                    wavelength=self.wavelength_grid
+                    wavelength=self.WavelengthGrid
                 )
 
                 # dividing by ne to obtain the same value returned by CHIANTI
@@ -395,7 +426,7 @@ class spectrum:
 
                 if (Z - ionstage) in [0, 1] and not dielectronic:
                     twophoton_emission = CHIANTI.get_twophoton_emission_rate(
-                        wavelength=self.wavelength_grid
+                        wavelength=self.WavelengthGrid
                     )
 
             CHIANTI.terminate()
@@ -408,20 +439,13 @@ class spectrum:
                     + twophoton_emission
             )
 
-            species_spectra_rate[species] = species_emission
+            species_spectra_rate[species] = species_emission * row_grid_mask[:, None]
 
         return species_spectra_rate
 
     ######################################################################################
-    # Compute spectrum for 2D data
+    # generate spectrum for 2D data
     ######################################################################################
-
-
-    ##############################################################################
-    # Main method
-    # Keep this inside your Spectrum class
-    ##############################################################################
-
     def generateSpectrum(
             self,
             temperature,
@@ -474,26 +498,14 @@ class spectrum:
 
         ##########################################################################
         # DEM calculation first
-        ##########################################################################
+        # initialize emission measure class
+        EM = emissionMeasure(Tmin=100, Tmax=1.0e9, Nbins=300, verbose=self.verbose)
+        # generate DEM
+        EM.DEM2D(temperature=temperature,
+                 ne=ne, speciesDensities=species_densities,
+                 volume=grid_volume, gridMask=grid_mask)
 
-        EM = emissionMeasure(
-            Tmin=100,
-            Tmax=1.0e9,
-            Nbins=300,
-            verbose=self.verbose
-        )
-
-        EM.DEM2D(
-            temperature=temperature,
-            ne=ne,
-            speciesDensities=species_densities,
-            volume=grid_volume
-        )
-
-        ##########################################################################
         # Allocate only binned spectra
-        ##########################################################################
-
         SpeciesSpectrum = {
             species: np.zeros(
                 (EM.Nbins, self.N_wvl),
@@ -504,34 +516,29 @@ class spectrum:
 
         ##########################################################################
         # Multiprocessing row spectra calculation
-        ##########################################################################
-
         N_grid_level = len(temperature)
 
+        # uniform grid or 1 level grid
         if N_grid_level == 1:
-
             utils.nebula_warning("Uniform grid not implemented.")
 
+        # multilevel grid
         else:
-
             timeout = 0.1
-            row_tasks = []
+            AllTasks = []
 
             for level in range(N_grid_level):
                 for row in range(len(temperature[level])):
-                    row_tasks.append(
-                        (
-                            level,
-                            row,
-                            temperature[level, row],
-                            ne[level, row]
-                        )
+                    AllTasks.append(
+                        (level, row,
+                         temperature[level, row],
+                         ne[level, row], grid_mask[level, row])
                     )
 
-            Ntasks = len(row_tasks)
+            Ntasks = len(AllTasks)
 
             # Start small. Increase to 4 only if memory is okay.
-            proc = min(11, mp.cpu_count(), Ntasks)
+            proc = min(4, mp.cpu_count(), Ntasks)
 
             print(
                 f" [ MULTIPROCESSING ]: Utilizing {proc} cores | "
@@ -543,7 +550,7 @@ class spectrum:
             workerQ = mp.Queue()
             doneQ = mp.Queue()
 
-            for task in row_tasks:
+            for task in AllTasks:
                 workerQ.put(task)
 
             for _ in range(proc):

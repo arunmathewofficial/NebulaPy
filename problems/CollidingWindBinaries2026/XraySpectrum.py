@@ -95,20 +95,20 @@ NebulaSpectrum = nebula.spectrum(
     min_photon_energy=None,  # Minimum photon energy in keV
     max_photon_energy=None,  # Maximum photon energy in keV
     elements=elements,
-    CIE=True,
     doBremsstrahlung=True,
     doFreebound=True,
     doLine=True,
     doTwophoton=True,
+    CIE=True,
     filtername=None,
     filterfactor=None,
-    user_grid=True,
-    grid_size=4000,
+    userGrid=True,
+    gridSize=4000,
     allLines=True,
     verbose=True
 )
 
-wavelength = NebulaSpectrum.spectrum_container['wavelength_grid']
+wavelength = NebulaSpectrum.WavelengthGrid
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files
