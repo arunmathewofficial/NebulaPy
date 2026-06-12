@@ -133,7 +133,7 @@ for step, silo_instant in enumerate(batched_silos):
                                grid_volume=grid_volume, grid_mask=grid_mask)
 
 
-    NebulaSpectrum = NebulaSpectrum.spectrum_container['spectrum']
+    NebulaSpectrum = NebulaSpectrum.Spectrum
 
     energy = 12.39841984 / wavelength
     # sort in increasing energy

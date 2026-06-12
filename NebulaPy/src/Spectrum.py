@@ -385,9 +385,9 @@ class spectrum:
 
 
             #if species not in ['fe_25', 'fe_26', 'si_14', 'si_13', 's_16']:
-            if species not in ['fe_25']:
+            #if species not in ['fe_25']:
             #    #utils.nebula_warning(f"{count} Skipping {species} ...")
-                continue
+            #    continue
 
             # show current species name in progress bar
             #species_iterator.set_postfix_str(species)
@@ -640,8 +640,7 @@ class spectrum:
             axis=0
         )
 
-        self.spectrum_container["species_spectrum"] = Spectrum
-        self.spectrum_container["spectrum"] = integrated_spectrum
+        #self.spectrum_container["species_spectrum"] = Spectrum
+        self.Spectrum = integrated_spectrum
 
-        return integrated_spectrum
 
