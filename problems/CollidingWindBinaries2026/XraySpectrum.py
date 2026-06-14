@@ -108,7 +108,8 @@ NebulaSpectrum = nebula.spectrum(
     verbose=True
 )
 
-wavelength = NebulaSpectrum.WavelengthGrid
+
+
 
 runtime = 0.0
 # Loop over each time instant in the batched silo files
@@ -132,8 +133,8 @@ for step, silo_instant in enumerate(batched_silos):
                                species_densities=species_densities,
                                grid_volume=grid_volume, grid_mask=grid_mask)
 
-
-    NebulaSpectrum = NebulaSpectrum.Spectrum
+    wavelength = NebulaSpectrum.WavelengthGrid
+    spectrum = NebulaSpectrum.Spectrum
 
     energy = 12.39841984 / wavelength
     # sort in increasing energy
@@ -149,7 +150,7 @@ for step, silo_instant in enumerate(batched_silos):
 
     ax.plot(
         wavelength,
-        NebulaSpectrum,
+        spectrum,
         color="blue",
         linewidth=1.4,
         label="NEQ Spectrum"

@@ -129,8 +129,7 @@ class pion():
         '''
         # If verbose is enabled, print the chemistry code
         if self.verbose:
-            print("─" * 85)
-            print(f" Loading geometry: ", end="")
+            print(f" [ LOADING GEOMETRY ]: ", end="")
 
         # Open the data for the first silo instant silo
         header_data = OpenData(self.silo_set[0])
@@ -412,8 +411,7 @@ class pion():
             else:
                 # If verbose is enabled, print the chemistry code
                 if self.verbose:
-                    print("─" * 85)
-                    print(f" Loading Microphysics Module: NEMO")
+                    print(f" [ LOADING CHEMISTRY ]: NEMO Microphysics features")
 
                 # Loop through each process
                 for index, process in enumerate(processes):
@@ -684,7 +682,6 @@ class pion():
         list: A list of valid ions that passed the check.
         """
         # Printing separator for clarity
-        print(f" ---------------------------")
 
         # Checking if both ion and ion_list are provided, which is an error
         if ion is not None and ion_list is not None:

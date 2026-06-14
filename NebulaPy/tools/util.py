@@ -56,7 +56,7 @@ def nebula_computing_comment(comment):
     """
     GRAY = "\033[90m"
     RESET = "\033[0m"
-    print(f"{GRAY}[ COMPUTING ]:{RESET} {comment}")
+    print(f"{GRAY} [ COMPUTING ]:{RESET} {comment}")
 
 ######################################################################################
 # Nebula done comment
@@ -69,7 +69,7 @@ def nebula_done_comment(comment):
     GRAY = "\033[90m"
     RESET = "\033[0m"
 
-    print(f"{GRAY}[ DONE ]:{RESET} {comment}")
+    print(f"{GRAY} [ DONE ]:{RESET} {comment}")
 ######################################################################################
 # Nebula version
 ######################################################################################
@@ -121,8 +121,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
     start_time_sec = start_time * factor if start_time is not None else None
     finish_time_sec = finish_time * factor if finish_time is not None else None
 
-    print("─" * 85)
-    print(" Batching silo files into time instances:")
+    print(" [ SILO BATCHING ]: Batching silo files into time instances:")
     print(f" Starting time: {start_time} {time_unit}")
     print(f" Finishing time: {finish_time} {time_unit}")
     print(f" Output frequency: {out_frequency}")
@@ -176,7 +175,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
 
         Ninstances = len(batched_silos)
         print(f" {Ninstances} time instances between {start_time} {time_unit} and {finish_time} {time_unit}")
-        print(" Batching completed")
+        nebula_done_comment(" Batching completed")
         return batched_silos
 
     # for nested grid *********************************************************************
@@ -280,7 +279,7 @@ def batch_silos(dir, filebase, start_time=None, finish_time=None, time_unit=None
 
         Ninstances = len(batched_silos)
         print(f" {Ninstances} time instances between {start_time:.3f} {time_unit} and {finish_time:.3f} {time_unit}")
-        print(" Silo batching completed")
+        nebula_done_comment("Silo batching completed")
         if not batched_silos:
             nebula_exit_with_error('No silo files found in the specified time range, check your selection criteria')
         return batched_silos

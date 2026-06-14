@@ -14,7 +14,7 @@ import NebulaPy.src.Chianti as nebula_chianti
 import NebulaPy.src.Constants as const
 from tqdm import tqdm
 #from .ChiantiMultiProc import *
-
+import os
 from NebulaPy.src.LineEmission import line_emission
 from NebulaPy.src.EmissionMeasure import emissionMeasure
 
@@ -141,11 +141,11 @@ class spectrum:
 
         # Verbose output
         if self.verbose:
-            print(" Active radiative processes :")
-            print(f" a) Bremsstrahlung continuum : {'ON' if doBremsstrahlung else 'OFF'}")
-            print(f" b) Free-bound continuum     : {'ON' if doFreebound else 'OFF'}")
-            print(f" c) Spectral line emission   : {'ON' if doLine else 'OFF'}")
-            print(f" d) Two-photon emission      : {'ON' if doTwophoton else 'OFF'}")
+            print(" Radiative process configuration:")
+            print(f"   Bremsstrahlung continuum : {'Enabled' if doBremsstrahlung else 'Disabled'}")
+            print(f"   Free-bound continuum     : {'Enabled' if doFreebound else 'Disabled'}")
+            print(f"   Spectral line emission   : {'Enabled' if doLine else 'Disabled'}")
+            print(f"   Two-photon emission      : {'Enabled' if doTwophoton else 'Disabled'}")
 
         # Initialize empty attributes for species and elemental abundances
         self.chianti_species_attributes = {}
@@ -153,17 +153,14 @@ class spectrum:
 
         # setup wavelength grid #####################################
         self.WavelengthGrid = []
-        self.setup_wavelength_grid(self.min_wvl,
-                                   self.max_wvl,
-                                   user_grid=userGrid,
-                                   grid_size=gridSize)
+        self.userGrid = userGrid
+        self.gridSize = gridSize
 
         self.CIE = CIE
         self.NEQ = not CIE
         if CIE:
             cie = cieMode(verbose=True)
             cie.load_cie()
-
 
     ######################################################################################
     # Build Species Attributes
@@ -317,17 +314,43 @@ class spectrum:
     ######################################################################################
     # Print Line Cataloger
     ######################################################################################
-    def PrintLineCataloger(self):
+    import os
+    import numpy as np
 
-        LineCatalog = {}
+    def LineCataloger(self, Filebase="", OutDir=""):
+
+        if not Filebase:
+            utils.nebula_exit_with_error(
+                "LineCataloger: output file base name not specified."
+            )
+
+        if not OutDir:
+            utils.nebula_exit_with_error(
+                "LineCataloger: output directory not specified."
+            )
+
+        if not os.path.isdir(OutDir):
+            utils.nebula_exit_with_error(
+                f"LineCataloger: output directory does not exist: {OutDir}"
+            )
+
+        outfile = os.path.join(
+            OutDir,
+            f"{Filebase}_LineCatalog.txt"
+        )
 
         dummy_temperature = [2.0e6]
         dummy_ne = [1.0e9]
 
+
+
+        line_catalog = []
+
         species_list = list(self.chianti_species_attributes.items())
+
         for species, attributes in tqdm(
                 species_list,
-                desc=" Retrieving CHIANTI wavelength grid",
+                desc=" Cataloging CHIANTI wavelength grid",
                 unit=" species",
                 ncols=100,
                 leave=True,
@@ -345,13 +368,94 @@ class spectrum:
             )
 
             try:
-                ion_transitions = chianti_nebula_object.get_allLineTransitions()
-                spectroscopic_name = chianti_nebula_object.chianti_ion.Spectroscopic
-                LineCatalog[spectroscopic_name] = ion_transitions
+                ionTransitions = (
+                    chianti_nebula_object.get_allLineTransitions()
+                )
+
+                spectroscopic_name = (
+                    chianti_nebula_object.chianti_ion.Spectroscopic
+                )
+
+                wavelengths_all = np.asarray(ionTransitions['wvl'])
+                Avalues_all = np.asarray(ionTransitions['Avalue'])
+                lower_states_all = np.asarray(
+                    ionTransitions['Lower'],
+                    dtype=object
+                )
+                upper_states_all = np.asarray(
+                    ionTransitions['Upper'],
+                    dtype=object
+                )
+
+                mask = (
+                        (wavelengths_all >= self.min_wvl)
+                        &
+                        (wavelengths_all <= self.max_wvl)
+                )
+
+                if not np.any(mask):
+                    continue
+
+                wavelengths = wavelengths_all[mask]
+                Avalues = Avalues_all[mask]
+                lower_states = lower_states_all[mask]
+                upper_states = upper_states_all[mask]
+
+                for wvl, aval, lower, upper in zip(
+                        wavelengths,
+                        Avalues,
+                        lower_states,
+                        upper_states
+                ):
+                    energy_keV = 12.398419843320026 / wvl
+                    spectral_line = f"{spectroscopic_name} {wvl:.6f}"
+
+                    line_catalog.append(
+                        (
+                            wvl,
+                            spectral_line,
+                            energy_keV,
+                            aval,
+                            str(lower),
+                            str(upper)
+                        )
+                    )
 
             finally:
                 del chianti_nebula_object
 
+        line_catalog.sort(key=lambda entry: entry[0])
+
+        with open(outfile, "w") as f:
+
+            f.write("# CHIANTI Line Catalogue\n")
+            f.write(
+                f"# Wavelength range: "
+                f"{self.min_wvl:.3f} - {self.max_wvl:.3f} Å\n"
+            )
+
+            f.write(
+                f"{'Spectral line':<35} "
+                f"{'Energy[keV]':>12} "
+                f"{'A-value':>15} "
+                f"{'Lower':>20} "
+                f"{'Upper':>20}\n"
+            )
+
+            f.write("-" * 110 + "\n")
+
+            for _, spectral_line, energy_keV, aval, lower, upper in line_catalog:
+                f.write(
+                    f"{spectral_line:<35} "
+                    f"{energy_keV:12.6f} "
+                    f"{aval:15.6e} "
+                    f"{lower:>20} "
+                    f"{upper:>20}\n"
+                )
+
+        utils.nebula_done_comment(
+            f"Saved CHIANTI line catalogue to {outfile}"
+        )
     ######################################################################################
     # COMPUTE SPECIES SPECTRA RATE
     ######################################################################################
@@ -497,6 +601,12 @@ class spectrum:
             )
 
         ##########################################################################
+        # Setting Up wavelength grid
+        self.setup_wavelength_grid(self.min_wvl, self.max_wvl,
+                                   user_grid=self.userGrid,
+                                   grid_size=self.gridSize)
+
+        ##########################################################################
         # DEM calculation first
         # initialize emission measure class
         EM = emissionMeasure(Tmin=100, Tmax=1.0e9, Nbins=300, verbose=self.verbose)
@@ -538,7 +648,7 @@ class spectrum:
             Ntasks = len(AllTasks)
 
             # Start small. Increase to 4 only if memory is okay.
-            proc = min(4, mp.cpu_count(), Ntasks)
+            proc = min(8, mp.cpu_count(), Ntasks)
 
             print(
                 f" [ MULTIPROCESSING ]: Utilizing {proc} cores | "

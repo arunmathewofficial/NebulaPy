@@ -30,7 +30,7 @@ cm2au = 6.68459e-14  # cm to au conversion factor
 #OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Output image directory
 #SiloDir = '/home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
 #Razer Blade -> Set up paths and filenames
-#OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
+OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
 SiloDir = '/home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
 Filebase = 'wr140_NEMO_d07e13_d2l6n128'  # Base name of the silo files
 start_time = 1.24e6  # in sec
@@ -95,11 +95,11 @@ NebulaSpectrum = nebula.spectrum(
     min_photon_energy=None,  # Minimum photon energy in keV
     max_photon_energy=None,  # Maximum photon energy in keV
     elements=elements,
-    doBremsstrahlung=True,
-    doFreebound=True,
+    doBremsstrahlung=False,
+    doFreebound=False,
     doLine=True,
-    doTwophoton=True,
-    CIE=True,
+    doTwophoton=False,
+    CIE=False,
     filtername=None,
     filterfactor=None,
     userGrid=True,
@@ -109,6 +109,6 @@ NebulaSpectrum = nebula.spectrum(
 )
 
 wavelength = NebulaSpectrum.WavelengthGrid
-NebulaSpectrum.PrintLineCataloger()
+NebulaSpectrum.LineCataloger(Filebase=Filebase, OutDir=OutputDir)
 
 
