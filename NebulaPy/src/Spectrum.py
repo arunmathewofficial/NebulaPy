@@ -648,7 +648,7 @@ class spectrum:
             Ntasks = len(AllTasks)
 
             # Start small. Increase to 4 only if memory is okay.
-            proc = min(8, mp.cpu_count(), Ntasks)
+            proc = min(4, mp.cpu_count(), Ntasks)
 
             print(
                 f" [ MULTIPROCESSING ]: Utilizing {proc} cores | "
