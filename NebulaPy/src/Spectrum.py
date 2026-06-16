@@ -496,9 +496,9 @@ class spectrum:
 
 
             #if species not in ['fe_25', 'fe_26', 'si_14', 'si_13', 's_16']:
-            if species not in ['h_2']:
+            #if species not in ['h_2']:
             #    #utils.nebula_warning(f"{count} Skipping {species} ...")
-                continue
+            #    continue
 
             # show current species name in progress bar
             #species_iterator.set_postfix_str(species)
