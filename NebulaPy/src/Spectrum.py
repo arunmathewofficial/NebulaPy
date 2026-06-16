@@ -4,7 +4,7 @@
 #from ChiantiPy.base import specTrails
 from .Chianti import chianti
 import numpy as np
-from .CIE import cieMode
+#from .CIE import cieMode
 #from ChiantiPy.core import mspectrum
 from NebulaPy.src import Utils as utils
 #import ChiantiPy.tools.mputil as mputil
@@ -97,7 +97,9 @@ class spectrum:
             filterfactor=None,
             allLines=True,
             userGrid=False,
+            MPNcores=4,
             gridSize=1000,
+
             verbose=True
     ):
 
@@ -156,11 +158,16 @@ class spectrum:
         self.userGrid = userGrid
         self.gridSize = gridSize
 
+        # Multiprocessing  ##########################################
+        self.MPNcores = MPNcores
+
+        '''
         self.CIE = CIE
         self.NEQ = not CIE
         if CIE:
             cie = cieMode(verbose=True)
             cie.load_cie()
+        '''
 
     ######################################################################################
     # Build Species Attributes
@@ -489,7 +496,7 @@ class spectrum:
 
 
             #if species not in ['fe_25', 'fe_26', 'si_14', 'si_13', 's_16']:
-            if species not in ['h_2', 'he_2', 'o_7', 'o_8']:
+            if species not in ['h_2']:
             #    #utils.nebula_warning(f"{count} Skipping {species} ...")
                 continue
 
@@ -590,6 +597,7 @@ class spectrum:
                     f"shapes for species {species}."
                 )
 
+        '''
         if self.NEQ:
             utils.nebula_warning(
                 "NEI mode is not implemented yet; using CIE instead."
@@ -599,6 +607,7 @@ class spectrum:
             utils.nebula_warning(
                 "Using collisional ionization equilibrium (CIE)."
             )
+        '''
 
         ##########################################################################
         # Setting Up wavelength grid
@@ -648,7 +657,7 @@ class spectrum:
             Ntasks = len(AllTasks)
 
             # Start small. Increase to 4 only if memory is okay.
-            proc = min(8, mp.cpu_count(), Ntasks)
+            proc = min(self.MPNcores, mp.cpu_count(), Ntasks)
 
             print(
                 f" [ MULTIPROCESSING ]: Utilizing {proc} cores | "
