@@ -11,6 +11,7 @@ cm2au = 6.68459e-14  # cm to au conversion factor
 
 
 # Colliding wind binaries
+'''
 #Razer Blade -> Set up paths and filenames
 OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
 SiloDir = '/home/tony/Desktop/CWBs-2026/Silo-n128'  # Directory containing silo files
@@ -20,6 +21,7 @@ finish_time = None
 time_unit = 'sec'
 out_frequency = None
 SimulationName = "CWB"
+'''
 
 # edit here for Mimir
 '''
@@ -37,14 +39,15 @@ SimulationName = "CWB"
 
 # Bowshock
 #Razer Blade -> Set up paths and filenames
-#OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
-#SiloDir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/silo'  # Directory containing silo files
-#Filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-#start_time = 161  # in kyr
-#finish_time = 161.5
-#time_unit = 'kyr'
-#out_frequency = None
-#SimulationName = "Bowshock"
+OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
+SiloDir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/silo'  # Directory containing silo files
+Filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+start_time = 161  # in kyr
+finish_time = 161.5
+time_unit = 'kyr'
+out_frequency = None
+SimulationName = "Bowshock"
+
 
 # Batch the silo files according to the time instant
 batched_silos = util.batch_silos(
@@ -84,8 +87,8 @@ elements = pion.get_elements()
 
 # initializing spectrum class
 NebulaSpectrum = nebula.spectrum(
-    min_wavelength=1.0,  # Minimum wavelength in Angstroms
-    max_wavelength=20,  # Maximum wavelength in Angstroms
+    min_wavelength=3700,  # Minimum wavelength in Angstroms
+    max_wavelength=7400, # Maximum wavelength in Angstroms
     min_photon_energy=None,  # Minimum photon energy in keV # not implemented
     max_photon_energy=None,  # Maximum photon energy in keV # not implemented
     elements=elements,
@@ -97,37 +100,60 @@ NebulaSpectrum = nebula.spectrum(
     filtername=None,
     filterfactor=None,
     userGrid=True,
-    gridSize=4000,
+    gridSize=3000,
     allLines=True,
-    MPNcores=10,
-    verbose=True
+    MPNcores=4,
+    verbose=False
 )
 
 runtime = 0.0
+
 # Loop over each time instant in the batched silo files
 for step, silo_instant in enumerate(batched_silos):
+
     silo_instant_start_time = time.time()
 
     print(" [ SIMULATION SNAPSHOT ] " + "─" * 70)
-    sim_time = pion.get_simulation_time(silo_instant, time_unit='sec')
-    print(f" Step: {step}  |  Simulation time: {sim_time:.6e} s")
+
+    sim_time = pion.get_simulation_time(silo_instant, time_unit=time_unit)
+    print(f" Step: {step} | Simulation time: {sim_time:.6e}")
 
     # Extract temperature and electron number density
-    temperature = pion.get_parameter('Temperature', silo_instant)
-    temperature = np.asarray(temperature, dtype=np.float64)
+    temperature = np.asarray(
+        pion.get_parameter('Temperature', silo_instant),
+        dtype=np.float64
+    )
 
     ne = pion.get_ne(silo_instant)
     species_densities = pion.get_species_number_densities(silo_instant)
 
-    NebulaSpectrum.generateSpectrum(temperature=temperature, ne=ne,
-                               species_densities=species_densities,
-                               grid_volume=grid_volume, grid_mask=grid_mask)
+    NebulaSpectrum.generateSpectrum(
+        temperature=temperature,
+        ne=ne,
+        species_densities=species_densities,
+        grid_volume=grid_volume,
+        grid_mask=grid_mask
+    )
 
     wavelength = NebulaSpectrum.WavelengthGrid
     spectrum = NebulaSpectrum.Spectrum
 
+    # Save spectrum to text file
+    txtfile = os.path.join(
+        OutputDir,
+        f"{Filebase}_Spectrum_{sim_time.value:6e}.txt"
+    )
+
+    np.savetxt(
+        txtfile,
+        np.c_[wavelength, spectrum],
+        header="Wavelength[A] Spectrum[erg s^-1 A^-1]",
+        fmt="%.8e"
+    )
+
+    print(f" Saved spectrum data to {txtfile}")
+
     energy = 12.39841984 / wavelength
-    # sort in increasing energy
     idx = np.argsort(energy)
     energy = energy[idx]
 
@@ -135,32 +161,56 @@ for step, silo_instant in enumerate(batched_silos):
 
     ax.set_xlabel(r"Wavelength [$\AA$]", fontsize=12)
     ax.set_ylabel(r"$L_\lambda$ [erg s$^{-1}$ $\AA^{-1}$]", fontsize=12)
-    ax.plot(wavelength, spectrum, color="green", linewidth=1.4, label=f"NEQ {SimulationName} Spectrum")
 
-    # Logarithmic luminosity axis
+    ax.plot(
+        wavelength,
+        spectrum,
+        color="green",
+        linewidth=1.4,
+        label=f"NEQ {SimulationName} Spectrum"
+    )
+
     ax.set_yscale("log")
-    # Publication-style ticks
+
     ax.minorticks_on()
-    ax.tick_params(axis='both', which='major', direction='in', top=True,
-        right=True, length=6, width=1.2, labelsize=11)
 
-    ax.tick_params(axis='both', which='minor', direction='in', top=True,
-        right=True, length=3, width=1.0)
+    ax.tick_params(
+        axis='both',
+        which='major',
+        direction='in',
+        top=True,
+        right=True,
+        length=6,
+        width=1.2,
+        labelsize=11
+    )
 
-    # Slightly thicker frame
+    ax.tick_params(
+        axis='both',
+        which='minor',
+        direction='in',
+        top=True,
+        right=True,
+        length=3,
+        width=1.0
+    )
+
     for spine in ax.spines.values():
         spine.set_linewidth(1.2)
 
     ax.legend(loc='best', frameon=False, fontsize=10)
+
     fig.tight_layout()
-    filename = f"{Filebase}_Spectrum.png"
-    outfile = os.path.join(OutputDir, filename)
+
+    outfile = os.path.join(OutputDir, f"{Filebase}_Spectrum_{sim_time.value:6e}.png")
+
     fig.savefig(outfile, dpi=300, bbox_inches="tight")
     plt.close(fig)
+
     print(f" sim time: {sim_time:.6e}, saved snapshot {step} to {outfile}")
 
     # Update runtime
-    silo_instant_finish_time = time.time()
-    dt = silo_instant_finish_time - silo_instant_start_time
+    dt = time.time() - silo_instant_start_time
     runtime += dt
+
     print(f" runtime: {runtime:.4e} s | step runtime: {dt:.4e} s")

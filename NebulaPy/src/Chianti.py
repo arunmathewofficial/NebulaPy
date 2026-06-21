@@ -409,21 +409,10 @@ class chianti:
 
 
 
-
-
-
-
-
-
-    ######################################################################################
-    # all below code need to be verified
-    ######################################################################################
-
-
     ######################################################################################
     # get bremsstrahlung emission rate info: verified OK
     ######################################################################################
-    def get_bremsstrahlung_emission_rate(self, wavelength):
+    def get_bremsstrahlung_coefficients(self, wavelength):
         """
         Calculates the free-free emission (bremsstrahlung) rate for a single ion.
 
@@ -433,8 +422,6 @@ class chianti:
             2D array with shape (n_temperature, n_wavelength), where each row
             contains the bremsstrahlung emission spectrum for one temperature.
         """
-
-        import numpy as np
 
         # -----------------------------
         # Prepare temperature and wavelength
@@ -499,51 +486,24 @@ class chianti:
         # Final emission
         # shape -> (nT, nW)
         # -----------------------------
-        bremsstrahlung_emission_rate = prefactor * exp_factor * gf
-
-
+        bremsstrahlung_coefficients = prefactor * exp_factor * gf
 
         # Final safety check
-        bremsstrahlung_emission_rate = np.asarray(
-            bremsstrahlung_emission_rate,
-            dtype=np.float64
-        ).squeeze()
+        bremsstrahlung_coefficients = np.asarray(bremsstrahlung_coefficients, dtype=np.float64).squeeze()
 
         if self.verbose:
             utils.nebula_done_comment(f"{self.chianti_ion.Spectroscopic} Bremsstrahlung emission computed")
 
-        return bremsstrahlung_emission_rate
+        return bremsstrahlung_coefficients
+
     ######################################################################################
-    # get free-bound emission # todo- comment by Arun: not verified
+    # get free-bound emission coefficients
     ######################################################################################
-    def get_freebound_emission_rate(self, wavelength, verner=True):
+    def get_freebound_coefficients(self, wavelength, verner=True):
         """
         Calculates the free-bound (radiative recombination) continuum emissivity of an ion.
-
-        Parameters
-        ----------
-        wavelength : numpy.ndarray
-            Array of wavelengths in Angstroms where the emissivity is computed.
-        elemental_abundance : float
-            Abundance of the element in the astrophysical environment.
-        ion_fraction : float
-            Fraction of the ionized species in the environment.
-        emission_measure : numpy.ndarray
-            Array of emission measures at each temperature.
-        verner : bool, optional
-            If True, use the Verner-Yakovlev photoionization cross-sections. Default is True.
-
-        Returns
-        -------
-        numpy.ndarray
-            Array of emissivity in units of ergs cm^(-2) s^(-1) sr^(-1) Angstrom^(-1) for the given ion.
-
-        Notes
-        -----
-        - Uses the Gaunt factors of CHIANTI V10 for recombination to the excited levels.
-        - Uses the photoionization cross-sections to develop the free-bound cross-section.
-        - Revised to calculate the free-bound cross-section and Maxwell energy distribution.
         """
+
         if self.verbose:
             utils.nebula_computing_comment(f"Free-bound emission rate for {self.chianti_ion.Spectroscopic}")
 
@@ -563,22 +523,21 @@ class chianti:
         # the returned emissivity is purely for the ion of interest, without scaling
         # by abundance or ionization fraction.
         if 'intensity' in continuum_fb.FreeBound:
-            freebound_emission = continuum_fb.FreeBound['intensity']
+            freebound_coefficients = continuum_fb.FreeBound['intensity']
         else:
-            freebound_emission = np.zeros((N_temp, N_wvl), dtype=np.float64)
+            freebound_coefficients = np.zeros((N_temp, N_wvl), dtype=np.float64)
         # Clean up the continuum object to free memory
         del continuum_fb
         if self.verbose:
             utils.nebula_done_comment(f'{self.chianti_ion.Spectroscopic} free-bound emission calculation completed')
 
-        return freebound_emission
-
+        return freebound_coefficients
 
 
     ######################################################################################
-    # get line semission rate for all lines within a wavelength range, with optional filter
+    # get line emission rate for all lines within a wavelength range, with optional filter
     ######################################################################################
-    def get_line_emission_rate(self, wavelength, allLines=True, filtername=None, filterfactor=None):
+    def get_line_coefficients(self, wavelength, allLines=True, filtername=None, filterfactor=None):
 
         if self.verbose:
             utils.nebula_computing_comment(f" Retrieving emissivity values "
@@ -604,7 +563,7 @@ class chianti:
         N_temp = len(self.temperature)
         N_wvl = len(wavelength)
 
-        line_emission_rate = np.zeros((N_temp, N_wvl), dtype=np.float64)
+        line_emission_coefficients = np.zeros((N_temp, N_wvl), dtype=np.float64)
 
         if len(selected_idx) == 0:
             if self.verbose:
@@ -613,7 +572,7 @@ class chianti:
                     f"in the wavelength range {min_wvl:.2e} - {max_wvl:.2e} Å"
                 )
                 print(" skipping ...")
-            return line_emission_rate
+            return line_emission_coefficients
 
         selected_lines = lines[selected_idx]
         selected_emissivity = emissivity[selected_idx, :]
@@ -626,7 +585,7 @@ class chianti:
                     factor=useFactor
                 )
 
-                line_emission_rate[temp_idx, :] += (
+                line_emission_coefficients[temp_idx, :] += (
                         line_profile * selected_emissivity[line_idx, temp_idx]
                 )
 
@@ -634,12 +593,12 @@ class chianti:
             utils.nebula_done_comment(
                 f" {self.chianti_ion.Spectroscopic} line calculation completed")
 
-        return line_emission_rate
+        return line_emission_coefficients
 
     ######################################################################################
-    # get two photon emission rate
+    # get two photon emission coefficients
     ######################################################################################
-    def get_twophoton_emission_rate(self, wavelength):
+    def get_twophoton_coefficients(self, wavelength):
 
         '''
         Returns the emissivity of two-photon emission for the specified wavelength(s).
@@ -655,7 +614,7 @@ class chianti:
         N_temp = len(self.temperature)
         N_wvl = len(wavelength)
 
-        twophoton_emission_rate = np.zeros((N_temp, N_wvl), dtype=np.float64)
+        twophoton_coefficients = np.zeros((N_temp, N_wvl), dtype=np.float64)
 
         # for hydrogen sequence
         if self.chianti_ion.Z == self.chianti_ion.Ion:
@@ -674,7 +633,7 @@ class chianti:
             if self.verbose:
                 utils.nebula_computing_comment(f"Two-photon emission rate for {self.chianti_ion.Spectroscopic}")
             self.chianti_ion.twoPhotonEmiss(wavelength)
-            twophoton_emission_rate = self.chianti_ion.TwoPhotonEmiss['emiss']
+            twophoton_coefficients = self.chianti_ion.TwoPhotonEmiss['emiss']
 
             if self.verbose:
                 utils.nebula_done_comment(f'{self.chianti_ion.Spectroscopic} two-photon emission computed')
@@ -685,7 +644,7 @@ class chianti:
                     f"Skipping two-photon emission for {self.chianti_ion.Spectroscopic}: "
                     f"no wavelengths > {wvl0:.3f} Å.")
 
-        return twophoton_emission_rate
+        return twophoton_coefficients
 
 
 
