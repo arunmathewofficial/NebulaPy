@@ -42,14 +42,14 @@ SimulationName = "CWB"
 
 # Bowshock
 #Razer Blade -> Set up paths and filenames
-#OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
-#SiloDir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/silo'  # Directory containing silo files
-#Filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
-#start_time = 161  # in kyr
-#finish_time = 161.5
-#time_unit = 'kyr'
-#out_frequency = None
-#SimulationName = "Bowshock"
+OutputDir = '/home/tony/Desktop/CWBs-2026/Postprocessing/X-raySpectrum'  # Output image directory
+SiloDir = '/home/tony/Desktop/multi-ion-bowshock/sim-output/silo'  # Directory containing silo files
+Filebase = 'Ostar_mhd-nemo-dep_d2n0128l3'  # Base name of the silo files
+start_time = 161  # in kyr
+finish_time = 161.5
+time_unit = 'kyr'
+out_frequency = None
+SimulationName = "Bowshock"
 
 # Batch the silo files according to the time instant
 batched_silos = util.batch_silos(
@@ -105,7 +105,7 @@ NebulaSpectrum = nebula.spectrum(
     userGrid=True,
     gridSize=4000,
     allLines=True,
-    verbose=True
+    verbose=False
 )
 
 wavelength = NebulaSpectrum.WavelengthGrid
