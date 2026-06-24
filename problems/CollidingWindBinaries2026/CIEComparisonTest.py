@@ -15,20 +15,14 @@ OutputDir = '/Users/tony/Desktop/CWBs-NEMOv1/Post-Processing/XraySpectrum'  # Ou
 print(" Comparing NebulaPy and CHIANTI CIE ion fractions")
 # Initialize nebulapy CIE module
 CIE = cieMode(verbose=True)
-CIE.load_cie()
+CIE.loadCIEFile()
+
+
 
 # Temperature grid
 Temperature = np.logspace(np.log10(1e6), np.log10(1e8), 200)
 
-element = 'fe'
-element_Z = 26
 
-# Initialize ChiantiPy CIE module
-chianti_ioneq = ch.ioneq(element_Z)
-chianti_ioneq.calculate(Temperature)
-chianti_ieq = chianti_ioneq.Ioneq
-# Electron density (dummy value for CHIANTI)
-ne = np.full_like(Temperature, 1.0e9)
 
 # Create figure
 fig, ax = plt.subplots(figsize=(9, 6))
@@ -55,7 +49,7 @@ for idx, i in enumerate(range(24, 26)):
     color = colors[idx]
 
     # NebulaPy CIE fraction
-    nebula_cie = CIE.get_cie_fraction(
+    nebula_cie = CIE.getCIEFraction(
         chianti_name,
         Temperature
     )
@@ -71,6 +65,7 @@ for idx, i in enumerate(range(24, 26)):
     )
 
     # -------------------------------------------------------------------------
+    '''
     ax.plot(
         np.log10(Temperature),
         np.log10(chianti_ieq[i - 1]),
@@ -79,6 +74,7 @@ for idx, i in enumerate(range(24, 26)):
         color=color,
         label=f'{chianti_name} (CHIANTI)'
     )
+    '''
 
 # Axis formatting
 # ax.set_ylim(-6, 0)

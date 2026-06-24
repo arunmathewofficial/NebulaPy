@@ -1,7 +1,7 @@
 import numpy as np
 from pathlib import Path
 import os
-from NebulaPy.tools import util as util
+from NebulaPy.src import Utils as utils
 from tqdm import tqdm
 
 class cieMode:
@@ -14,7 +14,7 @@ class cieMode:
 
         # Check if the database exists, exit if missing
         if database is None:
-            util.nebula_exit_with_error(
+            utils.nebula_exit_with_error(
                 "required database dir missing, install database to proceed"
             )
 
@@ -23,21 +23,19 @@ class cieMode:
     ######################################################################################
     # Load CIE ion fraction table from the database directory
     ######################################################################################
-    def load_cie(self):
+    def loadCIEFile(self):
 
         cie_file = self.cie_file
 
         if not os.path.exists(cie_file):
-            util.nebula_exit_with_error(f"CIE file not found: {cie_file}")
+            utils.nebula_exit_with_error(f"CIE file not found: {cie_file}")
 
         header = None
         data = []
 
         if self.verbose:
-            print(" [CIE] : Loading collision ionization equilibrium table")
+            print(" [ CIE ]: Loading collision ionization equilibrium table")
 
-        # Count valid data lines for progress bar
-        total_lines = 0
         with open(cie_file, "r") as f:
 
             lines = f.readlines()
@@ -66,13 +64,23 @@ class cieMode:
                 data.append([float(x) for x in parts])
 
         if header is None:
-            util.nebula_exit_with_error(" CIE file header not found.")
+            utils.nebula_exit_with_error("CIE file header not found.")
 
         if not data:
-            util.nebula_exit_with_error(" CIE file contains no data.")
+            utils.nebula_exit_with_error("CIE file contains no data.")
 
         self.data = np.array(data, dtype=np.float64)
-        self.col_index = {name: i for i, name in enumerate(header)}
+
+        # Keep the first column as log_T and convert ion columns to PION symbols
+        self.col_index = {
+            ("log_T" if i == 0 else utils.getPionSymbol(name)): i
+            for i, name in enumerate(header)
+        }
+
+        self.AllSpecies = np.array(
+            [utils.getPionSymbol(name) for name in header[1:]],
+            dtype=str
+        )
 
         if self.verbose:
             print(" CIE table summary")
@@ -82,7 +90,7 @@ class cieMode:
     ######################################################################################
     # Interpolate ion fraction for a given ion and temperature(s)
     ######################################################################################
-    def get_cie_fraction(self, ion, Temperature):
+    def getCIEFraction(self, ion, Temperature):
         """
         Interpolate ion fraction for scalar or array Temperature (Kelvin).
         """
@@ -102,3 +110,16 @@ class cieMode:
         frac = np.interp(logT, Tgrid, fgrid)
 
         return frac[0] if scalar else frac
+
+    ######################################################################################
+    # Interpolate ion fraction for a given ion and temperature(s)
+    ######################################################################################
+    def buildCIENumberDensities(self, ElementMassFraction, Temperature):
+        """
+        Build a dictionary of ion number densities for all ions in the CIE table.
+        ElementMassFraction: dict of element mass fractions (e.g. {'H': 0.7, 'He': 0.28, ...})
+        Temperature: scalar or array of temperatures (Kelvin)
+        Returns: dict of {ion: number density array}
+        """
+
+        pass
