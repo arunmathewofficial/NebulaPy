@@ -1,8 +1,7 @@
 import numpy as np
 import math
 from astropy import units as u
-import time
-from NebulaPy.tools import util as util
+from NebulaPy.src import Utils as util
 from tqdm import tqdm
 
 pi = math.pi

@@ -7,9 +7,9 @@ import numpy as np
 from astropy.io import fits
 from scipy import integrate
 import matplotlib.pyplot as plt
-import NebulaPy.tools.constants as const
 import NebulaPy.version as version
-from NebulaPy.tools import util as util
+from NebulaPy.src import Utils as util
+from NebulaPy.src import Constants as const
 
 # TODO: Include tolerance for mdot value in potsdam model
 # TODO: Mdot value for SMC-OB-Vd3 and other SMC check

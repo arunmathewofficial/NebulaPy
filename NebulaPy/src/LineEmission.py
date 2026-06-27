@@ -1,7 +1,7 @@
 from .Chianti import chianti
-import NebulaPy.tools.constants as const
 import numpy as np
-import NebulaPy.tools.util as util
+from NebulaPy.src import Constants as const
+from NebulaPy.src import Utils as util
 import copy
 from .PyNeb import pyneb
 import multiprocessing
