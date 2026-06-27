@@ -2,8 +2,8 @@ import re
 import numpy as np
 from pypion.ReadData import ReadData
 from pypion.SiloHeader_data import OpenData
-from NebulaPy.tools import util as util
-from NebulaPy.tools import constants as const
+from NebulaPy.src import Utils as util
+from NebulaPy.src import Constants as const
 import astropy.units as unit
 from tqdm import tqdm
 

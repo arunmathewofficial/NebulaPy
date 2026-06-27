@@ -1,6 +1,6 @@
 #import numpy as np
 import NebulaPy.src as nebula
-from NebulaPy.tools import util
+from NebulaPy.src import Utils as util
 import time
 import numpy as np
 import matplotlib.pyplot as plt

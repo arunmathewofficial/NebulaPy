@@ -8,8 +8,8 @@ import ChiantiPy.tools.data as chdata
 from ChiantiPy.base import specTrails
 import numpy as np
 import ChiantiPy.tools.util as chianti_util
-from NebulaPy.tools import constants as const
 from NebulaPy.src import Utils as utils
+from NebulaPy.src import Constants as const
 from ChiantiPy.core.Continuum import continuum
 import ChiantiPy.tools.io as io
 from scipy.interpolate import splev, splrep

@@ -3,8 +3,8 @@ import pyneb as pn
 from pyneb import RecAtom
 from pyneb import Atom
 from pyneb import atomicData as pyneb_atomic_data
-from NebulaPy.tools import util as util
-from NebulaPy.tools import constants as const
+from NebulaPy.src import Utils as util
+from NebulaPy.src import Constants as const
 from NebulaPy.src import chianti as nebula_chianti
 import ChiantiPy.core as ch
 import pkg_resources

@@ -1,12 +1,12 @@
 from .Chianti import chianti
-import NebulaPy.tools.constants as const
 import numpy as np
-import NebulaPy.tools.util as util
 import copy
 from .PyNeb import pyneb
 import multiprocessing
 from multiprocessing import Pool, Manager
 from typing import Optional
+from NebulaPy.src import Utils as util
+from NebulaPy.src import Constants as const
 
 class line_emission():
 

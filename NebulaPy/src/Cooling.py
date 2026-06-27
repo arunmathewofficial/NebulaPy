@@ -1,6 +1,7 @@
 import numpy as np
 import os
-from NebulaPy.tools import util as util
+from NebulaPy.src import Utils as util
+from NebulaPy.src import Constants as const
 from scipy import interpolate
 
 class cooling():
