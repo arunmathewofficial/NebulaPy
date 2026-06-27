@@ -87,14 +87,14 @@ elements = pion.get_elements()
 
 # initializing spectrum class
 NebulaSpectrum = nebula.spectrum(
-    min_wavelength=3700,  # Minimum wavelength in Angstroms
-    max_wavelength=7400,  # Maximum wavelength in Angstroms
+    min_wavelength=1.0,  # Minimum wavelength in Angstroms
+    max_wavelength=10.0,  # Maximum wavelength in Angstroms
     min_photon_energy=None,  # Minimum photon energy in keV # not implemented
     max_photon_energy=None,  # Maximum photon energy in keV # not implemented
     elements=elements,
     doBremsstrahlung=False,
-    doFreebound=True,
-    doLine=False,
+    doFreebound=False,
+    doLine=True,
     doTwophoton=False,
     CIE=False,
     filtername=None,
